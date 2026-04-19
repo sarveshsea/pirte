@@ -135,9 +135,10 @@ function updatePlayer(state: GameState, input: DoomInput, dt: number) {
     tryMove(state, p.pos, p.pos.x + mx * sp, p.pos.y + my * sp)
   }
 
-  // hazards
+  // hazards + exit
   const ch = tileAt(state.grid, Math.floor(p.pos.x), Math.floor(p.pos.y))
   if (isHazard(ch)) damagePlayer(state, 5 * dt)
+  if (ch === 'X') state.phase = 'won'
 
   // pickups
   for (let i = state.pickups.length - 1; i >= 0; i--) {
@@ -247,6 +248,17 @@ function updateProjectiles(state: GameState, dt: number) {
     }
     if (dead) state.projectiles.splice(i, 1)
   }
+}
+
+function tryOpenDoor(state: GameState) {
+  const p = state.player
+  // look 1 tile ahead in the facing direction
+  const tx = Math.floor(p.pos.x + p.dir.x * 1.2)
+  const ty = Math.floor(p.pos.y + p.dir.y * 1.2)
+  if (tileAt(state.grid, tx, ty) !== 'D') return
+  // replace D with . in the row string
+  const row = state.grid[ty]
+  state.grid[ty] = row.substring(0, tx) + '.' + row.substring(tx + 1)
 }
 
 function update(state: GameState, input: DoomInput, dt: number) {
@@ -363,6 +375,9 @@ function render(state: GameState, t: number): string {
         if (fch === '~') {
           const phase = ((fx + fy) * 1.7 + t * 0.004) % 4
           out[y][x] = phase < 1 ? '~' : phase < 2 ? '≈' : phase < 3 ? '-' : '·'
+        } else if (fch === 'X') {
+          const pulse = (Math.floor(t * 0.004) % 2) === 0
+          out[y][x] = pulse ? '▼' : '▽'
         } else {
           out[y][x] = rowDist < 3 ? '·' : rowDist < 7 ? '.' : ' '
         }
@@ -418,13 +433,95 @@ function render(state: GameState, t: number): string {
   // hud in the bottom HUD_H rows
   drawHud(out, cols, rows, state)
 
+  // overlay: paused / dead / won
+  if (state.phase !== 'play') drawOverlay(out, cols, rows, state)
+
   return out.map((r) => r.join('')).join('\n')
+}
+
+function drawOverlay(out: string[][], cols: number, rows: number, state: GameState) {
+  const sceneRows = Math.max(10, rows - HUD_H)
+  // dim the scene area with a dither
+  for (let y = 0; y < sceneRows; y++) {
+    for (let x = 0; x < cols; x++) {
+      if (((x + y) & 1) === 0) out[y][x] = ' '
+    }
+  }
+  const elapsed = Math.max(0, (performance.now() - state.startedAt) / 1000)
+  const mm = Math.floor(elapsed / 60)
+  const ss = Math.floor(elapsed % 60)
+  const timeStr = `${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`
+  let lines: string[]
+  if (state.phase === 'paused') {
+    lines = ['paused', '', 'p  resume', 'r  restart']
+  } else if (state.phase === 'dead') {
+    lines = [
+      'you died',
+      '',
+      `kills   ${state.kills}/${state.totalKills}`,
+      `items   ${state.items}/${state.totalItems}`,
+      `time    ${timeStr}`,
+      '',
+      'r  restart',
+    ]
+  } else {
+    lines = [
+      'e1m1 complete',
+      '',
+      `kills   ${state.kills}/${state.totalKills}`,
+      `items   ${state.items}/${state.totalItems}`,
+      `time    ${timeStr}`,
+      '',
+      'r  restart   ]  next page',
+    ]
+  }
+  const boxW = Math.max(...lines.map((l) => l.length)) + 6
+  const boxH = lines.length + 4
+  const x0 = Math.floor((cols - boxW) / 2)
+  const y0 = Math.floor((sceneRows - boxH) / 2)
+  // clear a border rectangle
+  for (let y = y0; y < y0 + boxH; y++) {
+    for (let x = x0; x < x0 + boxW; x++) {
+      if (y < 0 || y >= rows || x < 0 || x >= cols) continue
+      let ch = ' '
+      if (y === y0 || y === y0 + boxH - 1) ch = '─'
+      else if (x === x0 || x === x0 + boxW - 1) ch = '│'
+      if (y === y0 && x === x0) ch = '┌'
+      else if (y === y0 && x === x0 + boxW - 1) ch = '┐'
+      else if (y === y0 + boxH - 1 && x === x0) ch = '└'
+      else if (y === y0 + boxH - 1 && x === x0 + boxW - 1) ch = '┘'
+      out[y][x] = ch
+    }
+  }
+  // text lines
+  for (let i = 0; i < lines.length; i++) {
+    const s = lines[i]
+    const lx = x0 + Math.floor((boxW - s.length) / 2)
+    const ly = y0 + 2 + i
+    for (let k = 0; k < s.length; k++) {
+      if (ly >= 0 && ly < rows && lx + k >= 0 && lx + k < cols) out[ly][lx + k] = s[k]
+    }
+  }
 }
 
 export function createDoom(): Doom {
   let state: GameState = makeState(80, 30)
   const input = newInput()
+  const prev = newInput()
   let lastT = 0
+
+  const handleEdges = () => {
+    if (input.pause && !prev.pause) {
+      if (state.phase === 'play') state.phase = 'paused'
+      else if (state.phase === 'paused') state.phase = 'play'
+    }
+    if (input.use && !prev.use && state.phase === 'play') tryOpenDoor(state)
+    if (input.restart && !prev.restart) {
+      state = makeState(state.cols, state.rows)
+    }
+    // snapshot current input for next frame
+    Object.assign(prev, input)
+  }
 
   return {
     reset(cols, rows) {
@@ -434,6 +531,7 @@ export function createDoom(): Doom {
     frame(t) {
       const dt = lastT === 0 ? 0 : Math.min(0.05, (t - lastT) / 1000)
       lastT = t
+      handleEdges()
       update(state, input, dt)
       return render(state, t)
     },
