@@ -9,6 +9,7 @@ export default function StatusBar({ onPalette }: Props) {
   const loc = useLocation()
   const [now, setNow] = useState(Date.now())
   const [fps, setFps] = useState(60)
+  const [coord, setCoord] = useState({ x: 0, y: 0 })
   const start = getSessionStart()
 
   useEffect(() => {
@@ -33,7 +34,21 @@ export default function StatusBar({ onPalette }: Props) {
     return () => cancelAnimationFrame(raf)
   }, [])
 
+  // rAF-throttled cursor coord tracking
+  useEffect(() => {
+    let raf = 0
+    let pending = { x: 0, y: 0 }
+    const onMove = (e: PointerEvent) => { pending = { x: e.clientX, y: e.clientY } }
+    const tick = () => { setCoord(pending); raf = requestAnimationFrame(tick) }
+    window.addEventListener('pointermove', onMove, { passive: true })
+    raf = requestAnimationFrame(tick)
+    return () => { window.removeEventListener('pointermove', onMove); if (raf) cancelAnimationFrame(raf) }
+  }, [])
+
   const route = loc.pathname === '/' ? '/index' : loc.pathname
+  const col = Math.floor(coord.x / 96)
+  const row = Math.floor(coord.y / 96)
+  const pad = (n: number) => String(n).padStart(3, '0')
 
   return (
     <div
@@ -42,6 +57,8 @@ export default function StatusBar({ onPalette }: Props) {
     >
       <span className="truncate">pirte<span className="mx-2 text-[var(--color-line)]">·</span>{route}</span>
       <div className="flex items-center gap-4">
+        <span className="tabular-nums">x<span className="text-[var(--color-fg)]">{pad(coord.x)}</span> y<span className="text-[var(--color-fg)]">{pad(coord.y)}</span></span>
+        <span className="tabular-nums text-[var(--color-line)]">[{col},{row}]</span>
         <span>utc {formatUTC(new Date(now))}</span>
         <span>session {formatElapsed(now - start)}</span>
         <span>{fps}fps</span>

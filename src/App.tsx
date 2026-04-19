@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, useLocation } from 'react-router-dom'
+import { AnimatePresence, motion } from 'framer-motion'
 import Cursor from './components/Cursor'
+import Spotlight from './components/Spotlight'
 import StatusBar from './components/StatusBar'
 import CommandPalette, { type Command } from './components/CommandPalette'
 import PageNav from './components/PageNav'
@@ -39,26 +41,20 @@ const commands: Command[] = [
   { id: 'particles',   label: 'particles',   to: '/particles',   hint: 'verlet physics' },
 ]
 
-export default function App() {
-  const [paletteOpen, setPaletteOpen] = useState(false)
+const TRANSITION = { duration: 0.14, ease: [0.2, 0.7, 0.2, 1] as [number, number, number, number] }
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault()
-        setPaletteOpen((v) => !v)
-      }
-      if (e.key === 'Escape') setPaletteOpen(false)
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [])
-
+function AnimatedRoutes() {
+  const location = useLocation()
   return (
-    <>
-      <main className="min-h-[calc(100vh-24px)] px-6 pt-6 pb-10 md:px-8 md:pt-8">
-        <PageNav />
-        <Routes>
+    <AnimatePresence mode="wait" initial={false}>
+      <motion.div
+        key={location.pathname}
+        initial={{ opacity: 0, y: 6, filter: 'blur(2px)' }}
+        animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+        exit={{ opacity: 0, y: -4, filter: 'blur(2px)' }}
+        transition={TRANSITION}
+      >
+        <Routes location={location}>
           <Route path="/" element={<Index />} />
           <Route path="/fractals" element={<Fractals />} />
           <Route path="/attractors" element={<Attractors />} />
@@ -76,6 +72,32 @@ export default function App() {
           <Route path="/particles" element={<Particles />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
+      </motion.div>
+    </AnimatePresence>
+  )
+}
+
+export default function App() {
+  const [paletteOpen, setPaletteOpen] = useState(false)
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setPaletteOpen((v) => !v)
+      }
+      if (e.key === 'Escape') setPaletteOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
+  return (
+    <>
+      <Spotlight />
+      <main className="min-h-[calc(100vh-28px)] px-6 pt-6 pb-10 md:px-8 md:pt-8">
+        <PageNav />
+        <AnimatedRoutes />
       </main>
       <StatusBar onPalette={() => setPaletteOpen(true)} />
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} commands={commands} />

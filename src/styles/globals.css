@@ -33,13 +33,28 @@ html {
   text-rendering: geometricPrecision;
 }
 
+/* layered canvas: fine dot grid + coarse line grid + soft washes */
 body {
   background-color: var(--color-bg);
   background-image:
-    radial-gradient(rgba(160, 160, 160, 0.09) 1px, transparent 1px),
-    radial-gradient(1000px 600px at 25% 10%, rgba(200, 200, 220, 0.04), transparent 60%),
+    radial-gradient(rgba(160, 160, 160, 0.10) 1px, transparent 1px),
+    linear-gradient(to right,  rgba(160, 160, 160, 0.028) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(160, 160, 160, 0.028) 1px, transparent 1px),
+    radial-gradient(1000px 600px at 25% 10%, rgba(200, 200, 220, 0.045), transparent 60%),
     radial-gradient(800px 500px at 80% 90%, rgba(220, 200, 200, 0.035), transparent 60%);
-  background-size: 26px 26px, auto, auto;
+  background-size: 24px 24px, 96px 96px, 96px 96px, auto, auto;
+}
+
+/* cursor-follow spotlight — screen-blended, under overlays */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 20;
+  background: radial-gradient(520px circle at var(--mx, 50%) var(--my, 50%), rgba(255, 255, 255, 0.045), transparent 60%);
+  mix-blend-mode: screen;
+  transition: opacity 200ms ease;
 }
 
 body {
@@ -48,6 +63,13 @@ body {
 
 a, button, input, select, textarea, [role="button"], [data-interactive] {
   cursor: none;
+}
+
+/* soft press on all interactive elements */
+[data-interactive]:active,
+button:active {
+  transform: scale(0.98);
+  transition-duration: 60ms;
 }
 
 ::selection {
@@ -67,11 +89,11 @@ button {
   border-radius: 6px;
   padding: 5px 12px;
   font: inherit;
-  transition: border-color 120ms ease, color 120ms ease, background 120ms ease;
+  transition: border-color 140ms ease, color 140ms ease, background 140ms ease, transform 140ms ease;
 }
 button:hover {
   border-color: var(--color-fg);
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 input[type="range"] {
@@ -96,10 +118,61 @@ input[type="text"], input[type="search"], input[type="color"] {
   border-radius: 6px;
 }
 
-/* soft chip look */
 .chip {
   border-radius: 6px;
 }
+
+/* interactive tile — 3D depth, tilt, lift, corner-bracket selection */
+.tile {
+  border-radius: 8px;
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.03) inset,
+    0 6px 20px -14px rgba(0, 0, 0, 0.6);
+  transition:
+    transform 180ms cubic-bezier(0.2, 0.7, 0.2, 1),
+    box-shadow 180ms ease,
+    border-color 180ms ease;
+  will-change: transform, box-shadow;
+}
+
+.tile-interactive {
+  transform: perspective(900px)
+             rotateX(var(--tilt-x, 0deg))
+             rotateY(var(--tilt-y, 0deg))
+             translate3d(0, var(--lift, 0px), 0)
+             scale(var(--scale, 1));
+  transform-style: preserve-3d;
+}
+.tile-interactive:hover {
+  --lift: -2px;
+  border-color: rgba(237, 237, 237, 0.45);
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.05) inset,
+    0 20px 48px -20px rgba(0, 0, 0, 0.85),
+    0 0 0 1px rgba(237, 237, 237, 0.03);
+}
+.tile-interactive:active {
+  --scale: 0.985;
+  transition-duration: 80ms;
+}
+
+/* corner brackets appear on hover of interactive tiles */
+.tile-bracket {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-color: var(--color-fg);
+  opacity: 0;
+  transition: opacity 160ms ease;
+  pointer-events: none;
+}
+.tile-interactive:hover .tile-bracket { opacity: 0.85; }
+.tile-bracket.tl { top: -1px; left: -1px;  border-top: 1px solid var(--color-fg); border-left:  1px solid var(--color-fg); }
+.tile-bracket.tr { top: -1px; right: -1px; border-top: 1px solid var(--color-fg); border-right: 1px solid var(--color-fg); }
+.tile-bracket.bl { bottom: -1px; left: -1px;  border-bottom: 1px solid var(--color-fg); border-left:  1px solid var(--color-fg); }
+.tile-bracket.br { bottom: -1px; right: -1px; border-bottom: 1px solid var(--color-fg); border-right: 1px solid var(--color-fg); }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -107,10 +180,14 @@ input[type="text"], input[type="search"], input[type="color"] {
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
   }
+  .tile-interactive { transform: none; }
+  body::before { opacity: 0; }
 }
 
 @media (pointer: coarse) {
   body, a, button, input, select, textarea, [role="button"], [data-interactive] {
     cursor: auto;
   }
+  body::before { opacity: 0; }
+  .tile-interactive { transform: none; }
 }
