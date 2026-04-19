@@ -6,6 +6,7 @@ import {
   PISTOL_IDLE, PISTOL_FIRE,
 } from './sprites'
 import { drawHud, HUD_H } from './hud'
+import { type Kind, toHTML } from './colors'
 import { mulberry32 } from '../../lib/rng'
 
 const FOV = Math.PI / 3
@@ -280,11 +281,11 @@ function distBand(dist: number): number {
 }
 
 function drawSprite(
-  out: string[][], zBuffer: number[],
+  out: string[][], kinds: Kind[][], zBuffer: number[],
   cols: number, sceneRows: number,
   state: GameState,
   sx: number, sy: number,
-  bitmap: string[],
+  bitmap: string[], kind: Kind,
 ) {
   const p = state.player
   const spriteX = sx - p.pos.x
@@ -312,7 +313,7 @@ function drawSprite(
       if (y < 0 || y >= sceneRows) continue
       const texY = Math.min(bmpH - 1, Math.max(0, Math.floor(((y - drawStartY) / spriteH) * bmpH)))
       const ch = bitmap[texY][texX]
-      if (ch && ch !== ' ') out[y][x] = ch
+      if (ch && ch !== ' ') { out[y][x] = ch; kinds[y][x] = kind }
     }
   }
 }
@@ -322,8 +323,12 @@ function render(state: GameState, t: number): string {
   const sceneRows = Math.max(10, rows - HUD_H)
   const halfRows = sceneRows / 2
   const shakeDy = state.shake > 0 ? -1 : 0
-  const out: string[][] = Array.from({ length: rows }, () => new Array<string>(cols).fill(' '))
+  const out: string[][]  = Array.from({ length: rows }, () => new Array<string>(cols).fill(' '))
+  const kinds: Kind[][]  = Array.from({ length: rows }, () => new Array<Kind>(cols).fill('blank'))
   const zBuffer = new Array<number>(cols).fill(Infinity)
+
+  const wallKinds: [Kind, Kind, Kind, Kind] = ['wall_x_near', 'wall_x_mid', 'wall_x_far', 'wall_x_mist']
+  const wallKindsY: [Kind, Kind, Kind, Kind] = ['wall_y_near', 'wall_y_mid', 'wall_y_far', 'wall_y_mist']
 
   for (let x = 0; x < cols; x++) {
     const cameraX = (2 * x) / cols - 1
@@ -363,10 +368,14 @@ function render(state: GameState, t: number): string {
     const glyph = hit === 'D'
       ? (side === 0 ? DOOR_X[band] : DOOR_Y[band])
       : (side === 0 ? WALL_X[band] : WALL_Y[band])
+    const wallKind: Kind = hit === 'D'
+      ? 'door'
+      : (side === 0 ? wallKinds[band] : wallKindsY[band])
 
     for (let y = 0; y < sceneRows; y++) {
       if (y < drawStart) {
         out[y][x] = ' '
+        kinds[y][x] = 'blank'
       } else if (y > drawEnd) {
         const rowDist = (halfRows * ASPECT) / (y - halfRows + 0.0001)
         const fx = p.pos.x + rayDirX * rowDist
@@ -375,40 +384,47 @@ function render(state: GameState, t: number): string {
         if (fch === '~') {
           const phase = ((fx + fy) * 1.7 + t * 0.004) % 4
           out[y][x] = phase < 1 ? '~' : phase < 2 ? '≈' : phase < 3 ? '-' : '·'
+          kinds[y][x] = 'nukage'
         } else if (fch === 'X') {
           const pulse = (Math.floor(t * 0.004) % 2) === 0
           out[y][x] = pulse ? '▼' : '▽'
+          kinds[y][x] = 'exit'
         } else {
           out[y][x] = rowDist < 3 ? '·' : rowDist < 7 ? '.' : ' '
+          kinds[y][x] = rowDist < 3 ? 'floor_near' : 'floor'
         }
       } else {
         out[y][x] = glyph
+        kinds[y][x] = wallKind
       }
     }
   }
 
-  // entities: sort by distance so near sprites overwrite far ones (simple painter)
-  type Drawable = { d: number; sx: number; sy: number; bmp: string[] }
+  // entities: sort by distance so near sprites overwrite far ones
+  type Drawable = { d: number; sx: number; sy: number; bmp: string[]; kind: Kind }
   const drawables: Drawable[] = []
   for (const it of state.pickups) {
     const bmp = it.kind === 'health' ? HEALTH_PACK : it.kind === 'armor' ? ARMOR : AMMO_CLIP
+    const k: Kind = it.kind === 'health' ? 'pickup_health' : it.kind === 'armor' ? 'pickup_armor' : 'pickup_ammo'
     const dd = Math.hypot(it.pos.x - p.pos.x, it.pos.y - p.pos.y)
-    drawables.push({ d: dd, sx: it.pos.x, sy: it.pos.y, bmp })
+    drawables.push({ d: dd, sx: it.pos.x, sy: it.pos.y, bmp, kind: k })
   }
   for (const e of state.enemies) {
     const bmp = e.state === 'dead' ? IMP_DEAD : e.state === 'attack' ? IMP_ATTACK : IMP_IDLE
+    const k: Kind = e.state === 'dead' ? 'imp_dead' : 'imp'
     const dd = Math.hypot(e.pos.x - p.pos.x, e.pos.y - p.pos.y)
-    drawables.push({ d: dd, sx: e.pos.x, sy: e.pos.y, bmp })
+    drawables.push({ d: dd, sx: e.pos.x, sy: e.pos.y, bmp, kind: k })
   }
   for (const pr of state.projectiles) {
     const dd = Math.hypot(pr.pos.x - p.pos.x, pr.pos.y - p.pos.y)
-    drawables.push({ d: dd, sx: pr.pos.x, sy: pr.pos.y, bmp: FIREBALL })
+    drawables.push({ d: dd, sx: pr.pos.x, sy: pr.pos.y, bmp: FIREBALL, kind: 'fireball' })
   }
   drawables.sort((a, b) => b.d - a.d)
-  for (const dr of drawables) drawSprite(out, zBuffer, cols, sceneRows, state, dr.sx, dr.sy, dr.bmp)
+  for (const dr of drawables) drawSprite(out, kinds, zBuffer, cols, sceneRows, state, dr.sx, dr.sy, dr.bmp, dr.kind)
 
   // pistol overlay at bottom of the 3d scene (just above the hud)
-  const gun = state.muzzleFlash > 0 ? PISTOL_FIRE : PISTOL_IDLE
+  const flashing = state.muzzleFlash > 0
+  const gun = flashing ? PISTOL_FIRE : PISTOL_IDLE
   const gunW = gun[0].length
   const gunH = gun.length
   const gx0 = Math.floor((cols - gunW) / 2)
@@ -419,32 +435,37 @@ function render(state: GameState, t: number): string {
       if (ch !== ' ') {
         const ox = gx0 + x
         const oy = gy0 + y
-        if (oy >= 0 && oy < sceneRows && ox >= 0 && ox < cols) out[oy][ox] = ch
+        if (oy >= 0 && oy < sceneRows && ox >= 0 && ox < cols) {
+          out[oy][ox] = ch
+          // muzzle flash rows are only the top 2 rows of PISTOL_FIRE
+          kinds[oy][ox] = flashing && y < 2 ? 'muzzle' : 'pistol'
+        }
       }
     }
   }
 
-  // apply screen shake inside the scene area only
+  // apply screen shake inside the scene area only (shift char rows AND kind rows)
   if (shakeDy !== 0) {
-    for (let y = 0; y < sceneRows - 1; y++) out[y] = out[y + 1]
-    out[sceneRows - 1] = new Array<string>(cols).fill(' ')
+    for (let y = 0; y < sceneRows - 1; y++) { out[y] = out[y + 1]; kinds[y] = kinds[y + 1] }
+    out[sceneRows - 1]   = new Array<string>(cols).fill(' ')
+    kinds[sceneRows - 1] = new Array<Kind>(cols).fill('blank')
   }
 
   // hud in the bottom HUD_H rows
-  drawHud(out, cols, rows, state)
+  drawHud(out, kinds, cols, rows, state)
 
   // overlay: paused / dead / won
-  if (state.phase !== 'play') drawOverlay(out, cols, rows, state)
+  if (state.phase !== 'play') drawOverlay(out, kinds, cols, rows, state)
 
-  return out.map((r) => r.join('')).join('\n')
+  return toHTML(out, kinds)
 }
 
-function drawOverlay(out: string[][], cols: number, rows: number, state: GameState) {
+function drawOverlay(out: string[][], kinds: Kind[][], cols: number, rows: number, state: GameState) {
   const sceneRows = Math.max(10, rows - HUD_H)
   // dim the scene area with a dither
   for (let y = 0; y < sceneRows; y++) {
     for (let x = 0; x < cols; x++) {
-      if (((x + y) & 1) === 0) out[y][x] = ' '
+      if (((x + y) & 1) === 0) { out[y][x] = ' '; kinds[y][x] = 'blank' }
     }
   }
   const elapsed = Math.max(0, (performance.now() - state.startedAt) / 1000)
@@ -479,7 +500,6 @@ function drawOverlay(out: string[][], cols: number, rows: number, state: GameSta
   const boxH = lines.length + 4
   const x0 = Math.floor((cols - boxW) / 2)
   const y0 = Math.floor((sceneRows - boxH) / 2)
-  // clear a border rectangle
   for (let y = y0; y < y0 + boxH; y++) {
     for (let x = x0; x < x0 + boxW; x++) {
       if (y < 0 || y >= rows || x < 0 || x >= cols) continue
@@ -491,15 +511,18 @@ function drawOverlay(out: string[][], cols: number, rows: number, state: GameSta
       else if (y === y0 + boxH - 1 && x === x0) ch = '└'
       else if (y === y0 + boxH - 1 && x === x0 + boxW - 1) ch = '┘'
       out[y][x] = ch
+      kinds[y][x] = 'overlay_box'
     }
   }
-  // text lines
   for (let i = 0; i < lines.length; i++) {
     const s = lines[i]
     const lx = x0 + Math.floor((boxW - s.length) / 2)
     const ly = y0 + 2 + i
     for (let k = 0; k < s.length; k++) {
-      if (ly >= 0 && ly < rows && lx + k >= 0 && lx + k < cols) out[ly][lx + k] = s[k]
+      if (ly >= 0 && ly < rows && lx + k >= 0 && lx + k < cols) {
+        out[ly][lx + k] = s[k]
+        kinds[ly][lx + k] = 'overlay_text'
+      }
     }
   }
 }

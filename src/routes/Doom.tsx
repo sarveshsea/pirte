@@ -34,10 +34,10 @@ export default function Doom() {
     let raf = 0
     const reduce = prefersReducedMotion()
     const loop = (t: number) => {
-      pre.textContent = game.frame(t)
+      pre.innerHTML = game.frame(t)
       if (!reduce) raf = requestAnimationFrame(loop)
     }
-    if (reduce) pre.textContent = game.frame(0)
+    if (reduce) pre.innerHTML = game.frame(0)
     else raf = requestAnimationFrame(loop)
 
     return () => {
