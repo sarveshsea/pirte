@@ -17,6 +17,7 @@ export default function Waves() {
   const [step, setStep] = useState(0)
   const [bpm, setBpm] = useState(120)
   const [swing, setSwing] = useState(0)
+  const [muted, setMuted] = useState(false)
   const [patternsVersion, setPatternsVersion] = useState(0)
   const scopeRef = useRef<HTMLPreElement>(null)
   const specRef = useRef<HTMLPreElement>(null)
@@ -27,11 +28,22 @@ export default function Waves() {
     eng.setOnStep((s) => setStep(s))
     engineRef.current = eng
     setReady(true)
-    return () => { eng.stop() }
+    return () => {
+      eng.stop()
+      // fully release the audio context so nav-away leaves no scheduled silence
+      if (eng.ctx.state !== 'closed') eng.ctx.close().catch(() => {})
+      engineRef.current = null
+    }
   }, [])
 
   useEffect(() => { if (engineRef.current) engineRef.current.bpm = bpm }, [bpm])
   useEffect(() => { if (engineRef.current) engineRef.current.swing = swing }, [swing])
+  useEffect(() => {
+    const eng = engineRef.current
+    if (!eng) return
+    const target = muted ? 0 : 0.7
+    eng.out.gain.setTargetAtTime(target, eng.ctx.currentTime, 0.02)
+  }, [muted, ready])
 
   // visualizer: ASCII oscilloscope + tiny ASCII spectrum
   useEffect(() => {
@@ -167,6 +179,7 @@ export default function Waves() {
         <Tile label="transport">
           <div className="flex flex-col gap-2 p-3 text-[11px] tracking-[0.06em]">
             <button data-interactive onClick={toggle}>{playing ? '■ stop' : '▶ play'}</button>
+            <button data-interactive onClick={() => setMuted((m) => !m)}>{muted ? '🔈 unmute' : '🔇 mute'}</button>
             <button data-interactive onClick={() => { engineRef.current?.randomize(); setPatternsVersion((v) => v + 1) }}>randomize</button>
             <button data-interactive onClick={() => { engineRef.current?.clear(); setPatternsVersion((v) => v + 1) }}>clear</button>
           </div>
