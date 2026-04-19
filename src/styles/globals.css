@@ -33,6 +33,13 @@ html {
 }
 
 body {
+  background-color: var(--color-bg);
+  background-image: radial-gradient(rgba(110, 110, 110, 0.18) 1px, transparent 1px);
+  background-size: 24px 24px;
+  background-position: 0 0;
+}
+
+body {
   cursor: none;
 }
 

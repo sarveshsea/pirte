@@ -1,12 +1,12 @@
 export type ClockCity = { label: string; tz: string }
 
 export const CITIES: ClockCity[] = [
-  { label: 'SF',  tz: 'America/Los_Angeles' },
-  { label: 'NYC', tz: 'America/New_York' },
-  { label: 'LDN', tz: 'Europe/London' },
-  { label: 'DEL', tz: 'Asia/Kolkata' },
-  { label: 'TYO', tz: 'Asia/Tokyo' },
-  { label: 'SYD', tz: 'Australia/Sydney' },
+  { label: 'sf',  tz: 'America/Los_Angeles' },
+  { label: 'nyc', tz: 'America/New_York' },
+  { label: 'ldn', tz: 'Europe/London' },
+  { label: 'del', tz: 'Asia/Kolkata' },
+  { label: 'tyo', tz: 'Asia/Tokyo' },
+  { label: 'syd', tz: 'Australia/Sydney' },
 ]
 
 export function formatTime(tz: string, date: Date = new Date()): string {

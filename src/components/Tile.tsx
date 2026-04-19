@@ -14,7 +14,7 @@ type TileProps = {
 export default function Tile({ label, code, to, children, className = '', style, footer }: TileProps) {
   const body = (
     <div className={`relative flex h-full flex-col border border-[var(--color-line)] bg-[var(--color-bg)] ${className}`} style={style}>
-      <header className="flex items-center justify-between border-b border-[var(--color-line)] px-3 py-2 text-[11px] uppercase tracking-[0.12em] text-[var(--color-dim)]">
+      <header className="flex items-center justify-between border-b border-[var(--color-line)] px-3 py-2 text-[11px] tracking-[0.06em] text-[var(--color-dim)]">
         <span>{label}</span>
         {code && <span className="text-[var(--color-dim)]">{code}</span>}
       </header>

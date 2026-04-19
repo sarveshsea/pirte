@@ -12,13 +12,20 @@ uniform float uScale;
 uniform int uMode; // 0 mandelbrot, 1 julia
 uniform vec2 uJuliaC;
 uniform float uIterScale;
+uniform float uTime;
+
+vec3 hsv2rgb(vec3 c) {
+  vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+  vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+  return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+}
 
 void main() {
   vec2 uv = (gl_FragCoord.xy - 0.5 * uRes) / min(uRes.x, uRes.y);
   vec2 p = uCenter + uv * uScale;
   vec2 z = (uMode == 1) ? p : vec2(0.0);
   vec2 c = (uMode == 1) ? uJuliaC : p;
-  float maxIter = 220.0 * uIterScale;
+  float maxIter = 240.0 * uIterScale;
   float i = 0.0;
   for (float k = 0.0; k < 1200.0; k++) {
     if (k >= maxIter) break;
@@ -29,9 +36,14 @@ void main() {
     i = k;
   }
   float smooth_i = i - log2(log2(max(dot(z, z), 2.0))) + 4.0;
-  float m = (i >= maxIter - 1.0) ? 0.0 : smooth_i / maxIter;
-  m = pow(m, 0.5);
-  gl_FragColor = vec4(vec3(m), 1.0);
+  if (i >= maxIter - 1.0) {
+    gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+    return;
+  }
+  float m = pow(smooth_i / maxIter, 0.55);
+  float hue = fract(smooth_i * 0.018 + uTime * 0.04 + 0.62);
+  vec3 col = hsv2rgb(vec3(hue, 0.55, m));
+  gl_FragColor = vec4(col, 1.0);
 }
 `
 
@@ -72,6 +84,7 @@ export default function Fractals() {
         uMode: { value: 0 },
         uJuliaC: { value: [...DEFAULT_JULIA_C] },
         uIterScale: { value: 1 },
+        uTime: { value: 0 },
       },
     })
     const mesh = new Mesh(gl, { geometry: geom, program })
@@ -97,10 +110,16 @@ export default function Fractals() {
       program.uniforms.uScale.value = state.scale
       program.uniforms.uMode.value = state.mode
       program.uniforms.uJuliaC.value = state.juliaC
+      program.uniforms.uTime.value = performance.now() * 0.001
       renderer.render({ scene: mesh })
       setInfo({ x: state.center[0], y: state.center[1], scale: state.scale })
     }
-    render()
+    let animRaf = 0
+    const animate = () => {
+      render()
+      animRaf = requestAnimationFrame(animate)
+    }
+    animate()
 
     const screenToWorld = (px: number, py: number): [number, number] => {
       const rect = wrap.getBoundingClientRect()
@@ -165,6 +184,7 @@ export default function Fractals() {
 
     return () => {
       ro.disconnect()
+      if (animRaf) cancelAnimationFrame(animRaf)
       wrap.removeEventListener('pointerdown', onDown)
       wrap.removeEventListener('pointermove', onMove)
       wrap.removeEventListener('pointerup', onUp)

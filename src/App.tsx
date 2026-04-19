@@ -3,6 +3,7 @@ import { Routes, Route } from 'react-router-dom'
 import Cursor from './components/Cursor'
 import StatusBar from './components/StatusBar'
 import CommandPalette, { type Command } from './components/CommandPalette'
+import PageNav from './components/PageNav'
 import Index from './routes/Index'
 import Fractals from './routes/Fractals'
 import Attractors from './routes/Attractors'
@@ -41,7 +42,8 @@ export default function App() {
 
   return (
     <>
-      <main className="min-h-[calc(100vh-24px)] p-4 pb-8 md:p-8">
+      <main className="min-h-[calc(100vh-24px)] px-6 pt-6 pb-10 md:px-8 md:pt-8">
+        <PageNav />
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/fractals" element={<Fractals />} />

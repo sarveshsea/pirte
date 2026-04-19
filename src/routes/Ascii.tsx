@@ -128,7 +128,7 @@ export default function Ascii() {
           {!image && (
             <label data-interactive className="absolute inset-0 flex cursor-none flex-col items-center justify-center gap-2 text-[var(--color-dim)]">
               <span className="text-[32px]">+</span>
-              <span className="text-[11px] uppercase tracking-[0.2em]">drop or browse · png jpg webp svg</span>
+              <span className="text-[11px] tracking-[0.1em]">drop or browse · png jpg webp svg</span>
               <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) loadFile(f) }} />
             </label>
           )}
@@ -147,7 +147,7 @@ export default function Ascii() {
       <div className="flex flex-col gap-6">
         <Tile label="source">
           <div className="flex flex-col gap-2 p-3">
-            <label data-interactive className="cursor-none border border-[var(--color-line)] px-2 py-2 text-[11px] uppercase tracking-[0.12em] text-[var(--color-dim)] hover:border-[var(--color-fg)] hover:text-[var(--color-fg)]">
+            <label data-interactive className="cursor-none border border-[var(--color-line)] px-2 py-2 text-[11px] tracking-[0.06em] text-[var(--color-dim)] hover:border-[var(--color-fg)] hover:text-[var(--color-fg)]">
               + upload image
               <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) loadFile(f) }} />
             </label>
@@ -156,7 +156,7 @@ export default function Ascii() {
 
         <Tile label="character ramp">
           <div className="flex flex-col gap-2 p-3">
-            <div className="grid grid-cols-2 gap-1 text-[11px] uppercase tracking-[0.12em]">
+            <div className="grid grid-cols-2 gap-1 text-[11px] tracking-[0.06em]">
               {(['Standard', 'Blocks', 'Detailed', 'Minimal', 'Custom'] as const).map((r) => (
                 <button
                   key={r}
@@ -172,7 +172,7 @@ export default function Ascii() {
               className="w-full border border-[var(--color-line)] bg-transparent px-2 py-1 font-mono text-[13px] text-[var(--color-fg)] outline-none"
             />
             <Slider label="density bias" min={0.3} max={2} step={0.01} value={densityBias} onChange={setDensityBias} format={(v) => v.toFixed(2)} />
-            <label data-interactive className="flex cursor-none items-center gap-2 text-[11px] uppercase tracking-[0.12em] text-[var(--color-dim)]">
+            <label data-interactive className="flex cursor-none items-center gap-2 text-[11px] tracking-[0.06em] text-[var(--color-dim)]">
               <input type="checkbox" checked={invert} onChange={(e) => setInvert(e.target.checked)} /> invert
             </label>
           </div>
@@ -196,22 +196,22 @@ export default function Ascii() {
 
         <Tile label="mix">
           <div className="flex flex-col gap-2 p-3">
-            <div className="grid grid-cols-2 gap-1 text-[11px] uppercase tracking-[0.12em]">
+            <div className="grid grid-cols-2 gap-1 text-[11px] tracking-[0.06em]">
               <button data-interactive onClick={() => setMix('mono')}     className={`!px-2 !py-1 ${mix === 'mono'     ? 'border-[var(--color-fg)] text-[var(--color-fg)]' : 'text-[var(--color-dim)]'}`}>mono</button>
               <button data-interactive onClick={() => setMix('original')} className={`!px-2 !py-1 ${mix === 'original' ? 'border-[var(--color-fg)] text-[var(--color-fg)]' : 'text-[var(--color-dim)]'}`}>original</button>
             </div>
-            <div className="grid grid-cols-2 gap-1 text-[11px] uppercase tracking-[0.12em]">
+            <div className="grid grid-cols-2 gap-1 text-[11px] tracking-[0.06em]">
               <button data-interactive onClick={() => setBg('transparent')} className={`!px-2 !py-1 ${bg === 'transparent' ? 'border-[var(--color-fg)] text-[var(--color-fg)]' : 'text-[var(--color-dim)]'}`}>transparent</button>
               <button data-interactive onClick={() => setBg('solid')}       className={`!px-2 !py-1 ${bg === 'solid'       ? 'border-[var(--color-fg)] text-[var(--color-fg)]' : 'text-[var(--color-dim)]'}`}>solid</button>
             </div>
-            <label data-interactive className="flex cursor-none items-center justify-between text-[11px] uppercase tracking-[0.12em] text-[var(--color-dim)]">
+            <label data-interactive className="flex cursor-none items-center justify-between text-[11px] tracking-[0.06em] text-[var(--color-dim)]">
               bg color <input type="color" value={bgColor} onChange={(e) => setBgColor(e.target.value)} className="h-6 w-10 border border-[var(--color-line)] bg-transparent" />
             </label>
           </div>
         </Tile>
 
         <Tile label="export">
-          <div className="flex flex-col gap-2 p-3 text-[11px] uppercase tracking-[0.12em]">
+          <div className="flex flex-col gap-2 p-3 text-[11px] tracking-[0.06em]">
             <button data-interactive onClick={copyText}>copy text</button>
             <button data-interactive onClick={downloadText}>download .txt</button>
             <button data-interactive onClick={downloadPng}>download .png</button>

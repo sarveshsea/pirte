@@ -90,7 +90,7 @@ export default function Pixels() {
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_280px]">
       <Tile label="pixels · paint by number" code="05" footer={<span>{pct}% filled · select a color, click cells · idle 30s auto-solves</span>}>
         <div className="grid h-[72vh] place-items-center p-4">
-          {loading && <span className="text-[11px] uppercase tracking-[0.2em] text-[var(--color-dim)]">loading image…</span>}
+          {loading && <span className="text-[11px] tracking-[0.1em] text-[var(--color-dim)]">loading image…</span>}
           {puzzle && filled && !loading && (
             <div
               className="grid aspect-square max-h-full max-w-full border border-[var(--color-line)]"
@@ -141,7 +141,7 @@ export default function Pixels() {
         </Tile>
 
         <Tile label="actions">
-          <div className="flex flex-col gap-2 p-3 text-[11px] uppercase tracking-[0.12em]">
+          <div className="flex flex-col gap-2 p-3 text-[11px] tracking-[0.06em]">
             <button data-interactive onClick={newImage}>new image</button>
             <button data-interactive onClick={() => puzzle && setFilled(new Uint8Array(puzzle.size * puzzle.size))}>reset</button>
             <button data-interactive onClick={() => puzzle && setFilled(new Uint8Array(puzzle.cells.map(() => 1)))}>solve</button>

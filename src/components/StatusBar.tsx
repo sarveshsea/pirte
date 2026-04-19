@@ -40,7 +40,7 @@ export default function StatusBar({ onPalette }: Props) {
       className="fixed inset-x-0 bottom-0 z-40 flex h-6 items-center justify-between border-t border-[var(--color-line)] bg-[var(--color-bg)] px-4 text-[11px] text-[var(--color-dim)]"
       aria-label="status bar"
     >
-      <span className="truncate">PIRTE<span className="mx-2 text-[var(--color-line)]">·</span>{route}</span>
+      <span className="truncate">pirte<span className="mx-2 text-[var(--color-line)]">·</span>{route}</span>
       <div className="flex items-center gap-4">
         <span>utc {formatUTC(new Date(now))}</span>
         <span>session {formatElapsed(now - start)}</span>
