@@ -1,38 +1,17 @@
 import { type DoomInput, type GameState, newInput } from './types'
-
-// empty-box test map for step (b). replaced by e1m1 in step (c).
-const TEST_MAP = [
-  '################',
-  '#..............#',
-  '#..............#',
-  '#..............#',
-  '#.....###......#',
-  '#.....#........#',
-  '#.....#........#',
-  '#..............#',
-  '#..............#',
-  '#........###...#',
-  '#........#.....#',
-  '#........#.....#',
-  '#..............#',
-  '#..............#',
-  '#..............#',
-  '################',
-]
+import { parseMap, isBlocking, isHazard } from './map'
 
 const FOV = Math.PI / 3
-const MOVE_SPEED = 3.0 // tiles / sec
-const TURN_SPEED = 2.4 // rad / sec
+const MOVE_SPEED = 3.0   // tiles / sec
+const TURN_SPEED = 2.4   // rad / sec
 // chars are ~2x taller than wide; squash vertical scale so a 1x1 tile reads square.
 const ASPECT = 0.5
-// wall density ramp, near → far
-const WALL_NEAR = '█'
-const WALL_MID  = '▓'
-const WALL_FAR  = '▒'
-const WALL_MIST = '░'
-const WALL_SIDE_NEAR = '▓'
-const WALL_SIDE_MID  = '▒'
-const WALL_SIDE_FAR  = '░'
+
+// wall glyphs by distance, near → far; `side` uses the lighter set for depth cue
+const WALL_X = ['█', '▓', '▒', '░']
+const WALL_Y = ['▓', '▒', '░', '·']
+const DOOR_X = ['╬', '╫', '╪', '·']
+const DOOR_Y = ['╫', '╪', '·', '·']
 
 export type Doom = {
   reset(cols: number, rows: number): void
@@ -42,23 +21,23 @@ export type Doom = {
 }
 
 function makeState(cols: number, rows: number): GameState {
-  const grid = TEST_MAP.slice()
-  const mapW = grid[0].length
-  const mapH = grid.length
+  const parsed = parseMap()
+  const player = parsed.spawns.find((s) => s.kind === 'player')
+  const spawn = player?.at ?? { x: 2.5, y: 2.5 }
   return {
     cols,
     rows,
-    mapW,
-    mapH,
-    grid,
+    mapW: parsed.width,
+    mapH: parsed.height,
+    grid: parsed.grid,
     phase: 'play',
-    startedAt: 0,
+    startedAt: performance.now(),
     kills: 0,
-    totalKills: 0,
+    totalKills: parsed.spawns.filter((s) => s.kind === 'imp').length,
     items: 0,
-    totalItems: 0,
+    totalItems: parsed.spawns.filter((s) => s.kind !== 'player' && s.kind !== 'imp').length,
     player: {
-      pos: { x: 3.5, y: 3.5 },
+      pos: { x: spawn.x, y: spawn.y },
       dir: { x: 1, y: 0 },
       plane: { x: 0, y: Math.tan(FOV / 2) },
       health: 100,
@@ -69,21 +48,36 @@ function makeState(cols: number, rows: number): GameState {
   }
 }
 
-function isWall(grid: string[], x: number, y: number): boolean {
-  if (y < 0 || y >= grid.length) return true
+function tileAt(grid: string[], x: number, y: number): string {
+  if (y < 0 || y >= grid.length) return '#'
   const row = grid[y]
-  if (x < 0 || x >= row.length) return true
-  return row[x] === '#'
+  if (x < 0 || x >= row.length) return '#'
+  return row[x]
 }
 
 function tryMove(state: GameState, nx: number, ny: number) {
   const r = 0.2
   const p = state.player.pos
-  if (!isWall(state.grid, Math.floor(nx + Math.sign(nx - p.x) * r), Math.floor(p.y))) {
-    p.x = nx
-  }
-  if (!isWall(state.grid, Math.floor(p.x), Math.floor(ny + Math.sign(ny - p.y) * r))) {
-    p.y = ny
+  const txh = Math.floor(nx + Math.sign(nx - p.x) * r)
+  const tyv = Math.floor(ny + Math.sign(ny - p.y) * r)
+  if (!isBlocking(tileAt(state.grid, txh, Math.floor(p.y)))) p.x = nx
+  if (!isBlocking(tileAt(state.grid, Math.floor(p.x), tyv))) p.y = ny
+}
+
+function applyHazard(state: GameState, dt: number) {
+  const p = state.player
+  const ch = tileAt(state.grid, Math.floor(p.pos.x), Math.floor(p.pos.y))
+  if (isHazard(ch)) {
+    // 5 hp/sec; armor absorbs half
+    const dmg = 5 * dt
+    const absorbed = Math.min(p.armor, dmg * 0.5)
+    p.armor -= absorbed
+    p.health -= dmg - absorbed
+    if (p.health <= 0) {
+      p.health = 0
+      p.alive = false
+      state.phase = 'dead'
+    }
   }
 }
 
@@ -109,7 +103,6 @@ function update(state: GameState, input: DoomInput, dt: number) {
   let mx = 0, my = 0
   if (input.forward)  { mx += p.dir.x; my += p.dir.y }
   if (input.backward) { mx -= p.dir.x; my -= p.dir.y }
-  // strafe perpendicular to dir: rotate dir by +90°
   if (input.strafeR)  { mx += -p.dir.y; my +=  p.dir.x }
   if (input.strafeL)  { mx +=  p.dir.y; my += -p.dir.x }
   const mag = Math.hypot(mx, my)
@@ -117,12 +110,20 @@ function update(state: GameState, input: DoomInput, dt: number) {
     const sp = MOVE_SPEED * dt / mag
     tryMove(state, p.pos.x + mx * sp, p.pos.y + my * sp)
   }
+
+  applyHazard(state, dt)
 }
 
-function render(state: GameState): string {
+function distBand(dist: number): number {
+  if (dist < 2) return 0
+  if (dist < 5) return 1
+  if (dist < 10) return 2
+  return 3
+}
+
+function render(state: GameState, t: number): string {
   const { cols, rows, player: p, grid } = state
   const halfRows = rows / 2
-  // top = ceiling, bottom = floor
   const out: string[][] = Array.from({ length: rows }, () => new Array<string>(cols).fill(' '))
 
   for (let x = 0; x < cols; x++) {
@@ -140,13 +141,14 @@ function render(state: GameState): string {
     if (rayDirY < 0) { stepY = -1; sideDistY = (p.pos.y - mapY) * deltaY }
     else             { stepY =  1; sideDistY = (mapY + 1 - p.pos.y) * deltaY }
 
-    let hit = false
+    let hit = ''
     let side = 0
     let guard = 0
-    while (!hit && guard++ < 64) {
+    while (!hit && guard++ < 96) {
       if (sideDistX < sideDistY) { sideDistX += deltaX; mapX += stepX; side = 0 }
       else                       { sideDistY += deltaY; mapY += stepY; side = 1 }
-      if (isWall(grid, mapX, mapY)) hit = true
+      const ch = tileAt(grid, mapX, mapY)
+      if (isBlocking(ch)) hit = ch
     }
     const perp = side === 0
       ? (mapX - p.pos.x + (1 - stepX) / 2) / rayDirX
@@ -157,29 +159,28 @@ function render(state: GameState): string {
     const drawStart = Math.max(0, Math.floor(halfRows - lineH / 2))
     const drawEnd   = Math.min(rows - 1, Math.floor(halfRows + lineH / 2))
 
-    // wall char by distance, dimmer for y-side to fake shading
-    let ch: string
-    if (side === 0) {
-      if      (dist < 2)  ch = WALL_NEAR
-      else if (dist < 5)  ch = WALL_MID
-      else if (dist < 10) ch = WALL_FAR
-      else                ch = WALL_MIST
-    } else {
-      if      (dist < 2)  ch = WALL_SIDE_NEAR
-      else if (dist < 5)  ch = WALL_SIDE_MID
-      else if (dist < 10) ch = WALL_SIDE_FAR
-      else                ch = WALL_MIST
-    }
+    const band = distBand(dist)
+    const glyph = hit === 'D'
+      ? (side === 0 ? DOOR_X[band] : DOOR_Y[band])
+      : (side === 0 ? WALL_X[band] : WALL_Y[band])
 
     for (let y = 0; y < rows; y++) {
       if (y < drawStart) {
         out[y][x] = ' '
       } else if (y > drawEnd) {
-        // floor shading: closer = denser
-        const rowDist = halfRows / (y - halfRows + 0.0001)
-        out[y][x] = rowDist < 3 ? '·' : rowDist < 7 ? '.' : ' '
+        // floor — if the tile at the projected floor point is nukage, shimmer it
+        const rowDist = (halfRows * ASPECT) / (y - halfRows + 0.0001)
+        const fx = p.pos.x + rayDirX * rowDist
+        const fy = p.pos.y + rayDirY * rowDist
+        const fch = tileAt(grid, Math.floor(fx), Math.floor(fy))
+        if (fch === '~') {
+          const phase = ((fx + fy) * 1.7 + t * 0.004) % 4
+          out[y][x] = phase < 1 ? '~' : phase < 2 ? '≈' : phase < 3 ? '-' : '·'
+        } else {
+          out[y][x] = rowDist < 3 ? '·' : rowDist < 7 ? '.' : ' '
+        }
       } else {
-        out[y][x] = ch
+        out[y][x] = glyph
       }
     }
   }
@@ -201,7 +202,7 @@ export function createDoom(): Doom {
       const dt = lastT === 0 ? 0 : Math.min(0.05, (t - lastT) / 1000)
       lastT = t
       update(state, input, dt)
-      return render(state)
+      return render(state, t)
     },
     get input() { return input },
     get state() { return state },
