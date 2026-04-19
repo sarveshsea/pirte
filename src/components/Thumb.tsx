@@ -208,6 +208,27 @@ export function ThumbWaves() {
   return <canvas ref={ref} className="block h-full w-full" />
 }
 
+export function ThumbDoom() {
+  const art = useMemo(() => {
+    // silhouette of an imp framed by walls, stylized
+    return [
+      '################################',
+      '##                            ##',
+      '##    ░░▒▒▓▓█▓▓▒▒░░          ##',
+      '##    ░▒▓██▓▓▓██▓▒░          ##',
+      '##    ▒▓█ ▀▀ ▀▀ █▓▒          ##',
+      '##    ▒▓█  ▄▄▄▄  █▓▒          ##',
+      '##    ░▒▓▓██████▓▓▒░          ##',
+      '##      ░▒▓▓▓▓▓▓▒░            ##',
+      '##       ░░▒▒▒▒░░             ##',
+      '##                            ##',
+      '##   health 100   ammo  50    ##',
+      '################################',
+    ].join('\n')
+  }, [])
+  return <pre className="m-0 whitespace-pre text-[9px] leading-[1.0] text-[var(--color-fg)]">{art}</pre>
+}
+
 export function ThumbKaleidoscope() {
   const ref = useRef<HTMLCanvasElement>(null)
   useThrottledRaf((t) => {

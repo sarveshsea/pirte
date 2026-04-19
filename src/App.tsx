@@ -14,6 +14,7 @@ import Time from './routes/Time'
 import Kaleidoscope from './routes/Kaleidoscope'
 import Sprites from './routes/Sprites'
 import Waves from './routes/Waves'
+import Doom from './routes/Doom'
 import NotFound from './routes/NotFound'
 
 const commands: Command[] = [
@@ -27,6 +28,7 @@ const commands: Command[] = [
   { id: 'kaleidoscope', label: 'kaleidoscope', to: '/kaleidoscope', hint: 'n-fold mirror' },
   { id: 'sprites',     label: 'sprites',     to: '/sprites',     hint: 'ascii playground' },
   { id: 'waves',       label: 'waves',       to: '/waves',       hint: 'edm sequencer + scope' },
+  { id: 'doom',        label: 'doom',        to: '/doom',        hint: 'e1m1 ascii homage' },
 ]
 
 export default function App() {
@@ -59,6 +61,7 @@ export default function App() {
           <Route path="/kaleidoscope" element={<Kaleidoscope />} />
           <Route path="/sprites" element={<Sprites />} />
           <Route path="/waves" element={<Waves />} />
+          <Route path="/doom" element={<Doom />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
