@@ -84,3 +84,9 @@ input[type="range"]::-webkit-slider-thumb {
     transition-duration: 0.001ms !important;
   }
 }
+
+@media (pointer: coarse) {
+  body, a, button, input, select, textarea, [role="button"], [data-interactive] {
+    cursor: auto;
+  }
+}
