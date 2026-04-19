@@ -1,16 +1,27 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import Tile from '../components/Tile'
 import { CITIES, formatTime } from '../lib/clock'
 import { getSessionStart, formatElapsed } from '../lib/session'
+import {
+  ThumbMatrix,
+  ThumbClifford,
+  ThumbAscii,
+  ThumbMandelbrot,
+  ThumbPixels,
+  ThumbTime,
+  ThumbKaleidoscope,
+} from '../components/Thumb'
 
-const MODULES = [
-  { to: '/fractals',     label: 'fractals',     code: '01', desc: 'mandelbrot · julia' },
-  { to: '/attractors',   label: 'attractors',   code: '02', desc: 'lorenz · clifford · dejong' },
-  { to: '/ascii',        label: 'ascii',        code: '03', desc: 'image → text' },
-  { to: '/terminal',     label: 'terminal',     code: '04', desc: 'algorithmic loops' },
-  { to: '/pixels',       label: 'pixels',       code: '05', desc: 'fill game' },
-  { to: '/time',         label: 'time',         code: '06', desc: 'global clocks' },
-  { to: '/kaleidoscope', label: 'kaleidoscope', code: '07', desc: 'n-fold mirror' },
+type Mod = { to: string; label: string; code: string; desc: string; thumb: ReactNode; wide?: boolean }
+
+const MODULES: Mod[] = [
+  { to: '/fractals',     label: 'fractals',     code: '01', desc: 'mandelbrot · julia',             thumb: <ThumbMandelbrot />,   wide: true },
+  { to: '/attractors',   label: 'attractors',   code: '02', desc: 'lorenz · clifford · dejong',      thumb: <ThumbClifford /> },
+  { to: '/ascii',        label: 'ascii',        code: '03', desc: 'image → text',                    thumb: <ThumbAscii /> },
+  { to: '/terminal',     label: 'terminal',     code: '04', desc: 'rain · donut · life · flow · 30', thumb: <ThumbMatrix /> },
+  { to: '/kaleidoscope', label: 'kaleidoscope', code: '07', desc: 'n-fold mirror',                   thumb: <ThumbKaleidoscope /> },
+  { to: '/pixels',       label: 'pixels',       code: '05', desc: 'fill game',                       thumb: <ThumbPixels /> },
+  { to: '/time',         label: 'time',         code: '06', desc: 'global clocks',                   thumb: <ThumbTime /> },
 ]
 
 export default function Index() {
@@ -26,7 +37,9 @@ export default function Index() {
       <header className="flex flex-col gap-3 border-b border-[var(--color-line)] pb-6">
         <div className="flex items-baseline justify-between">
           <h1 className="text-[32px] leading-none tracking-[-0.02em] text-[var(--color-fg)]">PIRTE</h1>
-          <span className="text-[11px] uppercase tracking-[0.2em] text-[var(--color-dim)]">etrip · abstractions for the wandering mind</span>
+          <span className="text-[11px] uppercase tracking-[0.2em] text-[var(--color-dim)]">
+            etrip · abstractions for the wandering mind
+          </span>
         </div>
         <div className="grid grid-cols-2 gap-2 text-[11px] text-[var(--color-dim)] md:grid-cols-6">
           {CITIES.map((c) => (
@@ -43,18 +56,16 @@ export default function Index() {
       </header>
 
       <section className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {MODULES.map((m, i) => (
+        {MODULES.map((m) => (
           <Tile
             key={m.to}
             to={m.to}
             label={m.label}
             code={m.code}
-            className={i === 0 ? 'lg:col-span-2 lg:row-span-2 min-h-[240px] lg:min-h-[360px]' : 'min-h-[180px]'}
+            className={m.wide ? 'lg:col-span-2 lg:row-span-2 min-h-[240px] lg:min-h-[360px]' : 'min-h-[180px]'}
             footer={<span>{m.desc}</span>}
           >
-            <div className="grid h-full place-items-center text-[var(--color-dim)]">
-              <span className="text-[11px] uppercase tracking-[0.2em]">[ open ]</span>
-            </div>
+            <div className="h-full w-full">{m.thumb}</div>
           </Tile>
         ))}
       </section>
