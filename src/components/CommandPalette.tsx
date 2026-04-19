@@ -41,7 +41,7 @@ export default function CommandPalette({ open, onClose, commands }: Props) {
       onClick={onClose}
     >
       <div
-        className="w-[min(560px,92vw)] border border-[var(--color-line)] bg-[var(--color-bg)]"
+        className="w-[min(560px,92vw)] overflow-hidden rounded-[10px] border border-[var(--color-line)] bg-[var(--color-surface)] shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-2 border-b border-[var(--color-line)] px-3 py-2">

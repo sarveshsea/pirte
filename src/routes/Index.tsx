@@ -41,7 +41,7 @@ export default function Index() {
       <header className="flex flex-col gap-4">
         <div className="flex items-end justify-between gap-6">
           <div className="flex items-baseline gap-4">
-            <span className="inline-block h-[28px] w-[16px] bg-[var(--color-fg)]" aria-hidden />
+            <span className="inline-block h-[26px] w-[14px] rounded-[3px] bg-[var(--color-fg)]" aria-hidden />
             <h1 className="text-[40px] leading-none tracking-[-0.02em] text-[var(--color-fg)]">pirte</h1>
             <span className="text-[11px] tracking-[0.18em] text-[var(--color-dim)]">etrip · abstractions for the wandering mind</span>
           </div>
@@ -49,12 +49,12 @@ export default function Index() {
         </div>
         <div className="grid grid-cols-2 gap-2 text-[11px] text-[var(--color-dim)] md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-7">
           {CITIES.map((c) => (
-            <div key={c.tz} className="flex items-center justify-between border border-[var(--color-line)] bg-[var(--color-bg)] px-2 py-1">
+            <div key={c.tz} className="flex items-center justify-between rounded-[6px] border border-[var(--color-line)] bg-[var(--color-surface)] px-3 py-1.5">
               <span className="tracking-[0.12em]">{c.label}</span>
               <span className="tabular-nums text-[var(--color-fg)]">{formatTime(c.tz, now)}</span>
             </div>
           ))}
-          <div className="flex items-center justify-between border border-[var(--color-line)] bg-[var(--color-bg)] px-2 py-1 xl:col-span-1">
+          <div className="flex items-center justify-between rounded-[6px] border border-[var(--color-line)] bg-[var(--color-surface)] px-3 py-1.5 xl:col-span-1">
             <span className="tracking-[0.12em]">session</span>
             <span className="tabular-nums text-[var(--color-fg)]">{formatElapsed(now.getTime() - start)}</span>
           </div>

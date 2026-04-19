@@ -13,13 +13,20 @@ type TileProps = {
 
 export default function Tile({ label, code, to, children, className = '', style, footer }: TileProps) {
   const body = (
-    <div className={`relative flex h-full flex-col border border-[var(--color-line)] bg-[var(--color-bg)] ${className}`} style={style}>
-      <header className="flex items-center justify-between border-b border-[var(--color-line)] px-3 py-2 text-[11px] tracking-[0.06em] text-[var(--color-dim)]">
+    <div
+      className={`relative flex h-full flex-col border border-[var(--color-line)] bg-[var(--color-surface)] transition-colors ${className}`}
+      style={{
+        borderRadius: '8px',
+        boxShadow: '0 1px 0 0 rgba(255,255,255,0.03) inset, 0 6px 20px -12px rgba(0,0,0,0.6)',
+        ...style,
+      }}
+    >
+      <header className="flex items-center justify-between border-b border-[var(--color-line)] px-4 py-2.5 text-[11px] tracking-[0.06em] text-[var(--color-dim)]">
         <span>{label}</span>
         {code && <span className="text-[var(--color-dim)]">{code}</span>}
       </header>
       <div className="relative flex-1 overflow-hidden">{children}</div>
-      {footer && <footer className="border-t border-[var(--color-line)] px-3 py-2 text-[11px] text-[var(--color-dim)]">{footer}</footer>}
+      {footer && <footer className="border-t border-[var(--color-line)] px-4 py-2.5 text-[11px] text-[var(--color-dim)]">{footer}</footer>}
     </div>
   )
   if (to) {

@@ -2,17 +2,18 @@
 @import '@fontsource-variable/jetbrains-mono';
 
 @theme {
-  --color-bg: #000000;
-  --color-fg: #e8e8e8;
-  --color-dim: #6e6e6e;
-  --color-line: #1a1a1a;
+  --color-bg: #141414;
+  --color-surface: #1a1a1a;
+  --color-fg: #ededed;
+  --color-dim: #8a8a8a;
+  --color-line: #2a2a2a;
+  --color-glow: rgba(237, 237, 237, 0.04);
   --font-mono: 'JetBrains Mono Variable', ui-monospace, monospace;
   --radius-none: 0;
 }
 
 * {
   box-sizing: border-box;
-  border-radius: 0 !important;
 }
 
 html, body, #root {
@@ -26,7 +27,7 @@ html {
   color: var(--color-fg);
   font-family: var(--font-mono);
   font-size: 13px;
-  line-height: 1.45;
+  line-height: 1.5;
   font-variant-ligatures: none;
   -webkit-font-smoothing: antialiased;
   text-rendering: geometricPrecision;
@@ -34,9 +35,11 @@ html {
 
 body {
   background-color: var(--color-bg);
-  background-image: radial-gradient(rgba(110, 110, 110, 0.18) 1px, transparent 1px);
-  background-size: 24px 24px;
-  background-position: 0 0;
+  background-image:
+    radial-gradient(rgba(160, 160, 160, 0.09) 1px, transparent 1px),
+    radial-gradient(1000px 600px at 25% 10%, rgba(200, 200, 220, 0.04), transparent 60%),
+    radial-gradient(800px 500px at 80% 90%, rgba(220, 200, 200, 0.035), transparent 60%);
+  background-size: 26px 26px, auto, auto;
 }
 
 body {
@@ -61,27 +64,41 @@ button {
   background: transparent;
   color: inherit;
   border: 1px solid var(--color-line);
-  padding: 4px 10px;
+  border-radius: 6px;
+  padding: 5px 12px;
   font: inherit;
+  transition: border-color 120ms ease, color 120ms ease, background 120ms ease;
 }
 button:hover {
   border-color: var(--color-fg);
+  background: rgba(255, 255, 255, 0.03);
 }
 
 input[type="range"] {
   appearance: none;
   -webkit-appearance: none;
   background: var(--color-line);
-  height: 2px;
+  height: 3px;
+  border-radius: 2px;
   width: 100%;
 }
 input[type="range"]::-webkit-slider-thumb {
   appearance: none;
   -webkit-appearance: none;
-  width: 10px;
-  height: 14px;
+  width: 12px;
+  height: 16px;
   background: var(--color-fg);
+  border-radius: 3px;
   cursor: none;
+}
+
+input[type="text"], input[type="search"], input[type="color"] {
+  border-radius: 6px;
+}
+
+/* soft chip look */
+.chip {
+  border-radius: 6px;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -40,8 +40,12 @@ export default function Cursor() {
     <div
       ref={ref}
       aria-hidden
-      className="pointer-events-none fixed left-0 top-0 z-50 h-[14px] w-[8px] border border-[var(--color-fg)] mix-blend-difference"
-      style={{ transform: 'translate(-50px, -50px)' }}
+      className="pointer-events-none fixed left-0 top-0 z-50 h-[15px] w-[9px] border border-[var(--color-fg)] mix-blend-difference"
+      style={{
+        transform: 'translate(-50px, -50px)',
+        borderRadius: '3px',
+        boxShadow: '0 0 10px 2px rgba(237,237,237,0.08)',
+      }}
     />
   )
 }

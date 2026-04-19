@@ -37,7 +37,7 @@ export default function StatusBar({ onPalette }: Props) {
 
   return (
     <div
-      className="fixed inset-x-0 bottom-0 z-40 flex h-6 items-center justify-between border-t border-[var(--color-line)] bg-[var(--color-bg)] px-4 text-[11px] text-[var(--color-dim)]"
+      className="fixed inset-x-0 bottom-0 z-40 flex h-7 items-center justify-between border-t border-[var(--color-line)] bg-[var(--color-surface)]/80 px-4 text-[11px] text-[var(--color-dim)] backdrop-blur-md"
       aria-label="status bar"
     >
       <span className="truncate">pirte<span className="mx-2 text-[var(--color-line)]">·</span>{route}</span>
