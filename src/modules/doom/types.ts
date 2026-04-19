@@ -25,6 +25,28 @@ export type Player = {
 
 export type Phase = 'play' | 'paused' | 'dead' | 'won'
 
+export type EnemyState = 'idle' | 'chase' | 'attack' | 'dead'
+export type Enemy = {
+  kind: 'imp'
+  pos: Vec2
+  hp: number
+  state: EnemyState
+  stateT: number
+  attackCooldown: number
+  deadT: number
+}
+
+export type Projectile = {
+  pos: Vec2
+  vel: Vec2
+  ttl: number
+  owner: 'player' | 'imp'
+  damage: number
+}
+
+export type PickupKind = 'health' | 'armor' | 'ammo'
+export type Pickup = { kind: PickupKind; pos: Vec2 }
+
 export type GameState = {
   cols: number
   rows: number
@@ -38,6 +60,12 @@ export type GameState = {
   totalKills: number
   items: number
   totalItems: number
+  enemies: Enemy[]
+  projectiles: Projectile[]
+  pickups: Pickup[]
+  fireCooldown: number
+  muzzleFlash: number
+  shake: number
 }
 
 export function newInput(): DoomInput {
