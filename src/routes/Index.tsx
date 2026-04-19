@@ -13,6 +13,10 @@ import {
   ThumbSprites,
   ThumbWaves,
   ThumbDoom,
+  ThumbBreathe,
+  ThumbStarfield,
+  ThumbTarot,
+  ThumbParticles,
 } from '../components/Thumb'
 
 type Mod = { to: string; label: string; code: string; desc: string; thumb: ReactNode; span?: string }
@@ -28,6 +32,10 @@ const MODULES: Mod[] = [
   { to: '/sprites',      label: 'sprites',      code: '08', desc: 'ascii playground',                thumb: <ThumbSprites />,      span: 'lg:col-span-2' },
   { to: '/waves',        label: 'waves',        code: '09', desc: 'edm scope + sequencer',            thumb: <ThumbWaves />,        span: 'lg:col-span-2' },
   { to: '/doom',         label: 'doom',         code: '10', desc: 'e1m1 ascii homage',                thumb: <ThumbDoom />,         span: 'lg:col-span-2' },
+  { to: '/breathe',      label: 'breathe',      code: '11', desc: 'box-breathing guide',              thumb: <ThumbBreathe /> },
+  { to: '/starfield',    label: 'starfield',    code: '12', desc: '3d flythrough',                    thumb: <ThumbStarfield />,    span: 'lg:col-span-2' },
+  { to: '/tarot',        label: 'tarot',        code: '13', desc: 'random draw',                      thumb: <ThumbTarot /> },
+  { to: '/particles',    label: 'particles',    code: '14', desc: 'verlet physics',                   thumb: <ThumbParticles />,    span: 'lg:col-span-2' },
 ]
 
 export default function Index() {

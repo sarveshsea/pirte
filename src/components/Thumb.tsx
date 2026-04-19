@@ -6,6 +6,9 @@ import { renderKaleidoscope } from '../modules/kaleidoscope'
 import { RAMPS } from '../modules/asciiConvert'
 import { renderSevenSegment } from '../modules/sevenSegment'
 import { initState as spritesInit, step as spritesStep, render as spritesRender, type SpritesState } from '../modules/sprites'
+import { makeStars, stepStars, renderStars, type Star } from '../modules/starfield'
+import { createWorld, presetRope, step as partStep, render as partRender, type World } from '../modules/particles'
+import { MAJOR } from '../modules/tarot'
 
 const TARGET_FPS = 24
 const FRAME_MS = 1000 / TARGET_FPS
@@ -206,6 +209,100 @@ export function ThumbWaves() {
     }
   })
   return <canvas ref={ref} className="block h-full w-full" />
+}
+
+export function ThumbBreathe() {
+  const preRef = useRef<HTMLPreElement>(null)
+  useThrottledRaf((t) => {
+    if (!preRef.current) return
+    const cycle = 16
+    const p = ((t / 1000) % cycle) / cycle
+    let scale
+    if (p < 0.25) scale = 0.3 + 0.7 * (p / 0.25)
+    else if (p < 0.5) scale = 1
+    else if (p < 0.75) scale = 1 - 0.7 * ((p - 0.5) / 0.25)
+    else scale = 0.3
+    const cols = 32, rows = 12
+    const cx = cols / 2, cy = rows / 2
+    const maxR = Math.min(cols, rows * 2) * 0.45
+    const r = maxR * scale
+    const lines: string[] = []
+    for (let y = 0; y < rows; y++) {
+      let line = ''
+      for (let x = 0; x < cols; x++) {
+        const dx = x - cx
+        const dy = (y - cy) * 2
+        const d = Math.sqrt(dx * dx + dy * dy)
+        const edge = Math.abs(d - r)
+        if (d < r - 0.6) {
+          const k = 1 - d / Math.max(0.001, r)
+          const ramp = ' ░▒▓█'
+          line += ramp[Math.min(ramp.length - 1, Math.floor(k * ramp.length))]
+        } else if (edge < 0.6) line += '●'
+        else line += ' '
+      }
+      lines.push(line)
+    }
+    preRef.current.textContent = lines.join('\n')
+  })
+  return <pre ref={preRef} className="m-0 whitespace-pre text-[9px] leading-[1.0] text-[var(--color-fg)]" />
+}
+
+export function ThumbStarfield() {
+  const preRef = useRef<HTMLPreElement>(null)
+  const starsRef = useRef<Star[]>([])
+  useEffect(() => { starsRef.current = makeStars(180, 100) }, [])
+  useThrottledRaf(() => {
+    if (!preRef.current) return
+    stepStars(starsRef.current, 0.5, 1 / 24, 0.5, 100)
+    preRef.current.textContent = renderStars(starsRef.current, 38, 14, 0, 0, 1.0, 100)
+  })
+  return <pre ref={preRef} className="m-0 whitespace-pre text-[9px] leading-[1.0] text-[var(--color-fg)]" />
+}
+
+export function ThumbTarot() {
+  const art = useMemo(() => {
+    const c = MAJOR[Math.floor(Math.random() * MAJOR.length)]
+    const num = c.num.padEnd(9).slice(0, 9)
+    const name = c.name.length > 9 ? c.name.slice(0, 9) : c.name
+    const pad = Math.floor((9 - name.length) / 2)
+    const centered = ' '.repeat(pad) + name + ' '.repeat(9 - pad - name.length)
+    return [
+      '╭───────────╮',
+      `│ ${num}│`,
+      '│           │',
+      '│     ' + c.glyph + '     │',
+      '│           │',
+      `│ ${centered} │`,
+      '│           │',
+      '╰───────────╯',
+    ].join('\n')
+  }, [])
+  return (
+    <div className="grid h-full place-items-center">
+      <pre className="m-0 whitespace-pre text-[11px] leading-[1.1] text-[var(--color-fg)]">{art}</pre>
+    </div>
+  )
+}
+
+export function ThumbParticles() {
+  const preRef = useRef<HTMLPreElement>(null)
+  const worldRef = useRef<World | null>(null)
+  useEffect(() => {
+    const w = createWorld(34, 14)
+    presetRope(w, 34, 14)
+    worldRef.current = w
+  }, [])
+  useThrottledRaf(() => {
+    if (!preRef.current || !worldRef.current) return
+    const w = worldRef.current
+    // gentle wind on the tip of the rope
+    const tail = w.points[w.points.length - 1]
+    if (tail) { tail.x += (Math.random() - 0.5) * 0.3 }
+    partStep(w, 1 / 24)
+    preRef.current.textContent = partRender(w, null)
+  })
+  return <pre ref={preRef} className="m-0 whitespace-pre text-[10px] leading-[1.0] text-[var(--color-fg)]" />
 }
 
 export function ThumbDoom() {

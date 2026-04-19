@@ -12,6 +12,10 @@ export const ROUTE_ORDER = [
   { path: '/sprites',      label: 'sprites',      code: '08' },
   { path: '/waves',        label: 'waves',        code: '09' },
   { path: '/doom',         label: 'doom',         code: '10' },
+  { path: '/breathe',      label: 'breathe',      code: '11' },
+  { path: '/starfield',    label: 'starfield',    code: '12' },
+  { path: '/tarot',        label: 'tarot',        code: '13' },
+  { path: '/particles',    label: 'particles',    code: '14' },
 ]
 
 export default function PageNav() {

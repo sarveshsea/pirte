@@ -15,6 +15,10 @@ import Kaleidoscope from './routes/Kaleidoscope'
 import Sprites from './routes/Sprites'
 import Waves from './routes/Waves'
 import Doom from './routes/Doom'
+import Breathe from './routes/Breathe'
+import Starfield from './routes/Starfield'
+import Tarot from './routes/Tarot'
+import Particles from './routes/Particles'
 import NotFound from './routes/NotFound'
 
 const commands: Command[] = [
@@ -29,6 +33,10 @@ const commands: Command[] = [
   { id: 'sprites',     label: 'sprites',     to: '/sprites',     hint: 'ascii playground' },
   { id: 'waves',       label: 'waves',       to: '/waves',       hint: 'edm sequencer + scope' },
   { id: 'doom',        label: 'doom',        to: '/doom',        hint: 'e1m1 ascii homage' },
+  { id: 'breathe',     label: 'breathe',     to: '/breathe',     hint: 'box-breathing guide' },
+  { id: 'starfield',   label: 'starfield',   to: '/starfield',   hint: '3d flythrough' },
+  { id: 'tarot',       label: 'tarot',       to: '/tarot',       hint: 'major arcana draw' },
+  { id: 'particles',   label: 'particles',   to: '/particles',   hint: 'verlet physics' },
 ]
 
 export default function App() {
@@ -62,6 +70,10 @@ export default function App() {
           <Route path="/sprites" element={<Sprites />} />
           <Route path="/waves" element={<Waves />} />
           <Route path="/doom" element={<Doom />} />
+          <Route path="/breathe" element={<Breathe />} />
+          <Route path="/starfield" element={<Starfield />} />
+          <Route path="/tarot" element={<Tarot />} />
+          <Route path="/particles" element={<Particles />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>

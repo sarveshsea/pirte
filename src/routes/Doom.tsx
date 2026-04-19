@@ -46,6 +46,42 @@ export default function Doom() {
     }
   }, [game])
 
+  useEffect(() => {
+    const map = (e: KeyboardEvent): [keyof typeof game.input, boolean] | null => {
+      const k = e.key
+      const lk = k.toLowerCase()
+      if (lk === 'w' || k === 'ArrowUp')    return ['forward', true]
+      if (lk === 's' || k === 'ArrowDown')  return ['backward', true]
+      if (lk === 'a')                        return ['strafeL', true]
+      if (lk === 'd')                        return ['strafeR', true]
+      if (k === 'ArrowLeft')                 return ['turnL', true]
+      if (k === 'ArrowRight')                return ['turnR', true]
+      if (k === ' ')                         return ['fire', true]
+      if (lk === 'e')                        return ['use', true]
+      if (lk === 'p')                        return ['pause', true]
+      if (lk === 'r')                        return ['restart', true]
+      return null
+    }
+    const onDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
+      const m = map(e)
+      if (!m) return
+      if (m[0] === 'fire' || m[0] === 'forward' || m[0] === 'backward') e.preventDefault()
+      game.input[m[0]] = true
+    }
+    const onUp = (e: KeyboardEvent) => {
+      const m = map(e)
+      if (!m) return
+      game.input[m[0]] = false
+    }
+    window.addEventListener('keydown', onDown)
+    window.addEventListener('keyup', onUp)
+    return () => {
+      window.removeEventListener('keydown', onDown)
+      window.removeEventListener('keyup', onUp)
+    }
+  }, [game])
+
   return (
     <Tile
       label="doom · e1m1"
