@@ -3,9 +3,9 @@ import { useLocation } from 'react-router-dom'
 import { getSessionStart, formatElapsed } from '../lib/session'
 import { formatUTC } from '../lib/clock'
 
-type Props = { onPalette: () => void }
+type Props = { onPalette: () => void; onShortcuts?: () => void }
 
-export default function StatusBar({ onPalette }: Props) {
+export default function StatusBar({ onPalette, onShortcuts }: Props) {
   const loc = useLocation()
   const [now, setNow] = useState(Date.now())
   const [fps, setFps] = useState(60)
@@ -62,7 +62,12 @@ export default function StatusBar({ onPalette }: Props) {
         <span>utc {formatUTC(new Date(now))}</span>
         <span>session {formatElapsed(now - start)}</span>
         <span>{fps}fps</span>
-        <button onClick={onPalette} className="!border-0 !px-0 !py-0 text-[var(--color-dim)] hover:text-[var(--color-fg)]">
+        {onShortcuts && (
+          <button onClick={onShortcuts} className="!border-0 !px-0 !py-0 text-[var(--color-dim)] hover:text-[var(--color-fg)]" title="keyboard shortcuts · ?">
+            ?
+          </button>
+        )}
+        <button onClick={onPalette} className="!border-0 !px-0 !py-0 text-[var(--color-dim)] hover:text-[var(--color-fg)]" title="command palette · ⌘k">
           ⌘K
         </button>
       </div>

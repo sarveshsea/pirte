@@ -5,6 +5,7 @@ import Cursor from './components/Cursor'
 import Spotlight from './components/Spotlight'
 import StatusBar from './components/StatusBar'
 import CommandPalette, { type Command } from './components/CommandPalette'
+import Shortcuts from './components/Shortcuts'
 import PageNav from './components/PageNav'
 import Index from './routes/Index'
 import Fractals from './routes/Fractals'
@@ -88,14 +89,23 @@ function AnimatedRoutes() {
 
 export default function App() {
   const [paletteOpen, setPaletteOpen] = useState(false)
+  const [shortcutsOpen, setShortcutsOpen] = useState(false)
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault()
         setPaletteOpen((v) => !v)
       }
-      if (e.key === 'Escape') setPaletteOpen(false)
+      // '?' key varies by keyboard layout; match both '?' and shift+'/'
+      if (e.key === '?' || (e.shiftKey && e.key === '/')) {
+        if (!e.metaKey && !e.ctrlKey && !e.altKey) {
+          e.preventDefault()
+          setShortcutsOpen((v) => !v)
+        }
+      }
+      if (e.key === 'Escape') { setPaletteOpen(false); setShortcutsOpen(false) }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -108,8 +118,9 @@ export default function App() {
         <PageNav />
         <AnimatedRoutes />
       </main>
-      <StatusBar onPalette={() => setPaletteOpen(true)} />
+      <StatusBar onPalette={() => setPaletteOpen(true)} onShortcuts={() => setShortcutsOpen(true)} />
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} commands={commands} />
+      <Shortcuts open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
       <Cursor />
     </>
   )
