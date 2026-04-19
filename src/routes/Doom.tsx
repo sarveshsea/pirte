@@ -64,9 +64,10 @@ export default function Doom() {
     }
     const onDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
+      if (e.metaKey || e.ctrlKey || e.altKey) return
       const m = map(e)
       if (!m) return
-      if (m[0] === 'fire' || m[0] === 'forward' || m[0] === 'backward') e.preventDefault()
+      if (m[0] === 'fire' || m[0] === 'forward' || m[0] === 'backward' || m[0] === 'turnL' || m[0] === 'turnR') e.preventDefault()
       game.input[m[0]] = true
     }
     const onUp = (e: KeyboardEvent) => {

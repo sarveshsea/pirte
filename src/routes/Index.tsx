@@ -18,6 +18,8 @@ import {
   ThumbTarot,
   ThumbParticles,
   ThumbCyber,
+  ThumbFolds,
+  ThumbOrbit,
 } from '../components/Thumb'
 
 type Mod = { to: string; label: string; code: string; desc: string; thumb: ReactNode; span?: string }
@@ -38,6 +40,8 @@ const MODULES: Mod[] = [
   { to: '/tarot',        label: 'tarot',        code: '13', desc: 'random draw',                      thumb: <ThumbTarot /> },
   { to: '/particles',    label: 'particles',    code: '14', desc: 'verlet physics',                   thumb: <ThumbParticles />,    span: 'lg:col-span-2' },
   { to: '/cyber',        label: 'cyber',        code: '15', desc: 'night city // v2.077',             thumb: <ThumbCyber />,        span: 'lg:col-span-2' },
+  { to: '/folds',        label: 'folds',        code: '16', desc: 'generative gallery',               thumb: <ThumbFolds />,        span: 'lg:col-span-2' },
+  { to: '/orbit',        label: 'orbit',        code: '17', desc: 'iss · live from 400km',            thumb: <ThumbOrbit />,        span: 'lg:col-span-2' },
 ]
 
 export default function Index() {

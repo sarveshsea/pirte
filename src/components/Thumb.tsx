@@ -305,6 +305,73 @@ export function ThumbParticles() {
   return <pre ref={preRef} className="m-0 whitespace-pre text-[10px] leading-[1.0] text-[var(--color-fg)]" />
 }
 
+export function ThumbOrbit() {
+  const ref = useRef<HTMLCanvasElement>(null)
+  useEffect(() => {
+    const c = ref.current; if (!c) return
+    const ctx = c.getContext('2d')!
+    fitCanvas(c, ctx)
+    const rect = c.getBoundingClientRect()
+    // dark space bg with stars
+    ctx.fillStyle = '#020014'
+    ctx.fillRect(0, 0, rect.width, rect.height)
+    for (let i = 0; i < 60; i++) {
+      ctx.fillStyle = `rgba(255,255,255,${0.2 + Math.random() * 0.7})`
+      ctx.fillRect(Math.random() * rect.width, Math.random() * rect.height, 1, 1)
+    }
+    // earth limb arc
+    const cx = rect.width / 2, cy = rect.height * 1.6
+    const r = rect.height * 1.2
+    ctx.beginPath()
+    ctx.arc(cx, cy, r, 0, Math.PI * 2)
+    const grad = ctx.createRadialGradient(cx, cy - r * 0.3, 0, cx, cy, r)
+    grad.addColorStop(0, '#2a5eff')
+    grad.addColorStop(0.6, '#0a2254')
+    grad.addColorStop(1, '#04102a')
+    ctx.fillStyle = grad
+    ctx.fill()
+    // atmosphere glow
+    ctx.beginPath()
+    ctx.arc(cx, cy, r + 3, 0, Math.PI * 2)
+    ctx.strokeStyle = 'rgba(110, 180, 255, 0.6)'
+    ctx.lineWidth = 1
+    ctx.stroke()
+    // iss marker
+    ctx.fillStyle = '#ffffff'
+    ctx.fillRect(rect.width * 0.65 - 1, rect.height * 0.35 - 1, 3, 3)
+    ctx.strokeStyle = '#ff4b5e'
+    ctx.lineWidth = 0.5
+    ctx.strokeRect(rect.width * 0.65 - 5, rect.height * 0.35 - 5, 10, 10)
+  }, [])
+  return <canvas ref={ref} className="block h-full w-full" />
+}
+
+export function ThumbFolds() {
+  const lines = useMemo(() => {
+    const cols = 38, rows = 14
+    const half = cols / 2
+    const chars = ' .·-=+*#%@'
+    const out: string[] = []
+    for (let y = 0; y < rows; y++) {
+      let line = ''
+      for (let x = 0; x < cols; x++) {
+        const mx = x < half ? x : cols - x - 1
+        const n = Math.abs(Math.sin(mx * 0.3 + y * 0.4) + Math.cos(mx * 0.5 + y * 0.2)) / 2
+        const centerPull = 1 - Math.abs(mx / half - 0.5) * 1.2
+        const v = n * Math.max(0, centerPull)
+        line += chars[Math.min(chars.length - 1, Math.floor(v * chars.length * 1.1))]
+      }
+      out.push(line)
+    }
+    return out.join('\n')
+  }, [])
+  return (
+    <div className="grid h-full w-full place-items-center" style={{ background: '#0a0a0a' }}>
+      <pre className="m-0 whitespace-pre text-[9px] leading-[1.0] text-[#eaeaea]">{lines}</pre>
+    </div>
+  )
+}
+
 export function ThumbCyber() {
   const ref = useRef<HTMLCanvasElement>(null)
   const dropsRef = useRef<number[]>([])

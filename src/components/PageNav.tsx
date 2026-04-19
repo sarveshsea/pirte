@@ -17,6 +17,8 @@ export const ROUTE_ORDER = [
   { path: '/tarot',        label: 'tarot',        code: '13' },
   { path: '/particles',    label: 'particles',    code: '14' },
   { path: '/cyber',        label: 'cyber',        code: '15' },
+  { path: '/folds',        label: 'folds',        code: '16' },
+  { path: '/orbit',        label: 'orbit',        code: '17' },
 ]
 
 export default function PageNav() {
