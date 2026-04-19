@@ -5,6 +5,7 @@ import {
   HEALTH_PACK, ARMOR, AMMO_CLIP,
   PISTOL_IDLE, PISTOL_FIRE,
 } from './sprites'
+import { drawHud, HUD_H } from './hud'
 import { mulberry32 } from '../../lib/rng'
 
 const FOV = Math.PI / 3
@@ -268,7 +269,7 @@ function distBand(dist: number): number {
 
 function drawSprite(
   out: string[][], zBuffer: number[],
-  cols: number, rows: number,
+  cols: number, sceneRows: number,
   state: GameState,
   sx: number, sy: number,
   bitmap: string[],
@@ -281,12 +282,12 @@ function drawSprite(
   const transformY = invDet * (-p.plane.y * spriteX + p.plane.x * spriteY)
   if (transformY <= 0.01) return
   const screenX = Math.floor((cols / 2) * (1 + transformX / transformY))
-  const spriteH = Math.abs(Math.floor((rows * ASPECT) / transformY))
+  const spriteH = Math.abs(Math.floor((sceneRows * ASPECT) / transformY))
   const spriteW = spriteH
   const halfH = spriteH / 2
   const halfW = spriteW / 2
-  const drawStartY = Math.floor(rows / 2 - halfH)
-  const drawEndY   = Math.floor(rows / 2 + halfH)
+  const drawStartY = Math.floor(sceneRows / 2 - halfH)
+  const drawEndY   = Math.floor(sceneRows / 2 + halfH)
   const drawStartX = Math.floor(screenX - halfW)
   const drawEndX   = Math.floor(screenX + halfW)
   const bmpH = bitmap.length
@@ -296,7 +297,7 @@ function drawSprite(
     if (transformY >= zBuffer[x]) continue
     const texX = Math.min(bmpW - 1, Math.max(0, Math.floor(((x - drawStartX) / spriteW) * bmpW)))
     for (let y = drawStartY; y <= drawEndY; y++) {
-      if (y < 0 || y >= rows) continue
+      if (y < 0 || y >= sceneRows) continue
       const texY = Math.min(bmpH - 1, Math.max(0, Math.floor(((y - drawStartY) / spriteH) * bmpH)))
       const ch = bitmap[texY][texX]
       if (ch && ch !== ' ') out[y][x] = ch
@@ -306,7 +307,8 @@ function drawSprite(
 
 function render(state: GameState, t: number): string {
   const { cols, rows, player: p, grid } = state
-  const halfRows = rows / 2
+  const sceneRows = Math.max(10, rows - HUD_H)
+  const halfRows = sceneRows / 2
   const shakeDy = state.shake > 0 ? -1 : 0
   const out: string[][] = Array.from({ length: rows }, () => new Array<string>(cols).fill(' '))
   const zBuffer = new Array<number>(cols).fill(Infinity)
@@ -341,16 +343,16 @@ function render(state: GameState, t: number): string {
     const dist = Math.max(0.0001, perp)
     zBuffer[x] = dist
 
-    const lineH = Math.floor((rows * ASPECT) / dist)
+    const lineH = Math.floor((sceneRows * ASPECT) / dist)
     const drawStart = Math.max(0, Math.floor(halfRows - lineH / 2))
-    const drawEnd   = Math.min(rows - 1, Math.floor(halfRows + lineH / 2))
+    const drawEnd   = Math.min(sceneRows - 1, Math.floor(halfRows + lineH / 2))
 
     const band = distBand(dist)
     const glyph = hit === 'D'
       ? (side === 0 ? DOOR_X[band] : DOOR_Y[band])
       : (side === 0 ? WALL_X[band] : WALL_Y[band])
 
-    for (let y = 0; y < rows; y++) {
+    for (let y = 0; y < sceneRows; y++) {
       if (y < drawStart) {
         out[y][x] = ' '
       } else if (y > drawEnd) {
@@ -388,30 +390,33 @@ function render(state: GameState, t: number): string {
     drawables.push({ d: dd, sx: pr.pos.x, sy: pr.pos.y, bmp: FIREBALL })
   }
   drawables.sort((a, b) => b.d - a.d)
-  for (const dr of drawables) drawSprite(out, zBuffer, cols, rows, state, dr.sx, dr.sy, dr.bmp)
+  for (const dr of drawables) drawSprite(out, zBuffer, cols, sceneRows, state, dr.sx, dr.sy, dr.bmp)
 
-  // pistol overlay at bottom-center
+  // pistol overlay at bottom of the 3d scene (just above the hud)
   const gun = state.muzzleFlash > 0 ? PISTOL_FIRE : PISTOL_IDLE
   const gunW = gun[0].length
   const gunH = gun.length
   const gx0 = Math.floor((cols - gunW) / 2)
-  const gy0 = rows - gunH
+  const gy0 = sceneRows - gunH
   for (let y = 0; y < gunH; y++) {
     for (let x = 0; x < gunW; x++) {
       const ch = gun[y][x]
       if (ch !== ' ') {
         const ox = gx0 + x
         const oy = gy0 + y
-        if (oy >= 0 && oy < rows && ox >= 0 && ox < cols) out[oy][ox] = ch
+        if (oy >= 0 && oy < sceneRows && ox >= 0 && ox < cols) out[oy][ox] = ch
       }
     }
   }
 
-  // apply screen shake (shift whole buffer up by 1)
+  // apply screen shake inside the scene area only
   if (shakeDy !== 0) {
-    for (let y = 0; y < rows - 1; y++) out[y] = out[y + 1]
-    out[rows - 1] = new Array<string>(cols).fill(' ')
+    for (let y = 0; y < sceneRows - 1; y++) out[y] = out[y + 1]
+    out[sceneRows - 1] = new Array<string>(cols).fill(' ')
   }
+
+  // hud in the bottom HUD_H rows
+  drawHud(out, cols, rows, state)
 
   return out.map((r) => r.join('')).join('\n')
 }
