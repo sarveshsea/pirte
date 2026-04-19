@@ -5,6 +5,7 @@ import { stepClifford, DEFAULTS } from '../modules/attractors'
 import { renderKaleidoscope } from '../modules/kaleidoscope'
 import { RAMPS } from '../modules/asciiConvert'
 import { renderSevenSegment } from '../modules/sevenSegment'
+import { initState as spritesInit, step as spritesStep, render as spritesRender, type SpritesState } from '../modules/sprites'
 
 const TARGET_FPS = 24
 const FRAME_MS = 1000 / TARGET_FPS
@@ -152,6 +153,59 @@ export function ThumbTime() {
       <pre ref={preRef} className="m-0 whitespace-pre text-[var(--color-fg)] text-[10px] leading-[1.1]" />
     </div>
   )
+}
+
+export function ThumbSprites() {
+  const preRef = useRef<HTMLPreElement>(null)
+  const stateRef = useRef<SpritesState | null>(null)
+  useEffect(() => { stateRef.current = spritesInit(34, 14, 22); stateRef.current.mode = 'attract'; stateRef.current.cursor.active = false }, [])
+  useThrottledRaf(() => {
+    const s = stateRef.current
+    if (!s || !preRef.current) return
+    // gentle idle wander
+    s.cursor.x = s.cols / 2 + Math.cos(s.t * 0.3) * s.cols * 0.3
+    s.cursor.y = s.rows / 2 + Math.sin(s.t * 0.4) * s.rows * 0.3
+    s.cursor.active = true
+    spritesStep(s, 1 / 24)
+    preRef.current.textContent = spritesRender(s)
+  })
+  return <pre ref={preRef} className="m-0 whitespace-pre text-[9px] leading-[1.0] text-[var(--color-fg)]" />
+}
+
+export function ThumbWaves() {
+  const ref = useRef<HTMLCanvasElement>(null)
+  useThrottledRaf((t) => {
+    const c = ref.current; if (!c) return
+    const ctx = c.getContext('2d')!
+    fitCanvas(c, ctx)
+    const rect = c.getBoundingClientRect()
+    const W = rect.width, H = rect.height
+    ctx.fillStyle = '#000'
+    ctx.fillRect(0, 0, W, H)
+    ctx.strokeStyle = '#e8e8e8'
+    ctx.lineWidth = 1
+    ctx.beginPath()
+    // synthetic multi-sine waveform to suggest audio
+    for (let x = 0; x < W; x++) {
+      const p = x / W
+      const phase = t * 0.004
+      const v =
+        Math.sin(p * 28 + phase) * 0.35 +
+        Math.sin(p * 11 + phase * 1.3) * 0.25 +
+        Math.sin(p * 54 + phase * 2.1) * 0.12
+      const y = H / 2 + v * H * 0.34
+      if (x === 0) ctx.moveTo(x, y)
+      else ctx.lineTo(x, y)
+    }
+    ctx.stroke()
+    // spectrum bars underneath
+    ctx.fillStyle = '#6e6e6e'
+    for (let i = 0; i < 32; i++) {
+      const h = Math.abs(Math.sin(i * 0.6 + t * 0.002)) * H * 0.22
+      ctx.fillRect(i * (W / 32), H - h - 2, Math.max(1, W / 32 - 2), h)
+    }
+  })
+  return <canvas ref={ref} className="block h-full w-full" />
 }
 
 export function ThumbKaleidoscope() {

@@ -9,6 +9,8 @@ export const ROUTE_ORDER = [
   { path: '/pixels',       label: 'pixels',       code: '05' },
   { path: '/time',         label: 'time',         code: '06' },
   { path: '/kaleidoscope', label: 'kaleidoscope', code: '07' },
+  { path: '/sprites',      label: 'sprites',      code: '08' },
+  { path: '/waves',        label: 'waves',        code: '09' },
 ]
 
 export default function PageNav() {

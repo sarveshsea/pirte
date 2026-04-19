@@ -12,6 +12,8 @@ import Terminal from './routes/Terminal'
 import Pixels from './routes/Pixels'
 import Time from './routes/Time'
 import Kaleidoscope from './routes/Kaleidoscope'
+import Sprites from './routes/Sprites'
+import Waves from './routes/Waves'
 import NotFound from './routes/NotFound'
 
 const commands: Command[] = [
@@ -23,6 +25,8 @@ const commands: Command[] = [
   { id: 'pixels',      label: 'pixels',      to: '/pixels',      hint: 'fill game' },
   { id: 'time',        label: 'time',        to: '/time',        hint: 'global clocks' },
   { id: 'kaleidoscope', label: 'kaleidoscope', to: '/kaleidoscope', hint: 'n-fold mirror' },
+  { id: 'sprites',     label: 'sprites',     to: '/sprites',     hint: 'ascii playground' },
+  { id: 'waves',       label: 'waves',       to: '/waves',       hint: 'edm sequencer + scope' },
 ]
 
 export default function App() {
@@ -53,6 +57,8 @@ export default function App() {
           <Route path="/pixels" element={<Pixels />} />
           <Route path="/time" element={<Time />} />
           <Route path="/kaleidoscope" element={<Kaleidoscope />} />
+          <Route path="/sprites" element={<Sprites />} />
+          <Route path="/waves" element={<Waves />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>

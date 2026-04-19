@@ -10,6 +10,8 @@ import {
   ThumbPixels,
   ThumbTime,
   ThumbKaleidoscope,
+  ThumbSprites,
+  ThumbWaves,
 } from '../components/Thumb'
 
 type Mod = { to: string; label: string; code: string; desc: string; thumb: ReactNode; span?: string }
@@ -22,6 +24,8 @@ const MODULES: Mod[] = [
   { to: '/kaleidoscope', label: 'kaleidoscope', code: '07', desc: 'n-fold mirror',                   thumb: <ThumbKaleidoscope /> },
   { to: '/pixels',       label: 'pixels',       code: '05', desc: 'fill game',                       thumb: <ThumbPixels /> },
   { to: '/time',         label: 'time',         code: '06', desc: 'global clocks',                   thumb: <ThumbTime />,         span: 'lg:col-span-2' },
+  { to: '/sprites',      label: 'sprites',      code: '08', desc: 'ascii playground',                thumb: <ThumbSprites />,      span: 'lg:col-span-2' },
+  { to: '/waves',        label: 'waves',        code: '09', desc: 'edm scope + sequencer',            thumb: <ThumbWaves />,        span: 'lg:col-span-2' },
 ]
 
 export default function Index() {
