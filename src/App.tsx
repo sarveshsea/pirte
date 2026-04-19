@@ -21,6 +21,7 @@ import Breathe from './routes/Breathe'
 import Starfield from './routes/Starfield'
 import Tarot from './routes/Tarot'
 import Particles from './routes/Particles'
+import Cyber from './routes/Cyber'
 import NotFound from './routes/NotFound'
 
 const commands: Command[] = [
@@ -39,6 +40,7 @@ const commands: Command[] = [
   { id: 'starfield',   label: 'starfield',   to: '/starfield',   hint: '3d flythrough' },
   { id: 'tarot',       label: 'tarot',       to: '/tarot',       hint: 'major arcana draw' },
   { id: 'particles',   label: 'particles',   to: '/particles',   hint: 'verlet physics' },
+  { id: 'cyber',       label: 'cyber',       to: '/cyber',       hint: 'night city dashboard' },
 ]
 
 const TRANSITION = { duration: 0.14, ease: [0.2, 0.7, 0.2, 1] as [number, number, number, number] }
@@ -70,6 +72,7 @@ function AnimatedRoutes() {
           <Route path="/starfield" element={<Starfield />} />
           <Route path="/tarot" element={<Tarot />} />
           <Route path="/particles" element={<Particles />} />
+          <Route path="/cyber" element={<Cyber />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </motion.div>
