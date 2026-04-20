@@ -104,8 +104,16 @@ export function StudioProvider({ children }: { children: ReactNode }) {
     return () => clearTimeout(id)
   }, [rev, ready])
 
+  const [audioError, setAudioError] = useState<string | null>(null)
   useEffect(() => {
-    const eng = new WavesEngine(projectRef.current)
+    let eng: WavesEngine
+    try {
+      eng = new WavesEngine(projectRef.current)
+    } catch (e) {
+      // AudioContext can throw in cross-origin iframes, ios pre-gesture, etc.
+      setAudioError(e instanceof Error ? e.message : 'audio unavailable in this context')
+      return
+    }
     eng.setCallbacks({
       onStep: (s) => setStep(s),
     })
@@ -113,10 +121,10 @@ export function StudioProvider({ children }: { children: ReactNode }) {
     historyRef.current.push(projectRef.current)
     setReady(true)
     return () => {
-      eng.stop()
-      eng.dispose()
+      try { eng.stop() } catch { /* ignore */ }
+      try { eng.dispose() } catch { /* ignore */ }
       engineRef.current = null
-      midiRef.current.dispose()
+      try { midiRef.current.dispose() } catch { /* ignore */ }
     }
   }, [])
 
@@ -301,6 +309,18 @@ export function StudioProvider({ children }: { children: ReactNode }) {
       setMidiActiveId(id)
     },
   }), [rev, ready, playing, step, bump, mutTrack, snapshot, replaceProject, midiDevices, midiActiveId])
+
+  if (audioError) {
+    return (
+      <div className="mx-auto grid max-w-[520px] place-items-center gap-3 p-10 text-center text-[13px] text-[var(--color-dim)]">
+        <div className="text-[16px] text-[var(--color-fg)]">audio unavailable</div>
+        <div>
+          this browser blocked the audio context ({audioError}). try a fresh tab
+          or a non-embedded view — waves needs web audio to boot.
+        </div>
+      </div>
+    )
+  }
 
   return <Ctx.Provider value={api}>{children}</Ctx.Provider>
 }

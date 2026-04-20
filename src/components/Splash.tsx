@@ -30,15 +30,23 @@ export default function Splash() {
       return false
     }
 
+    // bounded polling — give up after ~1s; skip animation gracefully if
+    // the target never mounts (layout blocked, font load stalled, etc.)
+    let tries = 0
+    let measureId: number | null = null
     const tryMeasure = () => {
-      if (!findTarget()) setTimeout(tryMeasure, 60)
+      if (findTarget() || tries++ > 16) { measureId = null; return }
+      measureId = window.setTimeout(tryMeasure, 60)
     }
     tryMeasure()
 
     const t1 = setTimeout(() => setStage('twist'),  900)
     const t2 = setTimeout(() => setStage('settle'), 1500)
     const t3 = setTimeout(() => setStage('gone'),   2400)
-    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3) }
+    return () => {
+      if (measureId !== null) clearTimeout(measureId)
+      clearTimeout(t1); clearTimeout(t2); clearTimeout(t3)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 

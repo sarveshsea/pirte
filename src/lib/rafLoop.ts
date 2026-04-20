@@ -2,6 +2,9 @@
 // - pauses when the tab is backgrounded (document.hidden) so cpu/allocations
 //   don't accumulate while the user is elsewhere
 // - resumes on visibilitychange with a fresh time origin so dt doesn't spike
+// - isolates tick exceptions so a crash in one route (webgl context loss,
+//   oom, malformed state) doesn't keep re-throwing every frame — we log,
+//   tear down the loop, and let react error boundaries handle the rerender
 // - returns a single cancel fn that tears down raf + listener
 //
 // signature: tick receives (t: performance.now timestamp, dt: seconds since
@@ -13,15 +16,25 @@ export function rafLoop(tick: RafTick): () => void {
   let raf = 0
   let last = performance.now()
   let running = !document.hidden
+  let errored = false
 
   const frame = (t: number) => {
     const dt = Math.min(0.1, Math.max(0, (t - last) / 1000))
     last = t
-    tick(t, dt)
+    try {
+      tick(t, dt)
+    } catch (e) {
+      errored = true
+      running = false
+      // single log so a per-frame throw doesn't flood the console
+      console.error('rafLoop: tick threw, stopping loop', e)
+      return
+    }
     if (running) raf = requestAnimationFrame(frame)
   }
 
   const onVis = () => {
+    if (errored) return
     if (document.hidden) {
       if (raf) cancelAnimationFrame(raf)
       raf = 0
