@@ -1,4 +1,4 @@
-import { forwardRef } from 'react'
+import { forwardRef, Suspense } from 'react'
 import { byPath } from './registry'
 
 type Props = {
@@ -48,7 +48,11 @@ const Pane = forwardRef<HTMLDivElement, Props>(function Pane(
         </div>
       </header>
       <div className="relative min-h-0 flex-1 overflow-auto p-3">
-        {Content ? <Content /> : <div className="p-4 text-[var(--color-dim)]">unknown module · {route}</div>}
+        {Content ? (
+          <Suspense fallback={<div className="p-4 text-[11px] tracking-[0.18em] text-[var(--color-dim)]">loading…</div>}>
+            <Content />
+          </Suspense>
+        ) : <div className="p-4 text-[var(--color-dim)]">unknown module · {route}</div>}
       </div>
     </div>
   )

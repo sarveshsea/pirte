@@ -1,46 +1,30 @@
-import type { ComponentType } from 'react'
-import Fractals from '../routes/Fractals'
-import Attractors from '../routes/Attractors'
-import Ascii from '../routes/Ascii'
-import Terminal from '../routes/Terminal'
-import Pixels from '../routes/Pixels'
-import Time from '../routes/Time'
-import Kaleidoscope from '../routes/Kaleidoscope'
-import Sprites from '../routes/Sprites'
-import Waves from '../routes/Waves'
-import Doom from '../routes/Doom'
-import Breathe from '../routes/Breathe'
-import Starfield from '../routes/Starfield'
-import Tarot from '../routes/Tarot'
-import Particles from '../routes/Particles'
-import Cyber from '../routes/Cyber'
-import Folds from '../routes/Folds'
-import Orbit from '../routes/Orbit'
+import { lazy, type LazyExoticComponent, type ComponentType } from 'react'
 
 export type RouteEntry = {
   path: string
   label: string
-  Component: ComponentType
+  Component: LazyExoticComponent<ComponentType>
 }
 
+// lazy so panes only load their code when a route is actually placed in them.
 export const REGISTRY: RouteEntry[] = [
-  { path: '/fractals',     label: 'fractals',     Component: Fractals },
-  { path: '/attractors',   label: 'attractors',   Component: Attractors },
-  { path: '/ascii',        label: 'ascii',        Component: Ascii },
-  { path: '/terminal',     label: 'terminal',     Component: Terminal },
-  { path: '/pixels',       label: 'pixels',       Component: Pixels },
-  { path: '/time',         label: 'time',         Component: Time },
-  { path: '/kaleidoscope', label: 'kaleidoscope', Component: Kaleidoscope },
-  { path: '/sprites',      label: 'sprites',      Component: Sprites },
-  { path: '/waves',        label: 'waves',        Component: Waves },
-  { path: '/doom',         label: 'doom',         Component: Doom },
-  { path: '/breathe',      label: 'breathe',      Component: Breathe },
-  { path: '/starfield',    label: 'starfield',    Component: Starfield },
-  { path: '/tarot',        label: 'tarot',        Component: Tarot },
-  { path: '/particles',    label: 'particles',    Component: Particles },
-  { path: '/cyber',        label: 'cyber',        Component: Cyber },
-  { path: '/folds',        label: 'folds',        Component: Folds },
-  { path: '/orbit',        label: 'orbit',        Component: Orbit },
+  { path: '/fractals',     label: 'fractals',     Component: lazy(() => import('../routes/Fractals')) },
+  { path: '/attractors',   label: 'attractors',   Component: lazy(() => import('../routes/Attractors')) },
+  { path: '/ascii',        label: 'ascii',        Component: lazy(() => import('../routes/Ascii')) },
+  { path: '/terminal',     label: 'terminal',     Component: lazy(() => import('../routes/Terminal')) },
+  { path: '/pixels',       label: 'pixels',       Component: lazy(() => import('../routes/Pixels')) },
+  { path: '/time',         label: 'time',         Component: lazy(() => import('../routes/Time')) },
+  { path: '/kaleidoscope', label: 'kaleidoscope', Component: lazy(() => import('../routes/Kaleidoscope')) },
+  { path: '/sprites',      label: 'sprites',      Component: lazy(() => import('../routes/Sprites')) },
+  { path: '/waves',        label: 'waves',        Component: lazy(() => import('../routes/Waves')) },
+  { path: '/doom',         label: 'doom',         Component: lazy(() => import('../routes/Doom')) },
+  { path: '/breathe',      label: 'breathe',      Component: lazy(() => import('../routes/Breathe')) },
+  { path: '/starfield',    label: 'starfield',    Component: lazy(() => import('../routes/Starfield')) },
+  { path: '/tarot',        label: 'tarot',        Component: lazy(() => import('../routes/Tarot')) },
+  { path: '/particles',    label: 'particles',    Component: lazy(() => import('../routes/Particles')) },
+  { path: '/cyber',        label: 'cyber',        Component: lazy(() => import('../routes/Cyber')) },
+  { path: '/folds',        label: 'folds',        Component: lazy(() => import('../routes/Folds')) },
+  { path: '/orbit',        label: 'orbit',        Component: lazy(() => import('../routes/Orbit')) },
 ]
 
 export function byPath(p: string): RouteEntry | undefined {
