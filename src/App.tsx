@@ -9,6 +9,7 @@ import Shortcuts from './components/Shortcuts'
 import PageNav from './components/PageNav'
 import RouteError from './components/RouteError'
 import WM from './wm/WM'
+import { DotsSpinner } from './components/spinners'
 
 // route chunks — each becomes its own js file via vite code-splitting
 const Index        = lazy(() => import('./routes/Index'))
@@ -29,6 +30,8 @@ const Particles    = lazy(() => import('./routes/Particles'))
 const Cyber        = lazy(() => import('./routes/Cyber'))
 const Folds        = lazy(() => import('./routes/Folds'))
 const Orbit        = lazy(() => import('./routes/Orbit'))
+const Radio        = lazy(() => import('./routes/Radio'))
+const SpinnersPage = lazy(() => import('./routes/Spinners'))
 const Docs         = lazy(() => import('./routes/Docs'))
 const NotFound     = lazy(() => import('./routes/NotFound'))
 
@@ -52,14 +55,17 @@ const commands: Command[] = [
   { id: 'cyber',       label: 'cyber',       to: '/cyber',       hint: 'night city dashboard' },
   { id: 'folds',       label: 'folds',       to: '/folds',       hint: 'generative gallery' },
   { id: 'orbit',       label: 'orbit',       to: '/orbit',       hint: 'iss live · telemetry' },
+  { id: 'radio',       label: 'radio',       to: '/radio',       hint: 'global stations · pin the globe' },
+  { id: 'spinners',    label: 'spinners',    to: '/spinners',    hint: '54 terminal-style agent spinners' },
 ]
 
 const TRANSITION = { duration: 0.14, ease: [0.2, 0.7, 0.2, 1] as [number, number, number, number] }
 
 function RouteLoader() {
   return (
-    <div className="grid place-items-center py-24 text-[11px] tracking-[0.18em] text-[var(--color-dim)]">
-      loading…
+    <div className="grid place-items-center gap-3 py-24 text-[11px] tracking-[0.18em] text-[var(--color-dim)]">
+      <DotsSpinner size={20} color="var(--color-fg)" />
+      <span>loading…</span>
     </div>
   )
 }
@@ -97,6 +103,8 @@ function AnimatedRoutes() {
               <Route path="/cyber" element={<Cyber />} />
               <Route path="/folds" element={<Folds />} />
               <Route path="/orbit" element={<Orbit />} />
+              <Route path="/radio" element={<Radio />} />
+              <Route path="/spinners" element={<SpinnersPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>

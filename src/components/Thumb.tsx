@@ -450,6 +450,44 @@ export function ThumbDoom() {
   )
 }
 
+export function ThumbRadio() {
+  // ascii mini-globe with a few pins and a "live" dot
+  const lines = useMemo(() => {
+    const cols = 38, rows = 14
+    const cx = cols / 2, cy = rows / 2
+    const rx = cols * 0.42, ry = rows * 0.46
+    const out: string[] = []
+    // pin positions (col, row) — hand-picked to feel scattered
+    const pins = new Set(['6,4', '10,6', '14,3', '18,7', '22,5', '26,8', '30,4', '12,10', '22,10'])
+    const live = '22,5'
+    for (let y = 0; y < rows; y++) {
+      let line = ''
+      for (let x = 0; x < cols; x++) {
+        const dx = (x - cx) / rx, dy = (y - cy) / ry
+        const d = dx * dx + dy * dy
+        const key = `${x},${y}`
+        if (key === live) { line += '◉'; continue }
+        if (pins.has(key) && d < 1) { line += '•'; continue }
+        if (d > 1) { line += ' '; continue }
+        // latitude/longitude gridlines
+        const lat = Math.round(dy * 4)
+        const lon = Math.round(dx * 6)
+        if (Math.abs(lat * ry / 4 - (y - cy)) < 0.25) { line += '-'; continue }
+        if (Math.abs(lon * rx / 6 - (x - cx)) < 0.25) { line += '|'; continue }
+        // speckle land
+        line += (x * 13 + y * 7) % 5 === 0 ? '·' : ' '
+      }
+      out.push(line)
+    }
+    return out.join('\n')
+  }, [])
+  return (
+    <pre className="m-0 grid h-full w-full place-items-center whitespace-pre text-[9px] leading-[1.0] text-[var(--color-fg)]">
+      {lines}
+    </pre>
+  )
+}
+
 export function ThumbKaleidoscope() {
   const ref = useRef<HTMLCanvasElement>(null)
   useThrottledRaf((t) => {

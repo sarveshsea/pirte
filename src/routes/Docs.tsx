@@ -59,6 +59,7 @@ const SECTIONS: Section[] = [
     items: [
       { path: '/time',  code: '06', label: 'time',  desc: 'global clocks across six cities + session timer.' },
       { path: '/orbit', code: '17', label: 'orbit', desc: 'iss telemetry, live altitude/velocity, ground-track overlay.' },
+      { path: '/radio', code: '18', label: 'radio', desc: 'curated global stations streamed directly · clickable pins on an ascii world map.' },
     ],
   },
   {

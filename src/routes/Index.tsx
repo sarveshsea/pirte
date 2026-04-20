@@ -21,6 +21,7 @@ import {
   ThumbCyber,
   ThumbFolds,
   ThumbOrbit,
+  ThumbRadio,
 } from '../components/Thumb'
 
 type Tag = 'visual' | 'interactive' | 'audio' | 'meditative' | 'live' | 'game'
@@ -44,6 +45,7 @@ const MODULES: Mod[] = [
   { to: '/cyber',        label: 'cyber',        code: '15', desc: 'night city // v2.077',             thumb: <ThumbCyber />,        span: 'lg:col-span-2',                tags: ['visual'] },
   { to: '/folds',        label: 'folds',        code: '16', desc: 'generative gallery',               thumb: <ThumbFolds />,        span: 'lg:col-span-2',                tags: ['visual'] },
   { to: '/orbit',        label: 'orbit',        code: '17', desc: 'iss · live from 400km',            thumb: <ThumbOrbit />,        span: 'lg:col-span-2',                tags: ['live'] },
+  { to: '/radio',        label: 'radio',        code: '18', desc: 'global stations · spin the globe', thumb: <ThumbRadio />,        span: 'lg:col-span-2',                tags: ['live', 'audio', 'interactive'] },
 ]
 
 const TAGS: (Tag | 'all' | 'pinned')[] = ['all', 'pinned', 'visual', 'interactive', 'audio', 'meditative', 'live', 'game']
