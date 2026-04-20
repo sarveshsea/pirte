@@ -318,32 +318,6 @@ export function ThumbOrbit() {
   return <canvas ref={ref} className="block h-full w-full" />
 }
 
-export function ThumbFolds() {
-  const lines = useMemo(() => {
-    const cols = 38, rows = 14
-    const half = cols / 2
-    const chars = ' .·-=+*#%@'
-    const out: string[] = []
-    for (let y = 0; y < rows; y++) {
-      let line = ''
-      for (let x = 0; x < cols; x++) {
-        const mx = x < half ? x : cols - x - 1
-        const n = Math.abs(Math.sin(mx * 0.3 + y * 0.4) + Math.cos(mx * 0.5 + y * 0.2)) / 2
-        const centerPull = 1 - Math.abs(mx / half - 0.5) * 1.2
-        const v = n * Math.max(0, centerPull)
-        line += chars[Math.min(chars.length - 1, Math.floor(v * chars.length * 1.1))]
-      }
-      out.push(line)
-    }
-    return out.join('\n')
-  }, [])
-  return (
-    <div className="grid h-full w-full place-items-center" style={{ background: '#0a0a0a' }}>
-      <pre className="m-0 whitespace-pre text-[9px] leading-[1.0] text-[#eaeaea]">{lines}</pre>
-    </div>
-  )
-}
-
 export function ThumbDoom() {
   // top-down mini-map of the real e1m1 layout parsed from doom/map.
   // walls (#/D) stay opaque; floor dims; nukage gets a tint; spawns blink.

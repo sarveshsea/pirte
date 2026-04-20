@@ -111,14 +111,6 @@ export const ROUTE_SHORTCUTS: Record<string, Group> = {
       { keys: 'export',        label: 'download .txt or .png' },
     ],
   },
-  '/folds': {
-    heading: 'folds',
-    items: [
-      { keys: 'tabs',   label: 'filter by medium' },
-      { keys: 'search', label: 'filter by title / medium' },
-      { keys: '+ new fold', label: 're-seed every piece' },
-    ],
-  },
   '/orbit': {
     heading: 'orbit',
     items: [

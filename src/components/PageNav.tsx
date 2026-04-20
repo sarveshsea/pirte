@@ -13,7 +13,6 @@ export const ROUTE_ORDER = [
   { path: '/doom',         label: 'doom',         code: '10' },
   { path: '/breathe',      label: 'breathe',      code: '11' },
   { path: '/starfield',    label: 'starfield',    code: '12' },
-  { path: '/folds',        label: 'folds',        code: '16' },
   { path: '/orbit',        label: 'orbit',        code: '17' },
   { path: '/radio',        label: 'radio',        code: '18' },
   { path: '/spinners',     label: 'spinners',     code: '19' },

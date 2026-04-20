@@ -19,7 +19,6 @@ export const REGISTRY: RouteEntry[] = [
   { path: '/doom',         label: 'doom',         Component: lazy(() => import('../routes/Doom')) },
   { path: '/breathe',      label: 'breathe',      Component: lazy(() => import('../routes/Breathe')) },
   { path: '/starfield',    label: 'starfield',    Component: lazy(() => import('../routes/Starfield')) },
-  { path: '/folds',        label: 'folds',        Component: lazy(() => import('../routes/Folds')) },
   { path: '/orbit',        label: 'orbit',        Component: lazy(() => import('../routes/Orbit')) },
   { path: '/microbes',     label: 'microbes',     Component: lazy(() => import('../routes/Microbes')) },
   { path: '/chroma',       label: 'chroma',       Component: lazy(() => import('../routes/Chroma')) },

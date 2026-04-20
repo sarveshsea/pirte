@@ -19,7 +19,6 @@ const SECTIONS: Section[] = [
       { path: '/fractals',     code: '01', label: 'fractals',     desc: 'mandelbrot + julia via webgl. pan/zoom with mouse.' },
       { path: '/attractors',   code: '02', label: 'attractors',   desc: 'lorenz · clifford · dejong strange attractors in canvas2d.' },
       { path: '/kaleidoscope', code: '07', label: 'kaleidoscope', desc: 'n-fold mirror over a perlin field.' },
-      { path: '/folds',        code: '16', label: 'folds',        desc: 'generative gallery of deterministic compositions.' },
     ],
   },
   {

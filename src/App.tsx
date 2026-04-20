@@ -25,7 +25,6 @@ const Waves        = lazy(() => import('./routes/Waves'))
 const Doom         = lazy(() => import('./routes/Doom'))
 const Breathe      = lazy(() => import('./routes/Breathe'))
 const Starfield    = lazy(() => import('./routes/Starfield'))
-const Folds        = lazy(() => import('./routes/Folds'))
 const Orbit        = lazy(() => import('./routes/Orbit'))
 const Radio        = lazy(() => import('./routes/Radio'))
 const SpinnersPage = lazy(() => import('./routes/Spinners'))
@@ -48,7 +47,6 @@ const commands: Command[] = [
   { id: 'doom',        label: 'doom',        to: '/doom',        hint: 'e1m1 ascii homage' },
   { id: 'breathe',     label: 'breathe',     to: '/breathe',     hint: 'box-breathing guide' },
   { id: 'starfield',   label: 'starfield',   to: '/starfield',   hint: '3d flythrough' },
-  { id: 'folds',       label: 'folds',       to: '/folds',       hint: 'generative gallery' },
   { id: 'orbit',       label: 'orbit',       to: '/orbit',       hint: 'iss live · telemetry' },
   { id: 'radio',       label: 'radio',       to: '/radio',       hint: 'global stations · pin the globe' },
   { id: 'spinners',    label: 'spinners',    to: '/spinners',    hint: '54 terminal-style agent spinners' },
@@ -99,7 +97,6 @@ function AnimatedRoutes() {
               <Route path="/doom" element={<Doom />} />
               <Route path="/breathe" element={<Breathe />} />
               <Route path="/starfield" element={<Starfield />} />
-              <Route path="/folds" element={<Folds />} />
               <Route path="/orbit" element={<Orbit />} />
               <Route path="/radio" element={<Radio />} />
               <Route path="/spinners" element={<SpinnersPage />} />
