@@ -159,4 +159,14 @@ export const ROUTE_SHORTCUTS: Record<string, Group> = {
       { keys: '1 – 8',   label: 'pick pigment (sumi · ultramarine · alizarin · sienna · sap · cadmium · payne · indigo)' },
     ],
   },
+  '/faces': {
+    heading: 'faces',
+    items: [
+      { keys: 'click',   label: 'copy kaomoji to clipboard' },
+      { keys: '/',       label: 'focus the search box' },
+      { keys: 'enter',   label: 'copy first visible face (and clear search)' },
+      { keys: 'r',       label: 'copy a random currently-visible face' },
+      { keys: 'esc',     label: 'clear search + blur the input' },
+    ],
+  },
 }

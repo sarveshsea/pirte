@@ -652,3 +652,18 @@ export function ThumbBloom() {
   }, [])
   return <canvas ref={ref} className="block h-full w-full" />
 }
+
+/* faces thumb — static 2×3 preview of representative kaomoji. */
+export function ThumbFaces() {
+  const faces = ['(◕‿◕)', 'ʕ•ᴥ•ʔ', '¯\\_(ツ)_/¯', '(ಠ_ಠ)', '(⌐■_■)', '(♡°▽°♡)']
+  return (
+    <div
+      className="grid h-full w-full grid-cols-3 grid-rows-2 place-items-center gap-1 p-2"
+      style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Yu Gothic", sans-serif' }}
+    >
+      {faces.map((f, i) => (
+        <span key={i} className="truncate text-[13px] leading-none text-[var(--color-fg)]">{f}</span>
+      ))}
+    </div>
+  )
+}

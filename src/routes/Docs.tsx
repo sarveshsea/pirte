@@ -29,6 +29,7 @@ const SECTIONS: Section[] = [
       { path: '/pixels',     code: '05', label: 'pixels',    desc: 'upload an image, get a paint-by-number puzzle.', keybinds: ['click  fill a cell'] },
       { path: '/sprites',    code: '08', label: 'sprites',   desc: 'particle sandbox with attract/repel/vortex forces.', keybinds: ['a f v i  modes', 'click  pulse'] },
       { path: '/bloom',      code: '22', label: 'bloom',     desc: 'wet-on-wet watercolor sim — advection + capillary flow + edge darkening. 8 pigments, 4 papers, full parameter panel.', keybinds: ['drag  paint', 'space  freeze', 'c  clear', 'r  reseed paper', 's  save png', 'm  mono', '[ ]  brush size', '1–8  pigment'] },
+      { path: '/faces',      code: '10', label: 'faces',     desc: 'kaomoji gallery — ~150 curated unicode emoticons. search matches face + mood/subject tags. click to copy.', keybinds: ['click  copy', '/  focus search', 'enter  copy first', 'r  random', 'esc  clear'] },
     ],
   },
   {

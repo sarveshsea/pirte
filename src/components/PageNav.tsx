@@ -18,6 +18,7 @@ export const ROUTE_ORDER = [
   { path: '/microbes',     label: 'microbes',     code: '20' },
   { path: '/chroma',       label: 'chroma',       code: '21' },
   { path: '/bloom',        label: 'bloom',        code: '22' },
+  { path: '/faces',        label: 'faces',        code: '10' },
 ]
 
 export default function PageNav() {
