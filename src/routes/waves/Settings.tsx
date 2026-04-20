@@ -4,6 +4,14 @@ import { useStudio } from './StudioContext'
 export default function Settings() {
   const s = useStudio()
   const [initError, setInitError] = useState<string | null>(null)
+  const [confirmReset, setConfirmReset] = useState(false)
+
+  // arm for ~4s; if the user doesn't confirm in that window, disarm
+  useEffect(() => {
+    if (!confirmReset) return
+    const id = window.setTimeout(() => setConfirmReset(false), 4000)
+    return () => clearTimeout(id)
+  }, [confirmReset])
 
   useEffect(() => {
     // autostart midi if the browser supports it
@@ -47,10 +55,22 @@ export default function Settings() {
         <div className="text-[11px] text-[var(--color-dim)] mb-1">project</div>
         <button
           data-interactive
-          onClick={() => { if (confirm('reset project? (autosave will be cleared)')) s.resetProject() }}
-          className="!px-2 !py-1 !text-[11px] !text-[#ff7a7a] !border-[#2a1a1a]"
+          onClick={() => {
+            if (confirmReset) {
+              s.resetProject()
+              setConfirmReset(false)
+            } else {
+              setConfirmReset(true)
+            }
+          }}
+          className={`!px-2 !py-1 !text-[11px] ${
+            confirmReset
+              ? '!text-[var(--color-bg)] !bg-[#ff7a7a] !border-[#ff7a7a]'
+              : '!text-[#ff7a7a] !border-[#2a1a1a]'
+          }`}
+          title={confirmReset ? 'click again within 4s to confirm' : 'reset project — autosave will be cleared'}
         >
-          reset project
+          {confirmReset ? 'click again to confirm' : 'reset project'}
         </button>
       </div>
 

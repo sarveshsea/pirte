@@ -126,6 +126,20 @@ export default function Radio() {
       return
     }
     setStreamErr(null)
+    // defense-in-depth — toStation() upstream already filters to https,
+    // but re-validate at the sink so a future upstream change can't leak
+    // an http/file/javascript scheme into an <audio> src.
+    try {
+      if (new URL(current.url).protocol !== 'https:') {
+        setStreamErr('blocked non-https stream')
+        setPlaying(false)
+        return
+      }
+    } catch {
+      setStreamErr('invalid stream url')
+      setPlaying(false)
+      return
+    }
     a.src = current.url
     a.play()
       .then(() => { setPlaying(true); registerClick(current.id).catch(() => {}) })

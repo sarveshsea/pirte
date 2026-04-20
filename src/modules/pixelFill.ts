@@ -55,12 +55,27 @@ function medianCut(pixels: RGB[], k: number): RGB[] {
   })
 }
 
+// only accept schemes that are safe for canvas/image sources. 'javascript:' is
+// a no-op in <img> but still rejected for defense-in-depth; 'file:' and other
+// unknown protocols can read local context in some environments.
+const OK_SCHEMES = new Set(['https:', 'http:', 'data:', 'blob:'])
+
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((res, rej) => {
+    try {
+      const url = new URL(src, window.location.href)
+      if (!OK_SCHEMES.has(url.protocol)) {
+        rej(new Error(`blocked image scheme: ${url.protocol}`))
+        return
+      }
+    } catch {
+      rej(new Error('invalid image url'))
+      return
+    }
     const el = new Image()
     el.crossOrigin = 'anonymous'
     el.onload = () => res(el)
-    el.onerror = rej
+    el.onerror = () => rej(new Error('image failed to load'))
     el.src = src
   })
 }

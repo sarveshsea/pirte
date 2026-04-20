@@ -31,6 +31,19 @@ function streamSrc(s: Stream): string {
 
 const ISS_CONTINUOUS_START = new Date('2000-11-02T09:21:00Z').getTime()
 
+function isIssPayload(v: unknown): v is ISSData {
+  if (!v || typeof v !== 'object') return false
+  const o = v as Record<string, unknown>
+  return (
+    typeof o.latitude  === 'number' &&
+    typeof o.longitude === 'number' &&
+    typeof o.altitude  === 'number' &&
+    typeof o.velocity  === 'number' &&
+    typeof o.timestamp === 'number' &&
+    (o.visibility === 'daylight' || o.visibility === 'eclipsed')
+  )
+}
+
 type Status = 'idle' | 'loading' | 'ok' | 'slow' | 'error'
 
 function useISS(pollMs = 4000, timeoutMs = 8000) {
@@ -58,8 +71,11 @@ function useISS(pollMs = 4000, timeoutMs = 8000) {
           signal: ac.signal,
         })
         if (!res.ok) throw new Error(`http ${res.status}`)
-        const j = await res.json()
+        const j: unknown = await res.json()
         if (cancelled) return
+        // runtime shape check — wheretheiss.at is third-party; a schema drift
+        // or a cached stale response shouldn't crash the route
+        if (!isIssPayload(j)) throw new Error('unexpected api response')
         setData({
           latitude: j.latitude,
           longitude: j.longitude,
