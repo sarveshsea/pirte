@@ -1,5 +1,5 @@
 @import 'tailwindcss';
-@import '@fontsource-variable/plus-jakarta-sans';
+@import '@fontsource-variable/manrope';
 @import '@fontsource-variable/jetbrains-mono';
 
 @theme {
@@ -9,7 +9,7 @@
   --color-dim: #8a8a8a;
   --color-line: #2a2a2a;
   --color-glow: rgba(237, 237, 237, 0.04);
-  --font-sans: 'Plus Jakarta Sans Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Manrope Variable', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'JetBrains Mono Variable', ui-monospace, monospace;
   --radius-none: 0;
 }
