@@ -169,17 +169,17 @@ export default function WM({ open, onClose }: Props) {
     return () => window.removeEventListener('keydown', onKey, { capture: true })
   }, [open, focus, ws, state.workspaces.length, openLauncher, closeFocused, focusDir, switchWorkspace, updateWs, onClose])
 
-  // escape closes launcher first, then WM
+  // escape closes launcher first, then WM — never leave a user trapped
   useEffect(() => {
     if (!open) return
     const onEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        if (launcherOpen) { setLauncherOpen(false); return }
-      }
+      if (e.key !== 'Escape') return
+      if (launcherOpen) { setLauncherOpen(false); return }
+      onClose()
     }
     window.addEventListener('keydown', onEsc)
     return () => window.removeEventListener('keydown', onEsc)
-  }, [open, launcherOpen])
+  }, [open, launcherOpen, onClose])
 
   if (!open) return null
 
