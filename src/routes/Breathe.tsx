@@ -136,11 +136,11 @@ export default function Breathe() {
           <Slider label="hold"   min={0} max={10} step={1} value={hold1}  onChange={setHold1}  format={(v) => `${v}s`} />
           <Slider label="exhale" min={2} max={12} step={1} value={exhale} onChange={setExhale} format={(v) => `${v}s`} />
           <Slider label="hold"   min={0} max={10} step={1} value={hold2}  onChange={setHold2}  format={(v) => `${v}s`} />
-          <div className="mt-2 flex items-center justify-between text-[11px] text-[var(--color-dim)]">
+          <div className="mt-2 flex items-center justify-between text-[13px] text-[var(--color-dim)]">
             <button data-interactive onClick={() => { setInhale(4); setHold1(4); setExhale(4); setHold2(4) }}>4·4·4·4</button>
             <button data-interactive onClick={() => { setInhale(4); setHold1(7); setExhale(8); setHold2(0) }}>4·7·8</button>
           </div>
-          <div className="mt-1 flex items-center justify-between text-[11px] text-[var(--color-dim)]">
+          <div className="mt-1 flex items-center justify-between text-[13px] text-[var(--color-dim)]">
             <button
               data-interactive
               onClick={() => setMode((m) => (m === 'circle' ? 'waveform' : 'circle'))}

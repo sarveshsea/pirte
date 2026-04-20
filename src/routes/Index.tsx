@@ -82,11 +82,11 @@ export default function Index() {
           <div className="flex items-baseline gap-4">
             <span className="inline-block h-[26px] w-[14px] rounded-[3px] bg-[var(--color-fg)]" aria-hidden />
             <h1 className="text-[40px] leading-none tracking-[-0.02em] text-[var(--color-fg)]">pirte</h1>
-            <span className="text-[11px] tracking-[0.18em] text-[var(--color-dim)]">etrip · abstractions for the wandering mind</span>
+            <span className="text-[13px] tracking-[0.18em] text-[var(--color-dim)]">etrip · abstractions for the wandering mind</span>
           </div>
-          <span className="text-[11px] tracking-[0.1em] text-[var(--color-dim)]">press ⌘k · jump · ? shortcuts · ⇧space wm</span>
+          <span className="text-[13px] tracking-[0.1em] text-[var(--color-dim)]">press ⌘k · jump · ? shortcuts · ⇧space wm</span>
         </div>
-        <div className="grid grid-cols-2 gap-2 text-[11px] text-[var(--color-dim)] md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-7">
+        <div className="grid grid-cols-2 gap-2 text-[13px] text-[var(--color-dim)] md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-7">
           {CITIES.map((c) => (
             <div key={c.tz} className="flex items-center justify-between rounded-[6px] border border-[var(--color-line)] bg-[var(--color-surface)] px-3 py-1.5">
               <span className="tracking-[0.12em]">{c.label}</span>
@@ -100,7 +100,7 @@ export default function Index() {
         </div>
 
         {/* tag filter row */}
-        <nav className="flex flex-wrap items-center gap-1 border-t border-[var(--color-line)] pt-3 text-[11px]">
+        <nav className="flex flex-wrap items-center gap-1 border-t border-[var(--color-line)] pt-3 text-[13px]">
           {TAGS.map((t) => {
             const count =
               t === 'all' ? MODULES.length :
@@ -113,9 +113,9 @@ export default function Index() {
                 key={t}
                 data-interactive
                 onClick={() => setTab(t)}
-                className={`!px-3 !py-1 !text-[11px] ${active ? '!border-[var(--color-fg)] text-[var(--color-fg)]' : '!border-[var(--color-line)] text-[var(--color-dim)]'}`}
+                className={`!px-3 !py-1 !text-[13px] ${active ? '!border-[var(--color-fg)] text-[var(--color-fg)]' : '!border-[var(--color-line)] text-[var(--color-dim)]'}`}
               >
-                {label} <span className="ml-1 text-[10px] text-[var(--color-dim)]">{count}</span>
+                {label} <span className="ml-1 text-[12px] text-[var(--color-dim)]">{count}</span>
               </button>
             )
           })}

@@ -32,7 +32,7 @@ export default function Spinners() {
         <div className="flex items-baseline justify-between gap-4">
           <div className="flex items-baseline gap-3">
             <h1 className="text-[28px] leading-none tracking-[-0.02em] text-[var(--color-fg)]">spinners</h1>
-            <span className="text-[11px] tracking-[0.18em] text-[var(--color-dim)]">
+            <span className="text-[13px] tracking-[0.18em] text-[var(--color-dim)]">
               54 terminal-style agent spinners · port of{' '}
               <a
                 href="https://github.com/Eronred/expo-agent-spinners"
@@ -45,10 +45,10 @@ export default function Spinners() {
               </a>
             </span>
           </div>
-          <span className="text-[11px] tracking-[0.1em] text-[var(--color-dim)]">text · timer · zero deps</span>
+          <span className="text-[13px] tracking-[0.1em] text-[var(--color-dim)]">text · timer · zero deps</span>
         </div>
 
-        <nav className="flex flex-wrap items-center gap-2 border-t border-[var(--color-line)] pt-3 text-[11px]">
+        <nav className="flex flex-wrap items-center gap-2 border-t border-[var(--color-line)] pt-3 text-[13px]">
           {TABS.map((t) => {
             const active = t === tab
             return (
@@ -56,9 +56,9 @@ export default function Spinners() {
                 key={t}
                 data-interactive
                 onClick={() => setTab(t)}
-                className={`!px-3 !py-1 !text-[11px] ${active ? '!border-[var(--color-fg)] text-[var(--color-fg)]' : '!border-[var(--color-line)] text-[var(--color-dim)]'}`}
+                className={`!px-3 !py-1 !text-[13px] ${active ? '!border-[var(--color-fg)] text-[var(--color-fg)]' : '!border-[var(--color-line)] text-[var(--color-dim)]'}`}
               >
-                {t} <span className="ml-1 text-[10px] text-[var(--color-dim)]">{counts[t]}</span>
+                {t} <span className="ml-1 text-[12px] text-[var(--color-dim)]">{counts[t]}</span>
               </button>
             )
           })}
@@ -73,7 +73,7 @@ export default function Spinners() {
                 key={s}
                 data-interactive
                 onClick={() => setSize(s)}
-                className={`!px-2 !py-1 !text-[11px] tabular-nums ${active ? '!border-[var(--color-fg)] text-[var(--color-fg)]' : '!border-[var(--color-line)] text-[var(--color-dim)]'}`}
+                className={`!px-2 !py-1 !text-[13px] tabular-nums ${active ? '!border-[var(--color-fg)] text-[var(--color-fg)]' : '!border-[var(--color-line)] text-[var(--color-dim)]'}`}
               >
                 {s}
               </button>
@@ -87,7 +87,7 @@ export default function Spinners() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="filter…"
-            className="ml-auto border border-[var(--color-line)] bg-[var(--color-surface)] px-2 py-1 text-[11px] text-[var(--color-fg)] placeholder:text-[var(--color-dim)] outline-none focus:border-[var(--color-fg)]"
+            className="ml-auto border border-[var(--color-line)] bg-[var(--color-surface)] px-2 py-1 text-[13px] text-[var(--color-fg)] placeholder:text-[var(--color-dim)] outline-none focus:border-[var(--color-fg)]"
           />
         </nav>
       </header>
@@ -100,14 +100,14 @@ export default function Spinners() {
               key={s.id}
               className="tile group relative flex min-h-[140px] flex-col items-center justify-between gap-3 p-4"
             >
-              <span className="absolute left-2 top-2 text-[10px] tracking-[0.18em] text-[var(--color-dim)]">{s.family}</span>
-              <span className="absolute right-2 top-2 text-[10px] tabular-nums text-[var(--color-line)]">{String(s.Component.interval)}ms</span>
+              <span className="absolute left-2 top-2 text-[12px] tracking-[0.18em] text-[var(--color-dim)]">{s.family}</span>
+              <span className="absolute right-2 top-2 text-[12px] tabular-nums text-[var(--color-line)]">{String(s.Component.interval)}ms</span>
 
               <div className="grid flex-1 place-items-center">
                 <S size={size} color="var(--color-fg)" />
               </div>
 
-              <div className="flex w-full items-center justify-between border-t border-[var(--color-line)] pt-2 text-[11px]">
+              <div className="flex w-full items-center justify-between border-t border-[var(--color-line)] pt-2 text-[13px]">
                 <span className="text-[var(--color-fg)]">{s.name}</span>
                 <span className="tabular-nums text-[var(--color-dim)]">{s.Component.frames.length}f</span>
               </div>
@@ -122,7 +122,7 @@ export default function Spinners() {
         </div>
       )}
 
-      <footer className="flex items-center justify-between border-t border-[var(--color-line)] pt-3 text-[11px] text-[var(--color-dim)]">
+      <footer className="flex items-center justify-between border-t border-[var(--color-line)] pt-3 text-[13px] text-[var(--color-dim)]">
         <span>showing {visible.length} of {SPINNERS.length}</span>
         <span className="tracking-[0.1em]">54 spinners · mit license · <a href="https://github.com/Eronred/expo-agent-spinners" target="_blank" rel="noreferrer" data-interactive className="hover:text-[var(--color-fg)]">upstream</a></span>
       </footer>

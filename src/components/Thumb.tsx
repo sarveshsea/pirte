@@ -153,7 +153,7 @@ export function ThumbTime() {
   })
   return (
     <div className="grid h-full place-items-center overflow-hidden">
-      <pre ref={preRef} className="m-0 whitespace-pre text-[var(--color-fg)] text-[10px] leading-[1.1]" />
+      <pre ref={preRef} className="m-0 whitespace-pre text-[var(--color-fg)] text-[12px] leading-[1.1]" />
     </div>
   )
 }

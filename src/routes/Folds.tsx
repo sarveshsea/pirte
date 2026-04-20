@@ -196,7 +196,7 @@ function ASCIIGlobe() {
   }, [])
   return (
     <div className="grid h-full w-full place-items-center" style={{ background: '#0a1436' }}>
-      <pre ref={preRef} className="m-0 whitespace-pre text-[10px] leading-[1.0]" style={{ color: '#a6d7ff' }} />
+      <pre ref={preRef} className="m-0 whitespace-pre text-[12px] leading-[1.0]" style={{ color: '#a6d7ff' }} />
     </div>
   )
 }
@@ -233,14 +233,14 @@ function ZineCover({ seed }: { seed: number }) {
   return (
     <div className="relative flex h-full w-full flex-col justify-between p-5" style={{ background: '#1b2aa3', color: '#e0e6ff' }}>
       <div>
-        <div className="text-[10px] tracking-[0.2em] opacity-70">practica artistica</div>
-        <div className="mt-1 text-[10px] tracking-[0.1em] opacity-50">vol. {num} · folds</div>
+        <div className="text-[12px] tracking-[0.2em] opacity-70">practica artistica</div>
+        <div className="mt-1 text-[12px] tracking-[0.1em] opacity-50">vol. {num} · folds</div>
       </div>
       <div>
         <div className="text-[22px] leading-[1.05] tracking-[-0.01em]">it all folds<br/>to where<br/>it came from.</div>
-        <div className="mt-3 text-[10px] tracking-[0.15em] opacity-70">sarvesh · 2026</div>
+        <div className="mt-3 text-[12px] tracking-[0.15em] opacity-70">sarvesh · 2026</div>
       </div>
-      <div className="absolute right-4 top-4 flex h-6 w-6 items-center justify-center border border-[#e0e6ff]/40 text-[10px]">?</div>
+      <div className="absolute right-4 top-4 flex h-6 w-6 items-center justify-center border border-[#e0e6ff]/40 text-[12px]">?</div>
     </div>
   )
 }
@@ -346,7 +346,7 @@ function SilhouetteCrest({ seed }: { seed: number }) {
   }, [seed])
   return (
     <div className="grid h-full w-full place-items-center" style={{ background: '#f4f3ed' }}>
-      <pre className="m-0 whitespace-pre text-[11px] leading-[0.95] text-[#111]">{lines}</pre>
+      <pre className="m-0 whitespace-pre text-[13px] leading-[0.95] text-[#111]">{lines}</pre>
     </div>
   )
 }
@@ -374,7 +374,7 @@ function PieceCard({
         <span className="tile-bracket br" aria-hidden />
         <div className="absolute inset-0">{children}</div>
       </div>
-      <figcaption className="mt-2 flex items-start justify-between gap-2 text-[11px]">
+      <figcaption className="mt-2 flex items-start justify-between gap-2 text-[13px]">
         <div>
           <div className="text-[var(--color-fg)]">{meta.title}</div>
           <div className="text-[var(--color-dim)]">{meta.medium} · {meta.year}</div>
@@ -437,13 +437,13 @@ export default function Folds() {
                 className={`!px-3 !py-1 ${t === tab ? '!border-[var(--color-fg)] text-[var(--color-fg)]' : '!border-transparent text-[var(--color-dim)]'}`}
               >
                 {t}
-                {t !== 'all' && tab === t && <span className="ml-2 text-[10px] text-[var(--color-dim)]">{filtered.length}</span>}
+                {t !== 'all' && tab === t && <span className="ml-2 text-[12px] text-[var(--color-dim)]">{filtered.length}</span>}
               </button>
             ))}
           </nav>
           <div className="ml-auto flex items-center gap-3">
             <div className="flex items-center gap-2 rounded-[6px] border border-[var(--color-line)] bg-[var(--color-surface)] px-3 py-1.5">
-              <span className="text-[11px] text-[var(--color-dim)]">⌕</span>
+              <span className="text-[13px] text-[var(--color-dim)]">⌕</span>
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
@@ -458,9 +458,9 @@ export default function Folds() {
         <div className="flex items-end justify-between gap-6">
           <div>
             <h1 className="text-[40px] leading-none tracking-[-0.02em] text-[var(--color-fg)]">it all folds to where it came from.</h1>
-            <div className="mt-2 text-[11px] tracking-[0.12em] text-[var(--color-dim)]">{filtered.length} pieces · curated · last updated just now</div>
+            <div className="mt-2 text-[13px] tracking-[0.12em] text-[var(--color-dim)]">{filtered.length} pieces · curated · last updated just now</div>
           </div>
-          <div className="hidden flex-col items-end text-[11px] text-[var(--color-dim)] md:flex">
+          <div className="hidden flex-col items-end text-[13px] text-[var(--color-dim)] md:flex">
             <span>a small room of generative symmetry,</span>
             <span>dense typography, and quiet noise.</span>
           </div>

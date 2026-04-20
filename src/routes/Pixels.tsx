@@ -160,8 +160,8 @@ export default function Pixels() {
         }
       >
         <div className="relative grid h-[72vh] place-items-center p-4">
-          {loading && <span className="text-[11px] tracking-[0.1em] text-[var(--color-dim)]">processing image…</span>}
-          {error && !loading && <span className="text-[11px] tracking-[0.1em] text-[#ff7a7a]">{error}</span>}
+          {loading && <span className="text-[13px] tracking-[0.1em] text-[var(--color-dim)]">processing image…</span>}
+          {error && !loading && <span className="text-[13px] tracking-[0.1em] text-[#ff7a7a]">{error}</span>}
           {puzzle && filled && !loading && (
             <div
               className="grid aspect-square max-h-full max-w-full border border-[var(--color-line)]"
@@ -201,7 +201,7 @@ export default function Pixels() {
 
       <div className="flex flex-col gap-6">
         <Tile label="image source">
-          <div className="flex flex-col gap-2 p-3 text-[11px] tracking-[0.06em]">
+          <div className="flex flex-col gap-2 p-3 text-[13px] tracking-[0.06em]">
             <input
               ref={fileInputRef}
               type="file"
@@ -219,7 +219,7 @@ export default function Pixels() {
                 onChange={(e) => setUrlInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') onLoadUrl() }}
                 placeholder="paste image url"
-                className="min-w-0 flex-1 border border-[var(--color-line)] bg-transparent px-2 py-1 text-[11px] text-[var(--color-fg)] placeholder:text-[var(--color-dim)] focus:border-[var(--color-fg)] focus:outline-none"
+                className="min-w-0 flex-1 border border-[var(--color-line)] bg-transparent px-2 py-1 text-[13px] text-[var(--color-fg)] placeholder:text-[var(--color-dim)] focus:border-[var(--color-fg)] focus:outline-none"
               />
               <button data-interactive onClick={onLoadUrl}>load</button>
             </div>
@@ -235,11 +235,11 @@ export default function Pixels() {
               data-interactive
               onClick={rebuildCurrent}
               disabled={!puzzle || puzzle.source.kind === 'upload'}
-              className="text-[11px] tracking-[0.06em] disabled:opacity-40"
+              className="text-[13px] tracking-[0.06em] disabled:opacity-40"
             >
               reprocess
             </button>
-            <span className="text-[10px] text-[var(--color-dim)]">
+            <span className="text-[12px] text-[var(--color-dim)]">
               reprocess works for random and url sources. for uploads, re-upload to apply new settings.
             </span>
           </div>
@@ -252,7 +252,7 @@ export default function Pixels() {
                 key={i}
                 data-interactive
                 onClick={() => setSelected(i)}
-                className={`flex aspect-square items-center justify-center !border ${i === selected ? '!border-[var(--color-fg)]' : '!border-[var(--color-line)]'} text-[11px] !p-0`}
+                className={`flex aspect-square items-center justify-center !border ${i === selected ? '!border-[var(--color-fg)]' : '!border-[var(--color-line)]'} text-[13px] !p-0`}
                 style={{ background: `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`, color: (rgb[0] + rgb[1] + rgb[2]) / 3 > 140 ? '#000' : '#fff' }}
               >
                 {i}
@@ -262,7 +262,7 @@ export default function Pixels() {
         </Tile>
 
         <Tile label="actions">
-          <div className="flex flex-col gap-2 p-3 text-[11px] tracking-[0.06em]">
+          <div className="flex flex-col gap-2 p-3 text-[13px] tracking-[0.06em]">
             <button data-interactive onClick={() => puzzle && setFilled(new Uint8Array(puzzle.size * puzzle.size))}>reset fills</button>
             <button data-interactive onClick={() => puzzle && setFilled(new Uint8Array(puzzle.cells.map(() => 1)))}>solve</button>
           </div>
@@ -277,7 +277,7 @@ export default function Pixels() {
                 className="block w-full border border-[var(--color-line)]"
                 style={{ imageRendering: 'pixelated' }}
               />
-              <span className="mt-2 block text-[10px] text-[var(--color-dim)]">
+              <span className="mt-2 block text-[12px] text-[var(--color-dim)]">
                 {puzzle.size}×{puzzle.size} · {puzzle.palette.length} colors · {pct}% filled
               </span>
             </div>

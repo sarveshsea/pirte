@@ -96,7 +96,7 @@ function WorldMap({ iss }: { iss: ISSData | null }) {
     return arr.map((r) => r.join('')).join('\n')
   }, [iss?.latitude, iss?.longitude])
   return (
-    <pre className="m-0 whitespace-pre p-4 text-[10px] leading-[1.1] text-[var(--color-fg)]">
+    <pre className="m-0 whitespace-pre p-4 text-[12px] leading-[1.1] text-[var(--color-fg)]">
       {lines}
     </pre>
   )
@@ -117,18 +117,18 @@ function MissionClock() {
   const secs = Math.floor((ms / 1000) % 60)
   return (
     <div className="flex flex-col gap-3 p-4">
-      <div className="text-[11px] tracking-[0.12em] text-[var(--color-dim)]">continuous human presence</div>
+      <div className="text-[13px] tracking-[0.12em] text-[var(--color-dim)]">continuous human presence</div>
       <div className="flex items-baseline gap-3 tabular-nums text-[var(--color-fg)]">
         <span className="text-[42px] leading-none">{days.toLocaleString()}</span>
-        <span className="text-[11px] tracking-[0.1em] text-[var(--color-dim)]">days</span>
+        <span className="text-[13px] tracking-[0.1em] text-[var(--color-dim)]">days</span>
       </div>
       <div className="tabular-nums text-[var(--color-dim)]">
         {String(hours).padStart(2, '0')}h {String(mins).padStart(2, '0')}m {String(secs).padStart(2, '0')}s
       </div>
-      <div className="mt-2 border-t border-[var(--color-line)] pt-3 text-[11px] text-[var(--color-dim)]">
+      <div className="mt-2 border-t border-[var(--color-line)] pt-3 text-[13px] text-[var(--color-dim)]">
         since <span className="text-[var(--color-fg)]">nov 02, 2000 · 09:21 utc</span>
       </div>
-      <div className="text-[11px] text-[var(--color-dim)]">expedition 1 · krikalev, shepherd, gidzenko</div>
+      <div className="text-[13px] text-[var(--color-dim)]">expedition 1 · krikalev, shepherd, gidzenko</div>
     </div>
   )
 }
@@ -172,7 +172,7 @@ export default function Orbit() {
                     key={s.id}
                     data-interactive
                     onClick={() => setStreamIdx(i)}
-                    className={`ml-1 !px-2 !py-0.5 text-[11px] ${i === streamIdx ? '!border-[var(--color-fg)] text-[var(--color-fg)]' : 'text-[var(--color-dim)]'}`}
+                    className={`ml-1 !px-2 !py-0.5 text-[13px] ${i === streamIdx ? '!border-[var(--color-fg)] text-[var(--color-fg)]' : 'text-[var(--color-dim)]'}`}
                   >
                     {s.label}
                   </button>
@@ -195,7 +195,7 @@ export default function Orbit() {
             <span aria-hidden className="pointer-events-none absolute right-2 top-2 h-3 w-3 border-r border-t border-[var(--color-fg)]/60" />
             <span aria-hidden className="pointer-events-none absolute left-2 bottom-2 h-3 w-3 border-l border-b border-[var(--color-fg)]/60" />
             <span aria-hidden className="pointer-events-none absolute right-2 bottom-2 h-3 w-3 border-r border-b border-[var(--color-fg)]/60" />
-            <div aria-hidden className="pointer-events-none absolute left-3 top-3 flex items-center gap-2 text-[11px] text-[var(--color-fg)]">
+            <div aria-hidden className="pointer-events-none absolute left-3 top-3 flex items-center gap-2 text-[13px] text-[var(--color-fg)]">
               <span className="inline-block h-2 w-2 rounded-full bg-[#ff4b5e]" style={{ boxShadow: '0 0 8px #ff4b5e' }} />
               <span className="tracking-[0.12em]">live · iss</span>
             </div>
@@ -223,7 +223,7 @@ export default function Orbit() {
             ) : (
               <div className="text-[var(--color-dim)]">fetching telemetry…</div>
             )}
-            <div className="mt-2 text-[11px] text-[var(--color-dim)]">source · wheretheiss.at · norad 25544</div>
+            <div className="mt-2 text-[13px] text-[var(--color-dim)]">source · wheretheiss.at · norad 25544</div>
           </div>
         </Tile>
 

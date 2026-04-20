@@ -60,7 +60,7 @@ const TRANSITION = { duration: 0.14, ease: [0.2, 0.7, 0.2, 1] as [number, number
 
 function RouteLoader() {
   return (
-    <div className="grid place-items-center gap-3 py-24 text-[11px] tracking-[0.18em] text-[var(--color-dim)]">
+    <div className="grid place-items-center gap-3 py-24 text-[13px] tracking-[0.18em] text-[var(--color-dim)]">
       <DotsSpinner size={20} color="var(--color-fg)" />
       <span>loading…</span>
     </div>

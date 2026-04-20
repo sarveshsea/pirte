@@ -59,7 +59,7 @@ export default function CommandPalette({ open, onClose, commands }: Props) {
               if (e.key === 'Escape')    onClose()
             }}
           />
-          <span className="text-[11px] text-[var(--color-dim)]">esc</span>
+          <span className="text-[13px] text-[var(--color-dim)]">esc</span>
         </div>
         <ul className="max-h-[50vh] overflow-auto">
           {filtered.length === 0 && (
@@ -74,7 +74,7 @@ export default function CommandPalette({ open, onClose, commands }: Props) {
               className={`flex cursor-none items-center justify-between px-3 py-2 text-[13px] ${i === idx ? 'bg-[var(--color-line)] text-[var(--color-fg)]' : 'text-[var(--color-dim)]'}`}
             >
               <span>{c.label}</span>
-              {c.hint && <span className="text-[11px] text-[var(--color-dim)]">{c.hint}</span>}
+              {c.hint && <span className="text-[13px] text-[var(--color-dim)]">{c.hint}</span>}
             </li>
           ))}
         </ul>

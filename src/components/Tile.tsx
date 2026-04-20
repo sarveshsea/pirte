@@ -72,7 +72,7 @@ export default function Tile({ label, code, to, children, className = '', style,
       )}
       {accent && interactive && <span className="tile-sheen" aria-hidden />}
       {starBtn}
-      <header className="flex items-center justify-between border-b border-[var(--color-line)] px-4 py-2.5 text-[11px] tracking-[0.06em] text-[var(--color-dim)]">
+      <header className="flex items-center justify-between border-b border-[var(--color-line)] px-4 py-2.5 text-[13px] tracking-[0.06em] text-[var(--color-dim)]">
         <span className="tile-label flex items-center gap-2">
           {accent && <span className="tile-dot" aria-hidden />}
           {label}
@@ -81,7 +81,7 @@ export default function Tile({ label, code, to, children, className = '', style,
       </header>
       <div className="relative flex-1 overflow-hidden">{children}</div>
       {footer && (
-        <footer className="relative border-t border-[var(--color-line)] px-4 py-2.5 text-[11px] text-[var(--color-dim)]">
+        <footer className="relative border-t border-[var(--color-line)] px-4 py-2.5 text-[13px] text-[var(--color-dim)]">
           {footer}
           {interactive && <span className="tile-chevron" aria-hidden>→</span>}
         </footer>

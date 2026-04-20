@@ -32,9 +32,9 @@ module crashed
 
 ${err.name}: ${err.message}
 `}</pre>
-        <details className="text-[11px] text-[var(--color-dim)]">
+        <details className="text-[13px] text-[var(--color-dim)]">
           <summary className="cursor-none select-none">stack</summary>
-          <pre className="mt-2 whitespace-pre-wrap text-[10px] leading-[1.5]">{err.stack ?? '(no stack)'}</pre>
+          <pre className="mt-2 whitespace-pre-wrap text-[12px] leading-[1.5]">{err.stack ?? '(no stack)'}</pre>
         </details>
         <div className="flex items-center gap-3 text-[12px]">
           <button data-interactive onClick={this.reset}>[ restart module ]</button>

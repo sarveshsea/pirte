@@ -26,7 +26,7 @@ const Pane = forwardRef<HTMLDivElement, Props>(function Pane(
       }`}
       style={{ borderRadius: '6px', background: 'var(--color-surface)' }}
     >
-      <header className="flex shrink-0 items-center justify-between border-b border-[var(--color-line)] px-3 py-1.5 text-[11px]">
+      <header className="flex shrink-0 items-center justify-between border-b border-[var(--color-line)] px-3 py-1.5 text-[13px]">
         <div className="flex items-center gap-2">
           <span className={`inline-block h-[8px] w-[8px] rounded-full ${focused ? 'bg-[var(--color-fg)]' : 'bg-[var(--color-line)]'}`} />
           <span className="tracking-[0.08em] text-[var(--color-fg)]">{entry?.label ?? route}</span>
@@ -49,7 +49,7 @@ const Pane = forwardRef<HTMLDivElement, Props>(function Pane(
       </header>
       <div className="relative min-h-0 flex-1 overflow-auto p-3">
         {Content ? (
-          <Suspense fallback={<div className="p-4 text-[11px] tracking-[0.18em] text-[var(--color-dim)]">loading…</div>}>
+          <Suspense fallback={<div className="p-4 text-[13px] tracking-[0.18em] text-[var(--color-dim)]">loading…</div>}>
             <Content />
           </Suspense>
         ) : <div className="p-4 text-[var(--color-dim)]">unknown module · {route}</div>}

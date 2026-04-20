@@ -139,7 +139,7 @@ export default function Attractors() {
 
       <Tile label="params">
         <div className="flex h-full flex-col gap-3 p-3">
-          <div className="flex gap-1 text-[11px] tracking-[0.06em]">
+          <div className="flex gap-1 text-[13px] tracking-[0.06em]">
             {(['clifford', 'dejong', 'lorenz'] as AttractorKind[]).map((k) => (
               <button
                 key={k}

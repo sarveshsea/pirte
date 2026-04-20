@@ -186,7 +186,7 @@ export default function WM({ open, onClose }: Props) {
   return (
     <div className="fixed inset-x-0 top-0 z-40 flex flex-col bg-[var(--color-bg)]" style={{ bottom: '28px' }}>
       {/* top menubar */}
-      <header className="flex shrink-0 items-center justify-between border-b border-[var(--color-line)] bg-[var(--color-surface)] px-4 py-2 text-[11px]">
+      <header className="flex shrink-0 items-center justify-between border-b border-[var(--color-line)] bg-[var(--color-surface)] px-4 py-2 text-[13px]">
         <div className="flex items-center gap-4">
           <span className="flex items-center gap-2 text-[var(--color-fg)]">
             <span className="inline-block h-[14px] w-[8px] rounded-[2px] bg-[var(--color-fg)]" />
@@ -198,11 +198,11 @@ export default function WM({ open, onClose }: Props) {
                 key={i}
                 data-interactive
                 onClick={() => switchWorkspace(i)}
-                className={`!px-2 !py-0.5 !text-[11px] ${i === state.current ? '!border-[var(--color-fg)] text-[var(--color-fg)]' : '!border-[var(--color-line)]'}`}
+                className={`!px-2 !py-0.5 !text-[13px] ${i === state.current ? '!border-[var(--color-fg)] text-[var(--color-fg)]' : '!border-[var(--color-line)]'}`}
                 title={`workspace ${i + 1} · shift+${i + 1}`}
               >
                 {i + 1}
-                <span className="ml-1 text-[10px] text-[var(--color-dim)]">{allLeaves(w.root).length || '·'}</span>
+                <span className="ml-1 text-[12px] text-[var(--color-dim)]">{allLeaves(w.root).length || '·'}</span>
               </button>
             ))}
           </div>
@@ -269,7 +269,7 @@ export default function WM({ open, onClose }: Props) {
                   className={`flex cursor-none items-center justify-between px-3 py-2 text-[12px] ${i === launcherIdx ? 'bg-[var(--color-line)] text-[var(--color-fg)]' : 'text-[var(--color-dim)]'}`}
                 >
                   <span>{r.label}</span>
-                  <span className="text-[11px] text-[var(--color-dim)]">{r.path}</span>
+                  <span className="text-[13px] text-[var(--color-dim)]">{r.path}</span>
                 </li>
               ))}
               {filtered.length === 0 && <li className="px-3 py-3 text-[var(--color-dim)]">no module</li>}

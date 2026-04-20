@@ -360,7 +360,7 @@ function Dive({ piece, onClose }: { piece: Piece; onClose: () => void }) {
     <div className="fixed inset-0 z-50 bg-black" role="dialog" aria-modal="true">
       <div ref={wrapRef} className="h-full w-full" />
 
-      <div className="pointer-events-none absolute inset-0 flex flex-col justify-between p-4 text-[11px]">
+      <div className="pointer-events-none absolute inset-0 flex flex-col justify-between p-4 text-[13px]">
         <div className="flex items-start justify-between">
           <div className="pointer-events-auto rounded-[6px] border border-white/15 bg-black/55 px-3 py-2 backdrop-blur-md">
             <div className="tracking-[0.1em] text-white">{piece.kind}</div>
@@ -440,12 +440,12 @@ function FractalTile({ piece, onOpen, onRegenerate }: { piece: Piece; onOpen: ()
         >
           <canvas ref={canvasRef} width={256} height={256} className="block h-full w-full" />
           {!rendered && (
-            <div className="absolute inset-0 grid place-items-center text-[10px] tracking-[0.18em] text-[var(--color-dim)]">
+            <div className="absolute inset-0 grid place-items-center text-[12px] tracking-[0.18em] text-[var(--color-dim)]">
               rendering…
             </div>
           )}
           {rendered && (
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 translate-y-full bg-gradient-to-t from-black/85 to-transparent px-2 py-2 text-[10px] tracking-[0.15em] text-white/90 opacity-0 transition-[opacity,transform] duration-150 group-hover:translate-y-0 group-hover:opacity-100">
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 translate-y-full bg-gradient-to-t from-black/85 to-transparent px-2 py-2 text-[12px] tracking-[0.15em] text-white/90 opacity-0 transition-[opacity,transform] duration-150 group-hover:translate-y-0 group-hover:opacity-100">
               ⊙ dive in · infinite zoom
             </div>
           )}
@@ -453,17 +453,17 @@ function FractalTile({ piece, onOpen, onRegenerate }: { piece: Piece; onOpen: ()
         <button
           data-interactive
           onClick={(e) => { e.stopPropagation(); onRegenerate() }}
-          className="absolute right-1.5 top-1.5 z-10 !rounded-[4px] !border-white/15 !bg-black/55 !px-1.5 !py-0.5 text-[10px] text-white/80 opacity-0 backdrop-blur-md transition-opacity hover:!border-white/60 group-hover:opacity-100"
+          className="absolute right-1.5 top-1.5 z-10 !rounded-[4px] !border-white/15 !bg-black/55 !px-1.5 !py-0.5 text-[12px] text-white/80 opacity-0 backdrop-blur-md transition-opacity hover:!border-white/60 group-hover:opacity-100"
           title="regenerate this tile"
           aria-label="regenerate"
         >↻</button>
       </div>
-      <figcaption className="flex items-start justify-between gap-2 text-[11px] leading-[1.35]">
+      <figcaption className="flex items-start justify-between gap-2 text-[13px] leading-[1.35]">
         <div>
           <div className="text-[var(--color-fg)]">{piece.kind}</div>
           <div className="break-all text-[var(--color-dim)]">{pieceLabel(piece)}</div>
         </div>
-        <span className="shrink-0 text-[10px] tracking-[0.1em] text-[var(--color-dim)]">#{piece.id.slice(-4)}</span>
+        <span className="shrink-0 text-[12px] tracking-[0.1em] text-[var(--color-dim)]">#{piece.id.slice(-4)}</span>
       </figcaption>
     </figure>
   )
@@ -540,15 +540,15 @@ export default function Fractals() {
       <header className="flex flex-wrap items-end justify-between gap-3 border-b border-[var(--color-line)] pb-4">
         <div>
           <h1 className="text-[32px] leading-none tracking-[-0.02em] text-[var(--color-fg)]">fractals</h1>
-          <div className="mt-2 text-[11px] tracking-[0.12em] text-[var(--color-dim)]">
+          <div className="mt-2 text-[13px] tracking-[0.12em] text-[var(--color-dim)]">
             generative · click a tile to dive in · scroll for more
           </div>
         </div>
-        <div className="flex items-center gap-3 text-[11px] text-[var(--color-dim)]">
+        <div className="flex items-center gap-3 text-[13px] text-[var(--color-dim)]">
           <span className="tabular-nums">{pieces.length} rendered</span>
           <span className="text-[var(--color-line)]">·</span>
           <span>seed <span className="text-[var(--color-fg)]">{seedRoot}</span></span>
-          <button data-interactive onClick={newSeed} className="!px-3 !py-1 text-[11px]">+ new seed</button>
+          <button data-interactive onClick={newSeed} className="!px-3 !py-1 text-[13px]">+ new seed</button>
         </div>
       </header>
 
@@ -563,7 +563,7 @@ export default function Fractals() {
         ))}
       </section>
 
-      <div ref={sentinelRef} className="grid h-24 place-items-center text-[11px] tracking-[0.2em] text-[var(--color-dim)]">
+      <div ref={sentinelRef} className="grid h-24 place-items-center text-[13px] tracking-[0.2em] text-[var(--color-dim)]">
         generating more…
       </div>
 

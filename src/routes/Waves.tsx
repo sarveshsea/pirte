@@ -192,8 +192,8 @@ export default function Waves() {
       <div className="flex flex-col gap-6">
         <Tile label="waves · oscilloscope" code="09" footer={<span>step {String(step + 1).padStart(2, '0')}/{STEPS}  ·  {bpm} bpm{swing > 0 ? `  ·  swing ${(swing * 100).toFixed(0)}%` : ''}</span>}>
           <div className="p-2">
-            <pre ref={scopeRef} className="m-0 whitespace-pre text-[11px] leading-[1.0] text-[var(--color-fg)]" />
-            <pre ref={specRef}  className="m-0 mt-2 whitespace-pre text-[11px] leading-[1.0] text-[var(--color-dim)]" />
+            <pre ref={scopeRef} className="m-0 whitespace-pre text-[13px] leading-[1.0] text-[var(--color-fg)]" />
+            <pre ref={specRef}  className="m-0 mt-2 whitespace-pre text-[13px] leading-[1.0] text-[var(--color-dim)]" />
           </div>
         </Tile>
 
@@ -201,7 +201,7 @@ export default function Waves() {
           <div className="flex flex-col gap-2 p-3">
             {TRACKS.map((t) => (
               <div key={t} className="grid grid-cols-[80px_1fr] items-center gap-3">
-                <span className="text-[11px] tracking-[0.1em] text-[var(--color-dim)]">{t}</span>
+                <span className="text-[13px] tracking-[0.1em] text-[var(--color-dim)]">{t}</span>
                 <div className="grid grid-cols-[repeat(16,minmax(0,1fr))] gap-1">
                   {Array.from({ length: STEPS }).map((_, s) => {
                     const on = engineRef.current?.patterns[t][s] ?? false
@@ -211,7 +211,7 @@ export default function Waves() {
                         key={s}
                         data-interactive
                         onClick={() => toggleCell(t, s)}
-                        className={`!p-0 aspect-square min-h-[22px] text-[10px] ${on ? '!border-[var(--color-fg)] bg-[var(--color-fg)] text-[var(--color-bg)]' : '!border-[var(--color-line)] text-[var(--color-dim)] hover:!border-[var(--color-dim)]'} ${isCurrent ? 'ring-1 ring-[var(--color-fg)]' : ''}`}
+                        className={`!p-0 aspect-square min-h-[22px] text-[12px] ${on ? '!border-[var(--color-fg)] bg-[var(--color-fg)] text-[var(--color-bg)]' : '!border-[var(--color-line)] text-[var(--color-dim)] hover:!border-[var(--color-dim)]'} ${isCurrent ? 'ring-1 ring-[var(--color-fg)]' : ''}`}
                         title={`${t} ${s + 1}`}
                       >
                         {s % 4 === 0 ? (s / 4 + 1) : ''}
@@ -228,7 +228,7 @@ export default function Waves() {
 
       <div className="flex flex-col gap-6">
         <Tile label="transport">
-          <div className="flex flex-col gap-2 p-3 text-[11px] tracking-[0.06em]">
+          <div className="flex flex-col gap-2 p-3 text-[13px] tracking-[0.06em]">
             <button data-interactive onClick={toggle}>{playing ? '■ stop' : '▶ play'}</button>
             <button data-interactive onClick={() => setMuted((m) => !m)}>{muted ? '🔈 unmute' : '🔇 mute'}</button>
             <button data-interactive onClick={() => { engineRef.current?.randomize(); setPatternsVersion((v) => v + 1) }}>randomize</button>
@@ -242,7 +242,7 @@ export default function Waves() {
           </div>
         </Tile>
         <Tile label="synth keys" footer={<span>monophonic saw + filter envelope</span>}>
-          <pre className="m-0 whitespace-pre p-3 text-[11px] leading-[1.4] text-[var(--color-dim)]">{`
+          <pre className="m-0 whitespace-pre p-3 text-[13px] leading-[1.4] text-[var(--color-dim)]">{`
  w e   t y u   o p
 a s d f g h j k l ;
 

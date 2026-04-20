@@ -149,8 +149,8 @@ export default function Microbes() {
         <Tile label="model" code={spec.id}>
           <div className="flex flex-col gap-2 p-4 text-[12px]">
             <div className="text-[var(--color-fg)]">{spec.phenomenon}</div>
-            <div className="text-[11px] tracking-[0.08em] text-[var(--color-dim)]">{spec.citation}</div>
-            <pre className="m-0 whitespace-pre-wrap text-[11px] leading-[1.4] text-[var(--color-fg)]">{spec.equation}</pre>
+            <div className="text-[13px] tracking-[0.08em] text-[var(--color-dim)]">{spec.citation}</div>
+            <pre className="m-0 whitespace-pre-wrap text-[13px] leading-[1.4] text-[var(--color-fg)]">{spec.equation}</pre>
           </div>
         </Tile>
 
@@ -171,7 +171,7 @@ export default function Microbes() {
                 <div key={k} className="flex items-baseline justify-between border-b border-[var(--color-line)] px-4 py-1.5 last:border-0">
                   <span className="tracking-[0.08em] text-[var(--color-dim)]">{k}</span>
                   <span className="flex items-baseline gap-3">
-                    <span className="font-mono tabular-nums text-[11px] text-[var(--color-dim)]">{spark}</span>
+                    <span className="font-mono tabular-nums text-[13px] text-[var(--color-dim)]">{spark}</span>
                     <span className="tabular-nums text-[var(--color-fg)]">{METRIC_FMT(k, v)}</span>
                   </span>
                 </div>

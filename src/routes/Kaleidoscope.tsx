@@ -168,7 +168,7 @@ export default function Kaleidoscope() {
               {paused ? 'resume' : 'pause'}
             </button>
           </div>
-          <div className="mt-3 text-[11px] leading-relaxed text-[var(--color-dim)]">
+          <div className="mt-3 text-[13px] leading-relaxed text-[var(--color-dim)]">
             spiral streams always spin · perlin field drifts and rotates · click to drop expanding rings · cursor bends the field toward you.
           </div>
         </div>

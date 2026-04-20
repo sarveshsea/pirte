@@ -10,7 +10,7 @@ type Props = {
 
 export default function Slider({ label, value, min, max, step = 1, onChange, format }: Props) {
   return (
-    <label className="block text-[11px] text-[var(--color-dim)]">
+    <label className="block text-[13px] text-[var(--color-dim)]">
       <span className="mb-1 flex items-center justify-between tracking-[0.06em]">
         <span>{label}</span>
         <span className="text-[var(--color-fg)]">{format ? format(value) : value}</span>

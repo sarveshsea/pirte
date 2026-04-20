@@ -283,7 +283,7 @@ export default function Radio() {
       >
         <div className="relative h-[60vh] w-full">
           {status.kind !== 'ready' ? (
-            <div className="grid h-full place-items-center text-[11px] tracking-[0.18em] text-[var(--color-dim)]">
+            <div className="grid h-full place-items-center text-[13px] tracking-[0.18em] text-[var(--color-dim)]">
               {status.kind === 'error' ? `unable to reach radio-browser — ${status.message}` : 'fetching world radio…'}
             </div>
           ) : (
@@ -293,7 +293,7 @@ export default function Radio() {
                 onPointerMove={onMapMove}
                 onPointerLeave={onMapLeave}
                 onClick={onMapClick}
-                className="m-0 h-full w-full whitespace-pre p-3 text-[10px] leading-[1.0] text-[var(--color-dim)]"
+                className="m-0 h-full w-full whitespace-pre p-3 text-[12px] leading-[1.0] text-[var(--color-dim)]"
                 style={{ fontVariantNumeric: 'tabular-nums' }}
               >
                 {mapText}
@@ -303,7 +303,7 @@ export default function Radio() {
               {currentCell && (
                 <span
                   aria-hidden
-                  className="pointer-events-none absolute text-[10px] leading-[1.0]"
+                  className="pointer-events-none absolute text-[12px] leading-[1.0]"
                   style={{
                     left: `calc(${(currentCell.x / COLS) * 100}% + 12px)`,
                     top: `calc(${(currentCell.y / ROWS) * 100}% + 12px)`,
@@ -316,7 +316,7 @@ export default function Radio() {
               {/* hover tooltip */}
               {hoverCell && hoverStations.length > 0 && (
                 <div
-                  className="pointer-events-none absolute rounded-[6px] border border-[var(--color-line)] bg-[var(--color-surface)]/95 px-2 py-1.5 text-[11px] backdrop-blur-md"
+                  className="pointer-events-none absolute rounded-[6px] border border-[var(--color-line)] bg-[var(--color-surface)]/95 px-2 py-1.5 text-[13px] backdrop-blur-md"
                   style={{
                     left: `calc(${(hoverCell.col / COLS) * 100}% + 24px)`,
                     top: `calc(${(hoverCell.row / ROWS) * 100}% + 4px)`,
@@ -330,7 +330,7 @@ export default function Radio() {
                     </div>
                   ))}
                   {hoverStations.length < (nearestCell(index, hoverCell.col, hoverCell.row, 1)?.stations.length ?? 0) && (
-                    <div className="text-[10px] text-[var(--color-dim)]">+ more…</div>
+                    <div className="text-[12px] text-[var(--color-dim)]">+ more…</div>
                   )}
                 </div>
               )}
@@ -349,12 +349,12 @@ export default function Radio() {
                   <div className="text-[var(--color-fg)]">{current.name}</div>
                   <div className="text-[var(--color-dim)]">{current.country} · {current.language || 'n/a'}</div>
                 </div>
-                <div className="flex flex-wrap gap-1 text-[10px]">
+                <div className="flex flex-wrap gap-1 text-[12px]">
                   {current.tags.slice(0, 4).map((t) => (
                     <span key={t} className="rounded-[4px] border border-[var(--color-line)] px-1.5 py-0.5 text-[var(--color-dim)]">{t}</span>
                   ))}
                 </div>
-                <div className="flex items-center justify-between text-[11px] text-[var(--color-dim)]">
+                <div className="flex items-center justify-between text-[13px] text-[var(--color-dim)]">
                   <span>{current.codec || 'stream'}{current.bitrate ? ` · ${current.bitrate}kbps` : ''}</span>
                   <span>{current.votes} ★ · {current.clickcount} plays</span>
                 </div>
@@ -380,7 +380,7 @@ export default function Radio() {
               placeholder="search name / country / tag…"
               className="w-full rounded-[6px] border border-[var(--color-line)] bg-[var(--color-bg)] px-2 py-1.5 text-[12px] text-[var(--color-fg)] outline-none placeholder:text-[var(--color-dim)]"
             />
-            <div className="mt-1 text-[10px] tracking-[0.15em] text-[var(--color-dim)]">country</div>
+            <div className="mt-1 text-[12px] tracking-[0.15em] text-[var(--color-dim)]">country</div>
             <div className="flex flex-wrap gap-1">
               <Chip label="any" active={!country} onClick={() => setCountry('')} />
               {countries.slice(0, 12).map((c) => (
@@ -392,7 +392,7 @@ export default function Radio() {
                 />
               ))}
             </div>
-            <div className="mt-2 text-[10px] tracking-[0.15em] text-[var(--color-dim)]">genre</div>
+            <div className="mt-2 text-[12px] tracking-[0.15em] text-[var(--color-dim)]">genre</div>
             <div className="flex flex-wrap gap-1">
               <Chip label="any" active={!tag} onClick={() => setTag('')} />
               {tags.slice(0, 14).map((t) => (
@@ -425,17 +425,17 @@ export default function Radio() {
                   className={`flex w-full items-baseline justify-between gap-2 !rounded-[4px] !border-0 !px-2 !py-1 text-left text-[12px] ${active ? 'bg-[var(--color-line)] text-[var(--color-fg)]' : 'text-[var(--color-dim)] hover:bg-[var(--color-line)]/60'}`}
                 >
                   <span className="flex min-w-0 items-baseline gap-2">
-                    <span className="shrink-0 text-[10px] uppercase tracking-[0.1em]">{s.countrycode || '—'}</span>
+                    <span className="shrink-0 text-[12px] uppercase tracking-[0.1em]">{s.countrycode || '—'}</span>
                     <span className="truncate text-[var(--color-fg)]">{s.name}</span>
                   </span>
-                  <span className="shrink-0 text-[10px] text-[var(--color-dim)]">
+                  <span className="shrink-0 text-[12px] text-[var(--color-dim)]">
                     {s.bitrate ? `${s.bitrate}` : s.codec || ''}
                   </span>
                 </button>
               )
             })}
             {countInFilter === 0 && status.kind === 'ready' && (
-              <div className="p-3 text-[11px] text-[var(--color-dim)]">no stations match · clear the filter</div>
+              <div className="p-3 text-[13px] text-[var(--color-dim)]">no stations match · clear the filter</div>
             )}
           </div>
         </Tile>
@@ -449,7 +449,7 @@ function Chip({ label, active, onClick }: { label: string; active: boolean; onCl
     <button
       data-interactive
       onClick={onClick}
-      className={`!rounded-[999px] !border !px-2 !py-0.5 text-[10px] ${active ? '!border-[var(--color-fg)] text-[var(--color-fg)]' : '!border-[var(--color-line)] text-[var(--color-dim)]'}`}
+      className={`!rounded-[999px] !border !px-2 !py-0.5 text-[12px] ${active ? '!border-[var(--color-fg)] text-[var(--color-fg)]' : '!border-[var(--color-line)] text-[var(--color-dim)]'}`}
     >
       {label}
     </button>

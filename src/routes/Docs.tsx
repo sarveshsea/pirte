@@ -89,9 +89,9 @@ export default function Docs() {
       <header className="flex items-baseline justify-between gap-6 border-b border-[var(--color-line)] pb-3">
         <div className="flex items-baseline gap-3">
           <h1 className="text-[24px] tracking-[-0.01em] text-[var(--color-fg)]">docs</h1>
-          <span className="text-[11px] tracking-[0.12em] text-[var(--color-dim)]">{totalItems} modules · keybinds · how to navigate</span>
+          <span className="text-[13px] tracking-[0.12em] text-[var(--color-dim)]">{totalItems} modules · keybinds · how to navigate</span>
         </div>
-        <Link to="/" data-interactive className="text-[11px] tracking-[0.1em] text-[var(--color-dim)] hover:text-[var(--color-fg)]">
+        <Link to="/" data-interactive className="text-[13px] tracking-[0.1em] text-[var(--color-dim)] hover:text-[var(--color-fg)]">
           ← index
         </Link>
       </header>
@@ -105,14 +105,14 @@ export default function Docs() {
                   <li key={it.path} className="p-3">
                     <div className="flex items-baseline justify-between gap-3">
                       <Link to={it.path} data-interactive className="flex items-baseline gap-2 text-[var(--color-fg)] hover:underline">
-                        <span className="text-[11px] tracking-[0.1em] text-[var(--color-dim)]">{it.code}</span>
+                        <span className="text-[13px] tracking-[0.1em] text-[var(--color-dim)]">{it.code}</span>
                         <span className="text-[13px] tracking-[0.02em]">{it.label}</span>
-                        <span className="text-[11px] text-[var(--color-dim)]">{it.path}</span>
+                        <span className="text-[13px] text-[var(--color-dim)]">{it.path}</span>
                       </Link>
                     </div>
                     <p className="mt-1 text-[12px] leading-relaxed text-[var(--color-dim)]">{it.desc}</p>
                     {it.keybinds && it.keybinds.length > 0 && (
-                      <ul className="mt-2 flex flex-wrap gap-2 text-[11px]">
+                      <ul className="mt-2 flex flex-wrap gap-2 text-[13px]">
                         {it.keybinds.map((k) => (
                           <li
                             key={k}
@@ -134,7 +134,7 @@ export default function Docs() {
           <Tile label="global keys">
             <ul className="flex flex-col divide-y divide-[var(--color-line)]">
               {GLOBAL_KEYS.map(([k, v]) => (
-                <li key={k} className="flex items-center justify-between gap-3 px-3 py-2 text-[11px]">
+                <li key={k} className="flex items-center justify-between gap-3 px-3 py-2 text-[13px]">
                   <span className="rounded-[4px] border border-[var(--color-line)] bg-[var(--color-surface)] px-2 py-0.5 text-[var(--color-fg)]">{k}</span>
                   <span className="text-right text-[var(--color-dim)]">{v}</span>
                 </li>
@@ -143,7 +143,7 @@ export default function Docs() {
           </Tile>
 
           <Tile label="about">
-            <div className="flex flex-col gap-2 p-3 text-[11px] leading-relaxed text-[var(--color-dim)]">
+            <div className="flex flex-col gap-2 p-3 text-[13px] leading-relaxed text-[var(--color-dim)]">
               <p><span className="text-[var(--color-fg)]">pirte</span> — etrip reversed. a small site of abstractions for the wandering mind.</p>
               <p>terminal ui, pure black, one accent per page. bento grid, nothing superfluous.</p>
               <p className="mt-2">
