@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import Tile from '../components/Tile'
 import Slider from '../components/Slider'
 import { prefersReducedMotion } from '../lib/canvas'
+import { rafLoop } from '../lib/rafLoop'
 import { makeStars, stepStars, renderStars, type Star } from '../modules/starfield'
 
 const FAR = 100
@@ -50,18 +51,13 @@ export default function Starfield() {
     wrap.addEventListener('pointermove', onMove)
 
     const reduce = prefersReducedMotion()
-    let raf = 0
-    let last = performance.now()
-    const loop = (t: number) => {
-      const dt = Math.min(0.05, (t - last) / 1000)
-      last = t
-      const spd = speed * (warpRef.current ? 3.5 : 1)
-      stepStars(starsRef.current, spd, dt, 0.5, FAR)
-      pre.textContent = renderStars(starsRef.current, cols, rows, steerRef.current.x, steerRef.current.y, fov, FAR)
-      if (!reduce) raf = requestAnimationFrame(loop)
-    }
-    if (reduce) pre.textContent = renderStars(starsRef.current, cols, rows, 0, 0, fov, FAR)
-    else raf = requestAnimationFrame(loop)
+    const stop = reduce
+      ? (() => { pre.textContent = renderStars(starsRef.current, cols, rows, 0, 0, fov, FAR); return () => {} })()
+      : rafLoop((_t, dt) => {
+          const spd = speed * (warpRef.current ? 3.5 : 1)
+          stepStars(starsRef.current, spd, dt, 0.5, FAR)
+          pre.textContent = renderStars(starsRef.current, cols, rows, steerRef.current.x, steerRef.current.y, fov, FAR)
+        })
 
     const onKey = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement) return
@@ -76,7 +72,7 @@ export default function Starfield() {
       ro.disconnect()
       wrap.removeEventListener('pointermove', onMove)
       window.removeEventListener('keydown', onKey)
-      if (raf) cancelAnimationFrame(raf)
+      stop()
     }
   }, [speed, fov, count])
 

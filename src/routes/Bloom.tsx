@@ -69,9 +69,16 @@ export default function Bloom() {
       return
     }
 
+    // rAF-debounced — gpu.resize reallocates rendertargets on every call
+    let pendingResize = false
     const ro = new ResizeObserver(() => {
-      const r = wrap.getBoundingClientRect()
-      gpu?.resize(r.width, r.height)
+      if (pendingResize) return
+      pendingResize = true
+      requestAnimationFrame(() => {
+        pendingResize = false
+        const r = wrap.getBoundingClientRect()
+        gpu?.resize(r.width, r.height)
+      })
     })
     ro.observe(wrap)
     const r0 = wrap.getBoundingClientRect()

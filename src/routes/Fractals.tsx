@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Renderer, Program, Mesh, Triangle } from 'ogl'
 import { mulberry32, hashString } from '../lib/rng'
+import { rafLoop } from '../lib/rafLoop'
 
 type Kind = 'mandelbrot' | 'julia' | 'burningship' | 'tricorn'
 
@@ -342,16 +343,13 @@ function Dive({ piece, onClose }: { piece: Piece; onClose: () => void }) {
       if (e.key === '-' || e.key === '_') { state.scale *= 1.17; render() }
     }
     // auto-zoom loop: hold 'z' to continuously zoom toward center
-    let animRaf = 0
     const keys = new Set<string>()
     const onKD = (e: KeyboardEvent) => { keys.add(e.key.toLowerCase()); onKey(e) }
     const onKU = (e: KeyboardEvent) => { keys.delete(e.key.toLowerCase()) }
-    const loop = () => {
+    const stopZoomLoop = rafLoop(() => {
       if (keys.has('z')) { state.scale *= 0.985; render() }
       if (keys.has('x')) { state.scale *= 1.015; render() }
-      animRaf = requestAnimationFrame(loop)
-    }
-    animRaf = requestAnimationFrame(loop)
+    })
 
     wrap.addEventListener('pointerdown', onDown)
     wrap.addEventListener('pointermove', onMove)
@@ -362,7 +360,7 @@ function Dive({ piece, onClose }: { piece: Piece; onClose: () => void }) {
 
     return () => {
       ro.disconnect()
-      if (animRaf) cancelAnimationFrame(animRaf)
+      stopZoomLoop()
       wrap.removeEventListener('pointerdown', onDown)
       wrap.removeEventListener('pointermove', onMove)
       wrap.removeEventListener('pointerup', onUp)

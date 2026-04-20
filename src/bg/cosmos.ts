@@ -84,7 +84,10 @@ export function createCosmos(): BgProgram {
       viewW = cols * cell
       viewH = rows * cell
       bandWidth = viewH * 0.22
-      NEB_SCALE = viewW * viewH > 3_000_000 ? 12 : 8
+      const isTouch = typeof matchMedia !== 'undefined'
+        && matchMedia('(pointer: coarse)').matches
+      // bigger cell = lower-res nebula = fewer fbm evals per frame
+      NEB_SCALE = isTouch ? 16 : (viewW * viewH > 3_000_000 ? 12 : 8)
       nw = Math.max(8, Math.floor(viewW / NEB_SCALE))
       nh = Math.max(8, Math.floor(viewH / NEB_SCALE))
       nebOff = document.createElement('canvas')
@@ -93,9 +96,15 @@ export function createCosmos(): BgProgram {
       nebCtx = nebOff.getContext('2d', { alpha: true })
       if (nebCtx) nebImg = nebCtx.createImageData(nw, nh)
 
-      // denser — true zoomed-out field
+      // denser — true zoomed-out field. cut star count on touch / low-power
+      // devices where a 10k+ star loop + domain-warp nebula melts battery.
+      const isCoarse = typeof matchMedia !== 'undefined'
+        && matchMedia('(pointer: coarse)').matches
+      const densityCap = isCoarse ? 3500 : 12000
+      const densityFloor = isCoarse ? 1800 : 5500
+      const densityDiv = isCoarse ? 700 : 220
       const target = Math.floor(
-        Math.max(5500, Math.min(12000, (viewW * viewH) / 220))
+        Math.max(densityFloor, Math.min(densityCap, (viewW * viewH) / densityDiv))
       )
       stars = []
 

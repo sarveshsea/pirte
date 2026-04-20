@@ -7,6 +7,7 @@ import {
   WHITE, BLACK, type RGB, type HSL,
 } from '../modules/chroma/color'
 import { harmonies, type Harmony } from '../modules/chroma/harmony'
+import { rafLoop } from '../lib/rafLoop'
 
 const INITIAL = '#6a8cff'
 
@@ -117,7 +118,6 @@ export default function Chroma() {
     const canvas = bgRef.current
     if (!canvas) return
     const ctx = canvas.getContext('2d')!
-    let raf = 0
     let W = 0, H = 0
 
     const resize = () => {
@@ -133,7 +133,7 @@ export default function Chroma() {
     const ro = new ResizeObserver(resize)
     ro.observe(canvas)
 
-    const draw = (t: number) => {
+    const stop = rafLoop((t) => {
       ctx.clearRect(0, 0, W, H)
       // deep-black base so glass panes read against something
       ctx.fillStyle = '#07080b'
@@ -163,13 +163,11 @@ export default function Chroma() {
         ctx.fillRect(0, 0, W, H)
       }
       ctx.globalCompositeOperation = 'source-over'
-      raf = requestAnimationFrame(draw)
-    }
-    raf = requestAnimationFrame(draw)
+    })
 
     return () => {
       ro.disconnect()
-      if (raf) cancelAnimationFrame(raf)
+      stop()
     }
   }, [rgb, harm])
 

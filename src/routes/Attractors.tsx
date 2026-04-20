@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import Tile from '../components/Tile'
 import Slider from '../components/Slider'
 import { fitCanvas, prefersReducedMotion } from '../lib/canvas'
+import { rafLoop } from '../lib/rafLoop'
 import {
   DEFAULTS,
   stepClifford,
@@ -65,9 +66,8 @@ export default function Attractors() {
     const canvas = canvasRef.current
     if (!canvas) return
     const ctx = canvas.getContext('2d')!
-    let raf = 0
-    let lorenzState = { x: 0.1, y: 0, z: 0 }
-    let flatState = { x: 0.1, y: 0.1 }
+    const lorenzState = { x: 0.1, y: 0, z: 0 }
+    const flatState = { x: 0.1, y: 0.1 }
 
     const resize = () => fitCanvas(canvas, ctx)
     resize()
@@ -75,13 +75,15 @@ export default function Attractors() {
     ro.observe(canvas)
 
     const reduce = prefersReducedMotion()
+    ctx.fillStyle = '#000'
+    const r = canvas.getBoundingClientRect()
+    ctx.fillRect(0, 0, r.width, r.height)
 
-    const loop = () => {
+    const step = () => {
       const { width, height } = canvas.getBoundingClientRect()
       ctx.fillStyle = `rgba(0,0,0,${trail})`
       ctx.fillRect(0, 0, width, height)
       ctx.fillStyle = '#e8e8e8'
-
       const iters = kind === 'lorenz' ? 1500 : 8000
       if (kind === 'lorenz') {
         for (let i = 0; i < iters; i++) {
@@ -99,16 +101,13 @@ export default function Attractors() {
           ctx.fillRect(px, py, 1, 1)
         }
       }
-      if (!reduce) raf = requestAnimationFrame(loop)
     }
-    ctx.fillStyle = '#000'
-    const r = canvas.getBoundingClientRect()
-    ctx.fillRect(0, 0, r.width, r.height)
-    raf = requestAnimationFrame(loop)
+
+    const stop = reduce ? (() => { step(); return () => {} })() : rafLoop(step)
 
     return () => {
       ro.disconnect()
-      if (raf) cancelAnimationFrame(raf)
+      stop()
     }
   }, [kind, lorenz, clifford, dejong, trail])
 

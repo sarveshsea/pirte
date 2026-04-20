@@ -53,7 +53,16 @@ export function toHTML(chars: string[][], kinds: Kind[][], phase: Phase): string
   return lineParts.join('\n')
 }
 
+// strings here are inlined into innerHTML (Breathe.tsx:186 is a hot path
+// that sets pre.innerHTML every rAF tick). today the glyph set is hardcoded
+// (' ', '●', '○', '◉'), but escape anything that would parse as markup so
+// a future tweak to the glyph set can't accidentally introduce injection.
+function escape(s: string): string {
+  if (s.indexOf('<') < 0 && s.indexOf('>') < 0 && s.indexOf('&') < 0) return s
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+}
+
 function emit(palette: Palette, kind: Kind, s: string): string {
-  if (kind === 'blank') return s
-  return `<span style="color:${palette[kind]}">${s}</span>`
+  if (kind === 'blank') return escape(s)
+  return `<span style="color:${palette[kind]}">${escape(s)}</span>`
 }

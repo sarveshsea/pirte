@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Tile from '../components/Tile'
 import { prefersReducedMotion } from '../lib/canvas'
+import { rafLoop } from '../lib/rafLoop'
 import {
   initState, step, render, spawnPulse, resize as resizeState,
   type SpritesState, type CursorMode,
@@ -69,18 +70,13 @@ export default function Sprites() {
     wrap.addEventListener('click', onClick)
 
     const reduce = prefersReducedMotion()
-    let raf = 0
-    let last = performance.now()
-    const loop = (t: number) => {
-      const dt = Math.min(0.05, (t - last) / 1000)
-      last = t
-      const s = stateRef.current
-      if (s && !pausedRef.current) step(s, dt)
-      if (s) pre.textContent = render(s)
-      if (!reduce) raf = requestAnimationFrame(loop)
-    }
-    if (reduce) { const s = stateRef.current; if (s) pre.textContent = render(s) }
-    else raf = requestAnimationFrame(loop)
+    const stop = reduce
+      ? (() => { const s = stateRef.current; if (s) pre.textContent = render(s); return () => {} })()
+      : rafLoop((_t, dt) => {
+          const s = stateRef.current
+          if (s && !pausedRef.current) step(s, dt)
+          if (s) pre.textContent = render(s)
+        })
 
     const onKey = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement) return
@@ -102,7 +98,7 @@ export default function Sprites() {
 
     return () => {
       ro.disconnect()
-      if (raf) cancelAnimationFrame(raf)
+      stop()
       wrap.removeEventListener('pointermove', onMove)
       wrap.removeEventListener('pointerleave', onLeave)
       wrap.removeEventListener('click', onClick)

@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import Tile from '../components/Tile'
 import Slider from '../components/Slider'
 import { prefersReducedMotion } from '../lib/canvas'
+import { rafLoop } from '../lib/rafLoop'
 import { createKaleidoscope } from '../modules/kaleidoscope/engine'
 import { PALETTES, PALETTE_NAMES } from '../modules/kaleidoscope/palettes'
 
@@ -55,7 +56,6 @@ export default function Kaleidoscope() {
     const pre = preRef.current
     const wrap = wrapRef.current
     if (!pre || !wrap) return
-    let raf = 0
     let cellW = 8
     let cellH = 16
 
@@ -77,12 +77,9 @@ export default function Kaleidoscope() {
     ro.observe(wrap)
 
     const reduce = prefersReducedMotion()
-    const loop = (now: number) => {
-      pre.innerHTML = engine.frame(now)
-      if (!reduce) raf = requestAnimationFrame(loop)
-    }
-    if (reduce) pre.innerHTML = engine.frame(performance.now())
-    else raf = requestAnimationFrame(loop)
+    const stop = reduce
+      ? (() => { pre.innerHTML = engine.frame(performance.now()); return () => {} })()
+      : rafLoop((t) => { pre.innerHTML = engine.frame(t) })
 
     const toLocal = (e: PointerEvent): { x: number; y: number } => {
       const rect = wrap.getBoundingClientRect()
@@ -107,7 +104,7 @@ export default function Kaleidoscope() {
 
     return () => {
       ro.disconnect()
-      if (raf) cancelAnimationFrame(raf)
+      stop()
       wrap.removeEventListener('pointermove', onMove)
       wrap.removeEventListener('pointerleave', onLeave)
       wrap.removeEventListener('pointerdown', onDown)

@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import Tile from '../components/Tile'
 import Slider from '../components/Slider'
 import { prefersReducedMotion } from '../lib/canvas'
+import { rafLoop } from '../lib/rafLoop'
 import { type Kind, type Phase, PHASE_LABEL, PHASE_ORDER, phaseAccent, toHTML } from '../modules/breathe/colors'
 import { setSound, tick as audioTick } from '../modules/breathe/audio'
 
@@ -49,15 +50,11 @@ export default function Breathe() {
 
   useEffect(() => {
     if (paused) return
-    let raf = 0
-    let last = performance.now()
     let elapsed = 0
     let curPhase: Phase = phase
     let localCycle = cycle
 
-    const loop = (t: number) => {
-      const dt = (t - last) / 1000
-      last = t
+    const stop = rafLoop((t, dt) => {
       elapsed += dt
       const dur = durations[curPhase]
       if (elapsed >= dur) {
@@ -77,10 +74,8 @@ export default function Breathe() {
       scaleRef.current = s
       setRem(Math.max(0, durations[curPhase] - elapsed))
       draw(preRef.current, wrapRef.current, s, curPhase, t, mode)
-      raf = requestAnimationFrame(loop)
-    }
-    raf = requestAnimationFrame(loop)
-    return () => cancelAnimationFrame(raf)
+    })
+    return stop
     /* eslint-disable-next-line */
   }, [paused, inhale, hold1, exhale, hold2, mode])
 

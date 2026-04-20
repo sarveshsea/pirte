@@ -43,8 +43,16 @@ export default function GridBackground({ program }: Props) {
       const rows = Math.ceil(window.innerHeight / CELL)
       prog.reset(cols, rows, CELL)
     }
+    // rAF-debounce resize so devtools-toggle spam doesn't thrash the canvas
+    // (each size() does a full nebula reallocation).
+    let resizePending = false
+    const onResize = () => {
+      if (resizePending) return
+      resizePending = true
+      requestAnimationFrame(() => { resizePending = false; size() })
+    }
     size()
-    window.addEventListener('resize', size)
+    window.addEventListener('resize', onResize)
 
     const onMove = (e: PointerEvent) => {
       cursor.x = e.clientX
@@ -75,7 +83,7 @@ export default function GridBackground({ program }: Props) {
     })
 
     return () => {
-      window.removeEventListener('resize', size)
+      window.removeEventListener('resize', onResize)
       window.removeEventListener('pointermove', onMove)
       window.removeEventListener('pointerleave', onLeave)
       window.removeEventListener('pointerdown', onClick)
