@@ -44,7 +44,7 @@ const commands: Command[] = [
   { id: 'time',        label: 'time',        to: '/time',        hint: 'global clocks' },
   { id: 'kaleidoscope', label: 'kaleidoscope', to: '/kaleidoscope', hint: 'n-fold mirror' },
   { id: 'sprites',     label: 'sprites',     to: '/sprites',     hint: 'ascii playground' },
-  { id: 'waves',       label: 'waves',       to: '/waves',       hint: 'edm sequencer + scope' },
+  { id: 'waves',       label: 'waves',       to: '/waves',       hint: 'studio · 12 tracks · drum synths · fm/wavetable/pluck/pad · master fx · midi' },
   { id: 'doom',        label: 'doom',        to: '/doom',        hint: 'e1m1 ascii homage' },
   { id: 'breathe',     label: 'breathe',     to: '/breathe',     hint: 'box-breathing guide' },
   { id: 'starfield',   label: 'starfield',   to: '/starfield',   hint: '3d flythrough' },

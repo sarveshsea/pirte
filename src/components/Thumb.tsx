@@ -200,30 +200,48 @@ export function ThumbWaves() {
     fitCanvas(c, ctx)
     const rect = c.getBoundingClientRect()
     const W = rect.width, H = rect.height
-    ctx.fillStyle = '#000'
+    ctx.fillStyle = '#0a0a0a'
     ctx.fillRect(0, 0, W, H)
-    ctx.strokeStyle = '#e8e8e8'
+
+    // 12-lane mini pattern grid in the top 60%
+    const gridH = H * 0.6
+    const lanes = 12
+    const steps = 32
+    const cellW = W / steps
+    const laneH = gridH / lanes
+    const phase = Math.floor(t / 200) % steps
+    for (let lane = 0; lane < lanes; lane++) {
+      for (let s = 0; s < steps; s++) {
+        const on = Math.sin(lane * 1.7 + s * 0.9) + Math.cos(lane * 0.3 + s * 1.3) > 0.4
+        const isPlay = s === phase
+        if (on) {
+          ctx.fillStyle = isPlay ? '#50ffd8' : `rgba(80,255,216,${(0.3 + (lane % 3) * 0.2).toFixed(2)})`
+          ctx.fillRect(s * cellW + 0.5, lane * laneH + 0.5, cellW - 1, laneH - 1)
+        } else if (isPlay) {
+          ctx.fillStyle = 'rgba(80,255,216,0.10)'
+          ctx.fillRect(s * cellW, lane * laneH, cellW, laneH)
+        }
+      }
+    }
+
+    // mini scope in the bottom 40%
+    const scopeY = gridH + 2
+    const scopeH = H - scopeY - 1
+    ctx.strokeStyle = '#50ffd8'
     ctx.lineWidth = 1
     ctx.beginPath()
-    // synthetic multi-sine waveform to suggest audio
     for (let x = 0; x < W; x++) {
       const p = x / W
-      const phase = t * 0.004
+      const ph = t * 0.004
       const v =
-        Math.sin(p * 28 + phase) * 0.35 +
-        Math.sin(p * 11 + phase * 1.3) * 0.25 +
-        Math.sin(p * 54 + phase * 2.1) * 0.12
-      const y = H / 2 + v * H * 0.34
+        Math.sin(p * 28 + ph) * 0.35 +
+        Math.sin(p * 11 + ph * 1.3) * 0.25 +
+        Math.sin(p * 54 + ph * 2.1) * 0.12
+      const y = scopeY + scopeH / 2 + v * scopeH * 0.45
       if (x === 0) ctx.moveTo(x, y)
       else ctx.lineTo(x, y)
     }
     ctx.stroke()
-    // spectrum bars underneath
-    ctx.fillStyle = '#6e6e6e'
-    for (let i = 0; i < 32; i++) {
-      const h = Math.abs(Math.sin(i * 0.6 + t * 0.002)) * H * 0.22
-      ctx.fillRect(i * (W / 32), H - h - 2, Math.max(1, W / 32 - 2), h)
-    }
   }, [], ref)
   return <canvas ref={ref} className="block h-full w-full" />
 }
