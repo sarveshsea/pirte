@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, type RefObject } from 'react'
 import { fitCanvas, prefersReducedMotion } from '../lib/canvas'
 import { stepClifford, DEFAULTS } from '../modules/attractors'
 import { renderKaleidoscope } from '../modules/kaleidoscope'
-import { RAMPS } from '../modules/asciiConvert'
 import { renderSevenSegment } from '../modules/sevenSegment'
 import { initState as spritesInit, step as spritesStep, render as spritesRender, type SpritesState } from '../modules/sprites'
 import { makeStars, stepStars, renderStars, type Star } from '../modules/starfield'
@@ -11,6 +10,23 @@ import { DotsSpinner, ArcSpinner, PulseSpinner, WaveSpinner, BounceSpinner, Eart
 
 const TARGET_FPS = 24
 const FRAME_MS = 1000 / TARGET_FPS
+
+// local hsv→rgb (0..1) → 0..255 triple. used by the dynamic thumbs below.
+function hsv(h: number, s: number, v: number): [number, number, number] {
+  const i = Math.floor(h * 6)
+  const f = h * 6 - i
+  const p = v * (1 - s), q = v * (1 - f * s), t = v * (1 - (1 - f) * s)
+  let r = 0, g = 0, b = 0
+  switch (i % 6) {
+    case 0: r = v; g = t; b = p; break
+    case 1: r = q; g = v; b = p; break
+    case 2: r = p; g = v; b = t; break
+    case 3: r = p; g = q; b = v; break
+    case 4: r = t; g = p; b = v; break
+    case 5: r = v; g = p; b = q; break
+  }
+  return [r * 255 | 0, g * 255 | 0, b * 255 | 0]
+}
 
 function useThrottledRaf(
   draw: (t: number) => void,
@@ -88,72 +104,153 @@ export function ThumbClifford() {
   return <canvas ref={ref} className="block h-full w-full" />
 }
 
+// live rotating ascii donut — dynamic + recognizable + fits the aesthetic
 export function ThumbAscii() {
-  // static gradient of the Detailed ramp
-  const lines = useMemo(() => {
-    const ramp = RAMPS.Detailed
-    const cols = 38, rows = 14
-    const out: string[] = []
-    for (let y = 0; y < rows; y++) {
-      let line = ''
-      for (let x = 0; x < cols; x++) {
-        const v = Math.abs(Math.sin(x * 0.2 + y * 0.4)) * (1 - y / rows)
-        const idx = Math.floor(v * (ramp.length - 1))
-        line += ramp[ramp.length - 1 - idx]
+  const preRef = useRef<HTMLPreElement>(null)
+  useThrottledRaf((t) => {
+    if (!preRef.current) return
+    const A = t * 0.0009, B = t * 0.0005
+    const cA = Math.cos(A), sA = Math.sin(A)
+    const cB = Math.cos(B), sB = Math.sin(B)
+    const cols = 40, rows = 16
+    const K1 = cols * 0.42, K2 = 5
+    const out = new Array<string>(rows * cols).fill(' ')
+    const zbuf = new Float32Array(rows * cols)
+    const LUM = '.,-~:;=!*#$@'
+    for (let theta = 0; theta < 6.283; theta += 0.14) {
+      const cT = Math.cos(theta), sT = Math.sin(theta)
+      for (let phi = 0; phi < 6.283; phi += 0.05) {
+        const cP = Math.cos(phi), sP = Math.sin(phi)
+        const circleX = 2 + cT, circleY = sT
+        const x = circleX * (cB * cP + sA * sB * sP) - circleY * cA * sB
+        const y = circleX * (sB * cP - sA * cB * sP) + circleY * cA * cB
+        const z = K2 + cA * circleX * sP + circleY * sA
+        const ooz = 1 / z
+        const xp = Math.floor(cols / 2 + K1 * ooz * x)
+        const yp = Math.floor(rows / 2 - K1 * 0.5 * ooz * y)
+        const L = cP * cT * sB - cA * cT * sP - sA * sT + cB * (cA * sT - cT * sA * sP)
+        if (L > 0 && xp >= 0 && xp < cols && yp >= 0 && yp < rows) {
+          const idx = xp + cols * yp
+          if (ooz > zbuf[idx]) {
+            zbuf[idx] = ooz
+            out[idx] = LUM[Math.floor(L * 8)] ?? '@'
+          }
+        }
       }
-      out.push(line)
     }
-    return out.join('\n')
-  }, [])
-  return <pre className="m-0 whitespace-pre text-[9px] leading-[1.0] text-[var(--color-fg)]">{lines}</pre>
+    const lines: string[] = []
+    for (let y = 0; y < rows; y++) lines.push(out.slice(y * cols, (y + 1) * cols).join(''))
+    preRef.current.textContent = lines.join('\n')
+  }, [], preRef)
+  return (
+    <div className="grid h-full w-full place-items-center" style={{ background: '#060408' }}>
+      <pre ref={preRef} className="m-0 whitespace-pre text-[10px] leading-[1.0] text-[#e8e0ff]" />
+    </div>
+  )
 }
 
+// live colorful julia morph — c traces a slow lissajous curve, hue drifts
 export function ThumbMandelbrot() {
   const ref = useRef<HTMLCanvasElement>(null)
-  useEffect(() => {
-    const c = ref.current
-    if (!c) return
+  useThrottledRaf((t) => {
+    const c = ref.current; if (!c) return
     const ctx = c.getContext('2d')!
     fitCanvas(c, ctx)
     const rect = c.getBoundingClientRect()
-    const W = Math.floor(rect.width), H = Math.floor(rect.height)
+    // small backing-store — blitted up by css. cheap + soft.
+    const W = 140, H = 88
+    c.width = W * Math.min(2, window.devicePixelRatio || 1)
+    c.height = H * Math.min(2, window.devicePixelRatio || 1)
     const img = ctx.createImageData(W, H)
-    const scale = 3
-    const cx = -0.5, cy = 0
+    const data = img.data
+    const phase = t * 0.00018
+    const cxj = Math.cos(phase) * 0.38 - 0.42
+    const cyj = Math.sin(phase * 1.3) * 0.38 + 0.12
+    const scale = 2.6
+    const aspect = W / H
+    const maxIter = 64
     for (let y = 0; y < H; y++) {
       for (let x = 0; x < W; x++) {
-        const px = cx + ((x / W) - 0.5) * scale * (W / H)
-        const py = cy + (0.5 - (y / H)) * scale
-        let zx = 0, zy = 0
+        let zx = ((x / W) - 0.5) * scale * aspect
+        let zy = (0.5 - (y / H)) * scale
         let i = 0
-        const max = 80
-        for (; i < max; i++) {
-          const nx = zx * zx - zy * zy + px
-          const ny = 2 * zx * zy + py
+        let m = 0
+        for (; i < maxIter; i++) {
+          const zx2 = zx * zx, zy2 = zy * zy
+          m = zx2 + zy2
+          if (m > 64) break
+          const nx = zx2 - zy2 + cxj
+          const ny = 2 * zx * zy + cyj
           zx = nx; zy = ny
-          if (zx * zx + zy * zy > 4) break
         }
-        const m = i >= max - 1 ? 0 : i / max
-        const v = Math.floor(Math.pow(m, 0.5) * 255)
         const k = (y * W + x) * 4
-        img.data[k] = v; img.data[k + 1] = v; img.data[k + 2] = v; img.data[k + 3] = 255
+        if (i >= maxIter - 1) {
+          data[k] = 8; data[k + 1] = 6; data[k + 2] = 14; data[k + 3] = 255
+        } else {
+          const sm = i + 1 - Math.log2(Math.max(1e-6, Math.log2(Math.max(m, 2)) / 2))
+          const tnorm = Math.pow(Math.max(0, sm / maxIter), 0.55)
+          const [r, g, b] = hsv((phase * 0.35 + tnorm * 0.35 + 0.62) % 1, 0.55, 0.14 + tnorm * 0.86)
+          data[k] = r; data[k + 1] = g; data[k + 2] = b; data[k + 3] = 255
+        }
       }
     }
-    ctx.putImageData(img, 0, 0)
-  }, [])
+    // draw to offscreen at native, then scale up onto the real canvas
+    const off = document.createElement('canvas')
+    off.width = W; off.height = H
+    off.getContext('2d')!.putImageData(img, 0, 0)
+    ctx.imageSmoothingEnabled = true
+    ctx.clearRect(0, 0, c.width, c.height)
+    ctx.drawImage(off, 0, 0, c.width, c.height)
+    // keep css size accurate
+    c.style.width = `${rect.width}px`
+    c.style.height = `${rect.height}px`
+  }, [], ref)
   return <canvas ref={ref} className="block h-full w-full" />
 }
 
+// colorful voronoi blobs from seeded palette — reads as 'quantized image', not a gray checker
 export function ThumbPixels() {
-  // static gradient grid — evokes the palette-grid feel without a network fetch
-  const n = 14
+  const n = 16
+  const cells = useMemo(() => {
+    const palette: [number, number, number][] = [
+      [255, 106, 136], [255, 160, 96],  [235, 205, 110],
+      [160, 212, 130], [100, 212, 198], [108, 150, 255],
+      [180, 138, 255], [235, 130, 200], [120, 120, 150],
+    ]
+    const nSeeds = 5 + Math.floor(Math.random() * 3)
+    const seeds = Array.from({ length: nSeeds }, () => ({
+      x: Math.random() * n,
+      y: Math.random() * n,
+      color: palette[Math.floor(Math.random() * palette.length)],
+    }))
+    const out: string[] = []
+    for (let y = 0; y < n; y++) {
+      for (let x = 0; x < n; x++) {
+        let best = 0, bestD = Infinity
+        for (let i = 0; i < seeds.length; i++) {
+          const d = (x - seeds[i].x) ** 2 + (y - seeds[i].y) ** 2
+          if (d < bestD) { bestD = d; best = i }
+        }
+        const [r, g, b] = seeds[best].color
+        // subtle edge darkening toward the border
+        const edge = 1 - 0.35 * Math.max(0, (bestD / (n * n)))
+        out.push(`rgb(${Math.floor(r * edge)},${Math.floor(g * edge)},${Math.floor(b * edge)})`)
+      }
+    }
+    return out
+  }, [])
   return (
-    <div className="grid h-full w-full" style={{ gridTemplateColumns: `repeat(${n}, 1fr)`, gridTemplateRows: `repeat(${n}, 1fr)` }}>
-      {Array.from({ length: n * n }).map((_, i) => {
-        const x = i % n, y = Math.floor(i / n)
-        const v = Math.floor(((x * 17 + y * 31) % 7) / 6 * 255)
-        return <div key={i} style={{ background: `rgb(${v},${v},${v})` }} className="border-[0.5px] border-[var(--color-bg)]" />
-      })}
+    <div
+      className="grid h-full w-full"
+      style={{
+        gridTemplateColumns: `repeat(${n}, 1fr)`,
+        gridTemplateRows: `repeat(${n}, 1fr)`,
+        gap: '1px',
+        background: '#0a0a0a',
+        padding: '1px',
+      }}
+    >
+      {cells.map((bg, i) => <div key={i} style={{ background: bg }} />)}
     </div>
   )
 }

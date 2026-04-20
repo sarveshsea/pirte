@@ -127,12 +127,10 @@ export default function Index() {
             key={m.to}
             to={m.to}
             label={m.label}
-            code={m.code}
             className={m.span ?? ''}
             footer={<span>{m.desc}</span>}
             starred={favs.includes(m.to)}
             onToggleStar={() => onToggleFav(m.to)}
-            accent={m.accent}
           >
             <div className="h-full w-full">{m.thumb}</div>
           </Tile>
