@@ -58,7 +58,7 @@ export default function StatusBar({ onPalette, onShortcuts, onWM }: Props) {
         <span>session {formatElapsed(now - start)}</span>
         <span>{fps}fps</span>
         {onWM && (
-          <button onClick={onWM} className="!border-0 !px-0 !py-0 text-[var(--color-dim)] hover:text-[var(--color-fg)]" title="tiling window manager · alt+space">
+          <button onClick={onWM} className="!border-0 !px-0 !py-0 text-[var(--color-dim)] hover:text-[var(--color-fg)]" title="tiling window manager · shift+space">
             ▦ wm
           </button>
         )}

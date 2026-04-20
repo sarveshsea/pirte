@@ -33,7 +33,7 @@ export function createKaleidoscope(cfg: Config): Kaleidoscope {
   let backdropT = 0
   let lastT = 0
   let palIdx = 0
-  let world: World = createWorld(Math.PI / n, Math.min(W, H) * 0.48)
+  const world: World = createWorld(Math.PI / n, Math.min(W, H) * 0.48)
   seedShards(world, 20, rand)
   let cursorX = 0.35, cursorY = 0.35  // world-space, pre-fold (just a default)
   let cursorActive = false

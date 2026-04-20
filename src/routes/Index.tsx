@@ -88,7 +88,7 @@ export default function Index() {
             <h1 className="text-[40px] leading-none tracking-[-0.02em] text-[var(--color-fg)]">pirte</h1>
             <span className="text-[11px] tracking-[0.18em] text-[var(--color-dim)]">etrip · abstractions for the wandering mind</span>
           </div>
-          <span className="text-[11px] tracking-[0.1em] text-[var(--color-dim)]">press ⌘k · jump · ? shortcuts · alt+space wm</span>
+          <span className="text-[11px] tracking-[0.1em] text-[var(--color-dim)]">press ⌘k · jump · ? shortcuts · ⇧space wm</span>
         </div>
         <div className="grid grid-cols-2 gap-2 text-[11px] text-[var(--color-dim)] md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-7">
           {CITIES.map((c) => (

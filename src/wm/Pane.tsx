@@ -37,13 +37,13 @@ const Pane = forwardRef<HTMLDivElement, Props>(function Pane(
             data-interactive
             onClick={(e) => { e.stopPropagation(); onSwap() }}
             className="!border-0 !px-1 !py-0 hover:text-[var(--color-fg)]"
-            title="swap module (alt+d)"
+            title="swap module (shift+d)"
           >swap</button>
           <button
             data-interactive
             onClick={(e) => { e.stopPropagation(); onClose() }}
             className="!border-0 !px-1 !py-0 hover:text-[var(--color-fg)]"
-            title="close pane (alt+q)"
+            title="close pane (shift+q)"
           >×</button>
         </div>
       </header>

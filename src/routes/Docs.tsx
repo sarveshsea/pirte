@@ -73,7 +73,7 @@ const SECTIONS: Section[] = [
 const GLOBAL_KEYS: [string, string][] = [
   ['⌘k / ctrl+k', 'command palette — jump to any module'],
   ['?',           'toggle shortcuts overlay'],
-  ['alt+space',   'tiling window manager overlay'],
+  ['shift+space', 'tiling window manager overlay'],
   ['[ / ]',       'previous / next module'],
   ['h',           'home'],
 ]
