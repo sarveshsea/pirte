@@ -18,6 +18,7 @@ export const ROUTE_ORDER = [
   { path: '/spinners',     label: 'spinners',     code: '19' },
   { path: '/microbes',     label: 'microbes',     code: '20' },
   { path: '/chroma',       label: 'chroma',       code: '21' },
+  { path: '/bloom',        label: 'bloom',        code: '22' },
 ]
 
 export default function PageNav() {

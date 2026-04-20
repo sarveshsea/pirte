@@ -30,6 +30,7 @@ const Radio        = lazy(() => import('./routes/Radio'))
 const SpinnersPage = lazy(() => import('./routes/Spinners'))
 const Microbes     = lazy(() => import('./routes/Microbes'))
 const Chroma       = lazy(() => import('./routes/Chroma'))
+const Bloom        = lazy(() => import('./routes/Bloom'))
 const Docs         = lazy(() => import('./routes/Docs'))
 const NotFound     = lazy(() => import('./routes/NotFound'))
 
@@ -52,6 +53,7 @@ const commands: Command[] = [
   { id: 'spinners',    label: 'spinners',    to: '/spinners',    hint: '54 terminal-style agent spinners' },
   { id: 'microbes',    label: 'microbes',    to: '/microbes',    hint: 'real biology · physarum · turing · chemotaxis · fitzhugh' },
   { id: 'chroma',      label: 'chroma',      to: '/chroma',      hint: 'liquid color exploration · harmony · contrast' },
+  { id: 'bloom',       label: 'bloom',       to: '/bloom',       hint: 'wet-on-wet watercolor · drag to paint' },
 ]
 
 const TRANSITION = { duration: 0.14, ease: [0.2, 0.7, 0.2, 1] as [number, number, number, number] }
@@ -102,6 +104,7 @@ function AnimatedRoutes() {
               <Route path="/spinners" element={<SpinnersPage />} />
               <Route path="/microbes" element={<Microbes />} />
               <Route path="/chroma" element={<Chroma />} />
+              <Route path="/bloom" element={<Bloom />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>

@@ -20,6 +20,7 @@ import {
   ThumbSpinners,
   ThumbMicrobes,
   ThumbChroma,
+  ThumbBloom,
 } from '../components/Thumb'
 
 type Tag = 'visual' | 'interactive' | 'audio' | 'meditative' | 'live' | 'game'
@@ -42,6 +43,7 @@ const MODULES: Mod[] = [
   { to: '/spinners',     label: 'spinners',     code: '19', desc: '54 terminal-style spinners',        thumb: <ThumbSpinners />,                                           tags: ['visual'],                         accent: '#d8d8d8' },
   { to: '/microbes',     label: 'microbes',     code: '20', desc: 'real biology · ascii data-art',     thumb: <ThumbMicrobes />,     span: 'lg:col-span-2',                tags: ['visual', 'live'],                 accent: '#b8d8a8' },
   { to: '/chroma',       label: 'chroma',       code: '21', desc: 'liquid glass · color data',        thumb: <ThumbChroma />,       span: 'lg:col-span-2',                tags: ['visual', 'interactive'],          accent: '#a8b8ff' },
+  { to: '/bloom',        label: 'bloom',        code: '22', desc: 'wet-on-wet watercolor · drag to paint', thumb: <ThumbBloom />,     span: 'lg:col-span-2',                tags: ['visual', 'interactive', 'meditative'], accent: '#c8d4ff' },
 ]
 
 const TAGS: (Tag | 'all' | 'pinned')[] = ['all', 'pinned', 'visual', 'interactive', 'audio', 'meditative', 'live', 'game']

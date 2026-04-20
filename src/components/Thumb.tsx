@@ -521,3 +521,54 @@ export function ThumbChroma() {
   })
   return <canvas ref={ref} className="block h-full w-full" />
 }
+
+/* bloom thumb — static watercolor "blossom" rendered once via multiple
+   overlapping radial gradients on a warm paper background. evokes wet-on-wet
+   bleed without running a sim. */
+export function ThumbBloom() {
+  const ref = useRef<HTMLCanvasElement>(null)
+  useEffect(() => {
+    const c = ref.current; if (!c) return
+    const ctx = c.getContext('2d')!
+    fitCanvas(c, ctx)
+    const rect = c.getBoundingClientRect()
+    const W = rect.width, H = rect.height
+
+    // warm paper
+    ctx.fillStyle = 'rgb(248,244,230)'
+    ctx.fillRect(0, 0, W, H)
+    // faint fiber grain
+    for (let i = 0; i < 180; i++) {
+      ctx.fillStyle = `rgba(140,120,90,${0.03 + Math.random() * 0.04})`
+      ctx.fillRect(Math.random() * W, Math.random() * H, 1 + Math.random() * 2, 1)
+    }
+
+    // watercolor blossoms — subtractive overlays, multiply composite
+    ctx.globalCompositeOperation = 'multiply'
+    const drops: Array<[number, number, number, string]> = [
+      // [cx, cy, r, rgba]
+      [W * 0.32, H * 0.40, Math.min(W, H) * 0.44, '83,110,190'],   // ultramarine
+      [W * 0.60, H * 0.52, Math.min(W, H) * 0.38, '155, 60, 70'],  // alizarin
+      [W * 0.48, H * 0.70, Math.min(W, H) * 0.32, '160,130, 60'],  // ochre
+    ]
+    for (const [cx, cy, r, rgb] of drops) {
+      // main body
+      const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r)
+      g.addColorStop(0,    `rgba(${rgb},0.75)`)
+      g.addColorStop(0.55, `rgba(${rgb},0.45)`)
+      g.addColorStop(0.85, `rgba(${rgb},0.22)`)
+      g.addColorStop(1,    `rgba(${rgb},0.00)`)
+      ctx.fillStyle = g
+      ctx.fillRect(0, 0, W, H)
+      // darker edge ring (capillary)
+      const ring = ctx.createRadialGradient(cx, cy, r * 0.70, cx, cy, r * 0.92)
+      ring.addColorStop(0, `rgba(${rgb},0.00)`)
+      ring.addColorStop(0.7, `rgba(${rgb},0.35)`)
+      ring.addColorStop(1, `rgba(${rgb},0.00)`)
+      ctx.fillStyle = ring
+      ctx.fillRect(0, 0, W, H)
+    }
+    ctx.globalCompositeOperation = 'source-over'
+  }, [])
+  return <canvas ref={ref} className="block h-full w-full" />
+}

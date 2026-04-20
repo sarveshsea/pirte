@@ -28,6 +28,7 @@ const SECTIONS: Section[] = [
       { path: '/ascii',      code: '03', label: 'ascii',     desc: 'image → text converter with ramp, bias, pixelate, mix controls.' },
       { path: '/pixels',     code: '05', label: 'pixels',    desc: 'upload an image, get a paint-by-number puzzle.', keybinds: ['click  fill a cell'] },
       { path: '/sprites',    code: '08', label: 'sprites',   desc: 'particle sandbox with attract/repel/vortex forces.', keybinds: ['a f v i  modes', 'click  pulse'] },
+      { path: '/bloom',      code: '22', label: 'bloom',     desc: 'wet-on-wet watercolor sim — advection + capillary flow + edge darkening. 8 pigments, 4 papers, full parameter panel.', keybinds: ['drag  paint', 'space  freeze', 'c  clear', 'r  reseed paper', 's  save png', 'm  mono', '[ ]  brush size', '1–8  pigment'] },
     ],
   },
   {

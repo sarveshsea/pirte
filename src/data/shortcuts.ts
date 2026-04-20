@@ -151,4 +151,17 @@ export const ROUTE_SHORTCUTS: Record<string, Group> = {
       { keys: '1 – 4',  label: 'pick gray-scott regime (spots · stripes · solitons · coral)' },
     ],
   },
+  '/bloom': {
+    heading: 'bloom',
+    items: [
+      { keys: 'drag',    label: 'paint a wet-on-wet brushstroke' },
+      { keys: 'space',   label: 'freeze / unfreeze the sim' },
+      { keys: 'c',       label: 'clear canvas (keeps params)' },
+      { keys: 'r',       label: 'reseed paper grain' },
+      { keys: 's',       label: 'save current canvas as png' },
+      { keys: 'm',       label: 'toggle sumi monochrome override' },
+      { keys: '[ / ]',   label: 'decrease / increase brush radius' },
+      { keys: '1 – 8',   label: 'pick pigment (sumi · ultramarine · alizarin · sienna · sap · cadmium · payne · indigo)' },
+    ],
+  },
 }
