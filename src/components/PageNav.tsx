@@ -21,6 +21,7 @@ export const ROUTE_ORDER = [
   { path: '/orbit',        label: 'orbit',        code: '17' },
   { path: '/radio',        label: 'radio',        code: '18' },
   { path: '/spinners',     label: 'spinners',     code: '19' },
+  { path: '/lenia',        label: 'lenia',        code: '20' },
 ]
 
 export default function PageNav() {
