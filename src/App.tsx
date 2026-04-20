@@ -7,6 +7,7 @@ import StatusBar from './components/StatusBar'
 import CommandPalette, { type Command } from './components/CommandPalette'
 import Shortcuts from './components/Shortcuts'
 import PageNav from './components/PageNav'
+import RouteError from './components/RouteError'
 import WM from './wm/WM'
 import Index from './routes/Index'
 import Fractals from './routes/Fractals'
@@ -62,6 +63,7 @@ function AnimatedRoutes() {
         exit={{ opacity: 0, y: -4, filter: 'blur(2px)' }}
         transition={TRANSITION}
       >
+        <RouteError resetKey={location.pathname}>
         <Routes location={location}>
           <Route path="/" element={<Index />} />
           <Route path="/fractals" element={<Fractals />} />
@@ -83,6 +85,7 @@ function AnimatedRoutes() {
           <Route path="/orbit" element={<Orbit />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
+        </RouteError>
       </motion.div>
     </AnimatePresence>
   )
