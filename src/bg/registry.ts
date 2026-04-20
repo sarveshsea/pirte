@@ -1,14 +1,14 @@
 import type { BgFactory } from './program'
-import { createRain } from './rain'
+import { createInk } from './ink'
 import { createFlow } from './flow'
 import { createLife } from './life'
 
-export type BgName = 'rain' | 'flow' | 'life' | 'off'
+export type BgName = 'ink' | 'flow' | 'life' | 'off'
 
-export const BG_NAMES: BgName[] = ['rain', 'flow', 'life', 'off']
+export const BG_NAMES: BgName[] = ['ink', 'flow', 'life', 'off']
 
 export const BG_FACTORIES: Record<Exclude<BgName, 'off'>, BgFactory> = {
-  rain: createRain,
+  ink: createInk,
   flow: createFlow,
   life: createLife,
 }
