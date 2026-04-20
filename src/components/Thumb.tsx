@@ -7,8 +7,6 @@ import { RAMPS } from '../modules/asciiConvert'
 import { renderSevenSegment } from '../modules/sevenSegment'
 import { initState as spritesInit, step as spritesStep, render as spritesRender, type SpritesState } from '../modules/sprites'
 import { makeStars, stepStars, renderStars, type Star } from '../modules/starfield'
-import { createWorld, presetRope, step as partStep, render as partRender, type World } from '../modules/particles'
-import { MAJOR } from '../modules/tarot'
 import { parseMap } from '../modules/doom/map'
 import { DotsSpinner, ArcSpinner, PulseSpinner, WaveSpinner, BounceSpinner, EarthSpinner } from './spinners'
 
@@ -262,51 +260,6 @@ export function ThumbStarfield() {
   return <pre ref={preRef} className="m-0 whitespace-pre text-[9px] leading-[1.0] text-[var(--color-fg)]" />
 }
 
-export function ThumbTarot() {
-  const art = useMemo(() => {
-    const c = MAJOR[Math.floor(Math.random() * MAJOR.length)]
-    const num = c.num.padEnd(9).slice(0, 9)
-    const name = c.name.length > 9 ? c.name.slice(0, 9) : c.name
-    const pad = Math.floor((9 - name.length) / 2)
-    const centered = ' '.repeat(pad) + name + ' '.repeat(9 - pad - name.length)
-    return [
-      '╭───────────╮',
-      `│ ${num}│`,
-      '│           │',
-      '│     ' + c.glyph + '     │',
-      '│           │',
-      `│ ${centered} │`,
-      '│           │',
-      '╰───────────╯',
-    ].join('\n')
-  }, [])
-  return (
-    <div className="grid h-full place-items-center">
-      <pre className="m-0 whitespace-pre text-[11px] leading-[1.1] text-[var(--color-fg)]">{art}</pre>
-    </div>
-  )
-}
-
-export function ThumbParticles() {
-  const preRef = useRef<HTMLPreElement>(null)
-  const worldRef = useRef<World | null>(null)
-  useEffect(() => {
-    const w = createWorld(34, 14)
-    presetRope(w, 34, 14)
-    worldRef.current = w
-  }, [])
-  useThrottledRaf(() => {
-    if (!preRef.current || !worldRef.current) return
-    const w = worldRef.current
-    // gentle wind on the tip of the rope
-    const tail = w.points[w.points.length - 1]
-    if (tail) { tail.x += (Math.random() - 0.5) * 0.3 }
-    partStep(w, 1 / 24)
-    preRef.current.textContent = partRender(w, null)
-  })
-  return <pre ref={preRef} className="m-0 whitespace-pre text-[10px] leading-[1.0] text-[var(--color-fg)]" />
-}
-
 export function ThumbOrbit() {
   const ref = useRef<HTMLCanvasElement>(null)
   useEffect(() => {
@@ -372,48 +325,6 @@ export function ThumbFolds() {
       <pre className="m-0 whitespace-pre text-[9px] leading-[1.0] text-[#eaeaea]">{lines}</pre>
     </div>
   )
-}
-
-export function ThumbCyber() {
-  const ref = useRef<HTMLCanvasElement>(null)
-  const dropsRef = useRef<number[]>([])
-  useEffect(() => {
-    const c = ref.current; if (!c) return
-    const ctx = c.getContext('2d')!
-    fitCanvas(c, ctx)
-    const rect = c.getBoundingClientRect()
-    const FONT = 11
-    const cols = Math.max(1, Math.floor(rect.width / FONT))
-    dropsRef.current = Array.from({ length: cols }, () => Math.floor(Math.random() * (rect.height / FONT)))
-    ctx.fillStyle = '#0a0014'
-    ctx.fillRect(0, 0, rect.width, rect.height)
-  }, [])
-  useThrottledRaf(() => {
-    const c = ref.current; if (!c) return
-    const ctx = c.getContext('2d')!
-    const rect = c.getBoundingClientRect()
-    const FONT = 11
-    const cols = dropsRef.current.length
-    ctx.fillStyle = 'rgba(10,0,20,0.22)'
-    ctx.fillRect(0, 0, rect.width, rect.height)
-    ctx.font = `${FONT}px "JetBrains Mono Variable", monospace`
-    const KATA = 'アイウエオカキクケコサシスセソタチツテトナ0123456789'
-    for (let i = 0; i < cols; i++) {
-      const y = dropsRef.current[i] * FONT
-      const ch = KATA[Math.floor(Math.random() * KATA.length)]
-      ctx.fillStyle = '#00f0ffcc'
-      ctx.fillText(ch, i * FONT, y)
-      ctx.fillStyle = '#ffffff'
-      ctx.fillText(ch, i * FONT, y + FONT)
-      if (Math.random() < 0.01) {
-        ctx.fillStyle = '#ff2bd1'
-        ctx.fillText(ch, i * FONT, y - FONT * 3)
-      }
-      dropsRef.current[i]++
-      if (dropsRef.current[i] * FONT > rect.height && Math.random() > 0.975) dropsRef.current[i] = 0
-    }
-  })
-  return <canvas ref={ref} className="block h-full w-full" />
 }
 
 export function ThumbDoom() {

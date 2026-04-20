@@ -25,9 +25,6 @@ const Waves        = lazy(() => import('./routes/Waves'))
 const Doom         = lazy(() => import('./routes/Doom'))
 const Breathe      = lazy(() => import('./routes/Breathe'))
 const Starfield    = lazy(() => import('./routes/Starfield'))
-const Tarot        = lazy(() => import('./routes/Tarot'))
-const Particles    = lazy(() => import('./routes/Particles'))
-const Cyber        = lazy(() => import('./routes/Cyber'))
 const Folds        = lazy(() => import('./routes/Folds'))
 const Orbit        = lazy(() => import('./routes/Orbit'))
 const Radio        = lazy(() => import('./routes/Radio'))
@@ -51,9 +48,6 @@ const commands: Command[] = [
   { id: 'doom',        label: 'doom',        to: '/doom',        hint: 'e1m1 ascii homage' },
   { id: 'breathe',     label: 'breathe',     to: '/breathe',     hint: 'box-breathing guide' },
   { id: 'starfield',   label: 'starfield',   to: '/starfield',   hint: '3d flythrough' },
-  { id: 'tarot',       label: 'tarot',       to: '/tarot',       hint: 'major arcana draw' },
-  { id: 'particles',   label: 'particles',   to: '/particles',   hint: 'verlet physics' },
-  { id: 'cyber',       label: 'cyber',       to: '/cyber',       hint: 'night city dashboard' },
   { id: 'folds',       label: 'folds',       to: '/folds',       hint: 'generative gallery' },
   { id: 'orbit',       label: 'orbit',       to: '/orbit',       hint: 'iss live · telemetry' },
   { id: 'radio',       label: 'radio',       to: '/radio',       hint: 'global stations · pin the globe' },
@@ -100,9 +94,6 @@ function AnimatedRoutes() {
               <Route path="/doom" element={<Doom />} />
               <Route path="/breathe" element={<Breathe />} />
               <Route path="/starfield" element={<Starfield />} />
-              <Route path="/tarot" element={<Tarot />} />
-              <Route path="/particles" element={<Particles />} />
-              <Route path="/cyber" element={<Cyber />} />
               <Route path="/folds" element={<Folds />} />
               <Route path="/orbit" element={<Orbit />} />
               <Route path="/radio" element={<Radio />} />

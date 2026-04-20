@@ -104,27 +104,6 @@ export const ROUTE_SHORTCUTS: Record<string, Group> = {
       { keys: 'r',       label: 'reset stars' },
     ],
   },
-  '/tarot': {
-    heading: 'tarot',
-    items: [
-      { keys: 'space',       label: 'redraw spread' },
-      { keys: '1 / 3 / 5',   label: 'switch spread size' },
-    ],
-  },
-  '/particles': {
-    heading: 'particles',
-    items: [
-      { keys: 'click empty',  label: 'drop point' },
-      { keys: 'click → click', label: 'connect two points' },
-      { keys: 'drag',          label: 'fling selected point' },
-      { keys: 'shift-click',   label: 'pin / unpin point' },
-      { keys: 'g',             label: 'toggle gravity' },
-      { keys: 'c',             label: 'clear world' },
-      { keys: 'r',             label: 'rope preset' },
-      { keys: 't',             label: 'cloth preset' },
-      { keys: 'space',         label: 'pause / resume' },
-    ],
-  },
   '/pixels': {
     heading: 'pixels',
     items: [
@@ -145,12 +124,6 @@ export const ROUTE_SHORTCUTS: Record<string, Group> = {
       { keys: 'tabs',   label: 'filter by medium' },
       { keys: 'search', label: 'filter by title / medium' },
       { keys: '+ new fold', label: 're-seed every piece' },
-    ],
-  },
-  '/cyber': {
-    heading: 'cyber',
-    items: [
-      { keys: 'ambient', label: 'no input · watch the feed' },
     ],
   },
   '/orbit': {

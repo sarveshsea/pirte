@@ -21,7 +21,6 @@ const SECTIONS: Section[] = [
       { path: '/terminal',     code: '04', label: 'terminal',     desc: 'matrix rain · donut · life · flow · rule-30.', keybinds: ['← →  cycle scene', 'space  pause'] },
       { path: '/kaleidoscope', code: '07', label: 'kaleidoscope', desc: 'n-fold mirror over a perlin field.' },
       { path: '/folds',        code: '16', label: 'folds',        desc: 'generative gallery of deterministic compositions.' },
-      { path: '/cyber',        code: '15', label: 'cyber',        desc: 'night-city dashboard: neon, glitch, katakana.' },
     ],
   },
   {
@@ -31,7 +30,6 @@ const SECTIONS: Section[] = [
       { path: '/ascii',      code: '03', label: 'ascii',     desc: 'image → text converter with ramp, bias, pixelate, mix controls.' },
       { path: '/pixels',     code: '05', label: 'pixels',    desc: 'upload an image, get a paint-by-number puzzle.', keybinds: ['click  fill a cell'] },
       { path: '/sprites',    code: '08', label: 'sprites',   desc: 'particle sandbox with attract/repel/vortex forces.', keybinds: ['a f v i  modes', 'click  pulse'] },
-      { path: '/particles',  code: '14', label: 'particles', desc: 'verlet physics ropes + cloth.' },
     ],
   },
   {
@@ -44,7 +42,6 @@ const SECTIONS: Section[] = [
     title: 'meditative',
     items: [
       { path: '/breathe', code: '11', label: 'breathe', desc: 'box-breathing guide with phase colors, sine-tick audio, and a waveform mode.', keybinds: ['space  pause', 'v  mode (circle / waveform)', 'm  sound on/off', 'r  reset cycle'] },
-      { path: '/tarot',   code: '13', label: 'tarot',   desc: 'major arcana draw — 1 / 3 / 5 card spreads with reversed readings.' },
     ],
   },
   {
