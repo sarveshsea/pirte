@@ -7,7 +7,10 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { WavesEngine } from '../../modules/waves/engine'
 import { makeProject, findPattern } from '../../modules/waves/pattern'
-import type { FilterType, PatternId, Project, Track, VoiceKind } from '../../modules/waves/types'
+import type {
+  BitcrushParams, CompParams, DelayParams, FilterType, LimiterParams,
+  PatternId, Project, ReverbParams, Track, VoiceKind,
+} from '../../modules/waves/types'
 
 type StudioAPI = {
   project: Project
@@ -34,10 +37,18 @@ type StudioAPI = {
   setTrackSendA: (i: number, v: number) => void
   setTrackSendB: (i: number, v: number) => void
   triggerTrack: (i: number, note?: number) => void
+  // master fx
+  setMasterBitcrush: (p: Partial<BitcrushParams>) => void
+  setMasterDelay: (p: Partial<DelayParams>) => void
+  setMasterReverb: (p: Partial<ReverbParams>) => void
+  setMasterComp: (p: Partial<CompParams>) => void
+  setMasterLimiter: (p: Partial<LimiterParams>) => void
   // read-only handles for visualizer / meters
   readTimeDomain: (out: Uint8Array) => void
   readFrequency: (out: Uint8Array) => void
   getTrackLevel: (i: number) => [number, number]
+  getCompGR: () => number
+  getLimiterGR: () => number
 }
 
 const Ctx = createContext<StudioAPI | null>(null)
@@ -131,9 +142,31 @@ export function StudioProvider({ children }: { children: ReactNode }) {
     setTrackSendA: (i, v) => mutTrack(i, (t) => { t.sendA = v }),
     setTrackSendB: (i, v) => mutTrack(i, (t) => { t.sendB = v }),
     triggerTrack: (i, note = 60) => { engineRef.current?.triggerManual(i, note) },
+    setMasterBitcrush: (p) => {
+      Object.assign(projectRef.current.master.bitcrush, p)
+      engineRef.current?.syncMaster(); bump()
+    },
+    setMasterDelay: (p) => {
+      Object.assign(projectRef.current.master.delay, p)
+      engineRef.current?.syncMaster(); bump()
+    },
+    setMasterReverb: (p) => {
+      Object.assign(projectRef.current.master.reverb, p)
+      engineRef.current?.syncMaster(); bump()
+    },
+    setMasterComp: (p) => {
+      Object.assign(projectRef.current.master.comp, p)
+      engineRef.current?.syncMaster(); bump()
+    },
+    setMasterLimiter: (p) => {
+      Object.assign(projectRef.current.master.limiter, p)
+      engineRef.current?.syncMaster(); bump()
+    },
     readTimeDomain: (out) => engineRef.current?.readTimeDomain(out),
     readFrequency: (out) => engineRef.current?.readFrequency(out),
     getTrackLevel: (i) => engineRef.current?.getTrackLevel(i) ?? [0, 0],
+    getCompGR: () => engineRef.current?.getCompGR() ?? 0,
+    getLimiterGR: () => engineRef.current?.getLimiterGR() ?? 0,
   }), [rev, ready, playing, step, bump, mutTrack])
 
   return <Ctx.Provider value={api}>{children}</Ctx.Provider>

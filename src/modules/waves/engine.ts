@@ -3,9 +3,12 @@
 // commits 7-9 flesh out the master FX chain (bitcrush/comp/delay/reverb).
 
 import { Scheduler } from './scheduler'
-import type { Project, Track, VoiceKind } from './types'
+import type { BitcrushParams, CompParams, DelayParams, LimiterParams, Project, ReverbParams, Track, VoiceKind } from './types'
 import { findPattern } from './pattern'
 import { TrackStrip } from './effects/trackStrip'
+import { Reverb } from './effects/reverb'
+import { TapeDelay } from './effects/delay'
+import { Bitcrush } from './effects/bitcrush'
 import { createVoice, type Voice, SamplerVoice } from './voices'
 
 export type EngineCallbacks = {
@@ -23,10 +26,15 @@ export class WavesEngine {
   readonly ctx: AudioContext
   readonly master: GainNode
   readonly limiter: DynamicsCompressorNode
+  readonly compressor: DynamicsCompressorNode
+  readonly duck: GainNode
+  readonly preFx: GainNode
   readonly reverbIn: GainNode
   readonly delayIn: GainNode
   readonly analyser: AnalyserNode
-  readonly sidechainBus: GainNode
+  readonly reverb: Reverb
+  readonly delay: TapeDelay
+  readonly bitcrush: Bitcrush
   private project: Project
   private scheduler: Scheduler
   private callbacks: EngineCallbacks = {}
@@ -37,12 +45,19 @@ export class WavesEngine {
     const Ctx = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
     this.ctx = new Ctx({ latencyHint: 'interactive' })
 
+    // master chain:
+    //   tracks + sends → preFx → duck → bitcrush → compressor → master → limiter → analyser → destination
+    this.preFx = this.ctx.createGain()
+    this.duck = this.ctx.createGain(); this.duck.gain.value = 1
+
+    this.bitcrush = new Bitcrush(this.ctx)
+    this.bitcrush.setParams(project.master.bitcrush)
+
+    this.compressor = this.ctx.createDynamicsCompressor()
+    this.applyCompParams(project.master.comp)
+
     this.limiter = this.ctx.createDynamicsCompressor()
-    this.limiter.threshold.value = project.master.limiter.ceiling
-    this.limiter.ratio.value = 20
-    this.limiter.attack.value = 0.001
-    this.limiter.release.value = project.master.limiter.release
-    this.limiter.knee.value = 0
+    this.applyLimiterParams(project.master.limiter)
 
     this.master = this.ctx.createGain()
     this.master.gain.value = project.master.gain
@@ -50,14 +65,30 @@ export class WavesEngine {
     this.analyser = this.ctx.createAnalyser()
     this.analyser.fftSize = 2048
 
-    this.master.connect(this.limiter).connect(this.analyser).connect(this.ctx.destination)
+    this.preFx
+      .connect(this.duck)
+      .connect(this.bitcrush.input)
+    this.bitcrush.output
+      .connect(this.compressor)
+      .connect(this.master)
+      .connect(this.limiter)
+      .connect(this.analyser)
+      .connect(this.ctx.destination)
+
+    // reverb + delay sends live on parallel buses that land in the main chain
+    // at preFx (so bitcrush/comp affect the wet signal too — more glue).
+    this.reverb = new Reverb(this.ctx)
+    this.reverb.setParams(project.master.reverb)
+    this.delay = new TapeDelay(this.ctx)
+    this.delay.setParams(project.master.delay)
 
     this.reverbIn = this.ctx.createGain()
-    this.reverbIn.connect(this.master)
+    this.reverbIn.connect(this.reverb.input)
+    this.reverb.output.connect(this.preFx)
+
     this.delayIn = this.ctx.createGain()
-    this.delayIn.connect(this.master)
-    this.sidechainBus = this.ctx.createGain()
-    this.sidechainBus.gain.value = 0
+    this.delayIn.connect(this.delay.input)
+    this.delay.output.connect(this.preFx)
 
     this.buildTracks()
 
@@ -85,12 +116,55 @@ export class WavesEngine {
       const strip = new TrackStrip(this.ctx, this.reverbIn, this.delayIn)
       const voice = createVoice(t.voice, this.ctx)
       voice.output.connect(strip.input)
-      strip.output.connect(this.master)
+      strip.output.connect(this.preFx)
       this.applyStripState(strip, t)
       this.tracks.push({ strip, voice, voiceKind: t.voice })
     }
     this.recomputeSolo()
   }
+
+  private applyCompParams(p: CompParams) {
+    this.compressor.threshold.value = p.threshold
+    this.compressor.ratio.value = p.ratio
+    this.compressor.attack.value = p.attack
+    this.compressor.release.value = p.release
+    this.compressor.knee.value = 6
+  }
+
+  private applyLimiterParams(p: LimiterParams) {
+    this.limiter.threshold.value = p.ceiling
+    this.limiter.ratio.value = 20
+    this.limiter.attack.value = 0.001
+    this.limiter.release.value = p.release
+    this.limiter.knee.value = 0
+  }
+
+  /** push any change to master params from the ui into the audio graph. */
+  syncMaster() {
+    this.applyCompParams(this.project.master.comp)
+    this.applyLimiterParams(this.project.master.limiter)
+    this.bitcrush.setParams(this.project.master.bitcrush)
+    this.reverb.setParams(this.project.master.reverb)
+    this.delay.setParams(this.project.master.delay)
+    this.master.gain.setTargetAtTime(this.project.master.gain, this.ctx.currentTime, 0.01)
+  }
+
+  /** schedule a sidechain-style duck triggered by the kick. */
+  private duckEnvelope(time: number) {
+    if (!this.project.master.comp.sidechain) return
+    // depth proportional to "mix" knob of the compressor as a standin for
+    // duck amount. keeps the public api small.
+    const depth = Math.max(0.1, Math.min(0.9, this.project.master.comp.mix))
+    const release = Math.max(0.05, Math.min(0.6, this.project.master.comp.release * 3))
+    this.duck.gain.cancelScheduledValues(time)
+    this.duck.gain.setValueAtTime(1, time)
+    this.duck.gain.linearRampToValueAtTime(1 - depth, time + 0.005)
+    this.duck.gain.linearRampToValueAtTime(1, time + release)
+  }
+
+  /** current gain-reduction in dB for ui meter. */
+  getCompGR(): number { return this.compressor.reduction }
+  getLimiterGR(): number { return this.limiter.reduction }
 
   private applyStripState(strip: TrackStrip, t: Track) {
     strip.setFilter(t.filter.type, t.filter.cutoff, t.filter.res)
@@ -190,6 +264,20 @@ export class WavesEngine {
       const secPerStep = 60 / this.project.bpm / 4
       const gate = Math.max(0.01, (s.gate / 16) * secPerStep)
       this.tracks[i].voice.trigger({ time, note: s.note, vel, gate })
+      // fire a duck envelope off the first track (kick)
+      if (i === 0) this.duckEnvelope(time)
+    }
+  }
+
+  /** replace the waves engine types barrel re-export. */
+  getMasterParams() {
+    return {
+      bitcrush: { ...this.project.master.bitcrush } as BitcrushParams,
+      delay: { ...this.project.master.delay } as DelayParams,
+      reverb: { ...this.project.master.reverb } as ReverbParams,
+      comp: { ...this.project.master.comp } as CompParams,
+      limiter: { ...this.project.master.limiter } as LimiterParams,
+      gain: this.project.master.gain,
     }
   }
 }

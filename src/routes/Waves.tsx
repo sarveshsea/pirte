@@ -5,6 +5,7 @@ import Transport from './waves/Transport'
 import Mixer from './waves/Mixer'
 import StepGrid from './waves/StepGrid'
 import Visualizer from './waves/Visualizer'
+import FXRack from './waves/FXRack'
 
 /** global-keybinds bridge. kept inside the provider so it can call dispatchers. */
 function Shortcuts() {
@@ -41,6 +42,10 @@ function Studio() {
           </Tile>
         </div>
       </div>
+
+      <Tile label="master fx" footer={<span>bitcrush · compressor (sidechain taps the kick) · delay · reverb · limiter</span>}>
+        <FXRack />
+      </Tile>
     </div>
   )
 }
