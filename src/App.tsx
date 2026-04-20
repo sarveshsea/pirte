@@ -33,6 +33,7 @@ const Microbes     = lazy(() => import('./routes/Microbes'))
 const Chroma       = lazy(() => import('./routes/Chroma'))
 const Bloom        = lazy(() => import('./routes/Bloom'))
 const Faces        = lazy(() => import('./routes/Faces'))
+const Edits        = lazy(() => import('./routes/Edits'))
 const Docs         = lazy(() => import('./routes/Docs'))
 const NotFound     = lazy(() => import('./routes/NotFound'))
 
@@ -56,6 +57,7 @@ const commands: Command[] = [
   { id: 'chroma',      label: 'chroma',      to: '/chroma',      hint: 'liquid color exploration · harmony · contrast' },
   { id: 'bloom',       label: 'bloom',       to: '/bloom',       hint: 'wet-on-wet watercolor · drag to paint' },
   { id: 'faces',       label: 'faces',       to: '/faces',       hint: 'kaomoji gallery · click to copy' },
+  { id: 'edits',       label: 'edits',       to: '/edits',       hint: 'live wikipedia firehose · ~60 edits/sec' },
 ]
 
 function RouteLoader() {
@@ -97,6 +99,7 @@ function AnimatedRoutes() {
             <Route path="/chroma" element={<Chroma />} />
             <Route path="/bloom" element={<Bloom />} />
             <Route path="/faces" element={<Faces />} />
+            <Route path="/edits" element={<Edits />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>

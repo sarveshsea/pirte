@@ -19,6 +19,7 @@ export const ROUTE_ORDER = [
   { path: '/chroma',       label: 'chroma',       code: '21' },
   { path: '/bloom',        label: 'bloom',        code: '22' },
   { path: '/faces',        label: 'faces',        code: '10' },
+  { path: '/edits',        label: 'edits',        code: '23' },
 ]
 
 export default function PageNav() {

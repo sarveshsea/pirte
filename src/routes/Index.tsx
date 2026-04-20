@@ -21,6 +21,7 @@ import {
   ThumbChroma,
   ThumbBloom,
   ThumbFaces,
+  ThumbEdits,
 } from '../components/Thumb'
 
 type Tag = 'visual' | 'interactive' | 'audio' | 'meditative' | 'live' | 'game'
@@ -44,6 +45,7 @@ const MODULES: Mod[] = [
   { to: '/chroma',       label: 'chroma',       code: '21', desc: 'liquid glass · color data',        thumb: <ThumbChroma />,       span: 'lg:col-span-2',                tags: ['visual', 'interactive'],          accent: '#a8b8ff' },
   { to: '/bloom',        label: 'bloom',        code: '22', desc: 'wet-on-wet watercolor · drag to paint', thumb: <ThumbBloom />,     span: 'lg:col-span-2',                tags: ['visual', 'interactive', 'meditative'], accent: '#c8d4ff' },
   { to: '/faces',        label: 'faces',        code: '10', desc: 'kaomoji gallery · click to copy',   thumb: <ThumbFaces />,        span: 'lg:col-span-2',                tags: ['interactive'],                    accent: '#e8d0b8' },
+  { to: '/edits',        label: 'edits',        code: '23', desc: 'live wikipedia firehose',           thumb: <ThumbEdits />,        span: 'lg:col-span-2',                tags: ['live', 'visual'],                 accent: '#a8dcff' },
 ]
 
 const TAGS: (Tag | 'all' | 'pinned')[] = ['all', 'pinned', 'visual', 'interactive', 'audio', 'meditative', 'live', 'game']

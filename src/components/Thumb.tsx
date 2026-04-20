@@ -667,3 +667,45 @@ export function ThumbFaces() {
     </div>
   )
 }
+
+// static stylized preview of the live wikipedia edits feed — not a real sse
+// subscription (180 thumbs × connections would be wasteful). the route itself
+// shows the actual firehose.
+export function ThumbEdits() {
+  const rows = [
+    { t: '21:43:12', lang: 'en', user: 'jessica',    title: 'quantum mechanics',      kind: '→', delta:  '+128', bot: false },
+    { t: '21:43:12', lang: 'de', user: 'anon·ip',    title: 'berliner platz',         kind: '→', delta:  '+12',  bot: false },
+    { t: '21:43:12', lang: 'fr', user: 'wikibot',    title: 'paris',                  kind: '→', delta:   '0',   bot: true  },
+    { t: '21:43:13', lang: 'es', user: 'carlos',     title: 'madrid',                 kind: '+', delta: '+2.1k', bot: false },
+    { t: '21:43:13', lang: 'en', user: 'sarah_k',    title: 'general relativity',     kind: '→', delta:  '+44',  bot: false },
+    { t: '21:43:14', lang: 'ja', user: 'kobayashi',  title: '量子力学',                kind: '→', delta:  '+8',   bot: false },
+    { t: '21:43:14', lang: 'ru', user: 'petrov',     title: 'теория струн',           kind: '→', delta:  '-6',   bot: false },
+    { t: '21:43:15', lang: 'it', user: 'bot-ser',    title: 'milano',                 kind: '·', delta:   '0',   bot: true  },
+    { t: '21:43:15', lang: 'zh', user: 'liwei',      title: '北京',                    kind: '→', delta:  '+14',  bot: false },
+  ]
+  return (
+    <div className="flex h-full w-full flex-col gap-[1px] overflow-hidden bg-[#0a0a0c] px-2 py-2">
+      {rows.map((r, i) => {
+        const opacity = Math.max(0.22, 1 - (i / rows.length) * 0.78)
+        const userColor = r.bot ? 'text-[var(--color-dim)]' : 'text-[var(--color-fg)]'
+        const deltaColor = r.delta.startsWith('+') ? 'text-[#9ee3a0]'
+                         : r.delta.startsWith('-') ? 'text-[#ff9a8a]'
+                         : 'text-[var(--color-dim)]'
+        return (
+          <div
+            key={i}
+            style={{ opacity }}
+            className="flex items-baseline gap-1.5 whitespace-nowrap font-mono text-[9px] leading-[1.2]"
+          >
+            <span className="tabular-nums text-[var(--color-line)]">{r.t}</span>
+            <span className="w-[12px] tabular-nums text-[var(--color-dim)]">{r.lang}</span>
+            <span className={`truncate max-w-[50px] ${userColor}`}>{r.user}</span>
+            <span className="text-[var(--color-line)]">{r.kind}</span>
+            <span className="truncate flex-1 text-[var(--color-fg)]">{r.title}</span>
+            <span className={`tabular-nums ${deltaColor}`}>{r.delta}</span>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
