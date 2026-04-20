@@ -27,6 +27,7 @@ function GlitchText({ text, className = '' }: { text: string; className?: string
   useEffect(() => {
     let raf = 0
     let holdUntil = 0
+    const timeouts = new Set<number>()
     const tick = (t: number) => {
       if (t > holdUntil && Math.random() < 0.08) {
         const chars = text.split('')
@@ -37,12 +38,20 @@ function GlitchText({ text, className = '' }: { text: string; className?: string
         }
         setDisplay(chars.join(''))
         holdUntil = t + 80 + Math.random() * 140
-        setTimeout(() => setDisplay(text), 70 + Math.random() * 90)
+        const id = window.setTimeout(() => {
+          setDisplay(text)
+          timeouts.delete(id)
+        }, 70 + Math.random() * 90)
+        timeouts.add(id)
       }
       raf = requestAnimationFrame(tick)
     }
     raf = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf)
+    return () => {
+      cancelAnimationFrame(raf)
+      for (const id of timeouts) window.clearTimeout(id)
+      timeouts.clear()
+    }
   }, [text])
   return (
     <span className={`relative inline-block leading-none ${className}`}>
