@@ -24,9 +24,13 @@ export default function Cursor() {
       pos.current.x += (target.current.x - pos.current.x) * k
       pos.current.y += (target.current.y - pos.current.y) * k
       if (ref.current) {
-        ref.current.style.transform = `translate(${pos.current.x}px, ${pos.current.y}px)`
+        const s = overInteractive.current ? 1.8 : 1
+        ref.current.style.transform = `translate(${pos.current.x}px, ${pos.current.y}px) scale(${s})`
         ref.current.style.background = overInteractive.current ? 'var(--color-fg)' : 'transparent'
         ref.current.style.borderColor = 'var(--color-fg)'
+        ref.current.style.boxShadow = overInteractive.current
+          ? '0 0 18px 4px rgba(237, 237, 237, 0.22)'
+          : '0 0 10px 2px rgba(237, 237, 237, 0.08)'
       }
       raf.current = requestAnimationFrame(tick)
     }

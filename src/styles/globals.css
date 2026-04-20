@@ -156,6 +156,13 @@ input[type="text"], input[type="search"], input[type="color"] {
 .tile-interactive:hover {
   --lift: -2px;
   border-color: rgba(237, 237, 237, 0.45);
+  background:
+    radial-gradient(
+      240px circle at var(--mx-local, 50%) var(--my-local, 50%),
+      rgba(255, 255, 255, 0.055),
+      transparent 50%
+    ),
+    var(--color-surface);
   box-shadow:
     0 1px 0 0 rgba(255, 255, 255, 0.05) inset,
     0 20px 48px -20px rgba(0, 0, 0, 0.85),
@@ -164,6 +171,38 @@ input[type="text"], input[type="search"], input[type="color"] {
 .tile-interactive:active {
   --scale: 0.985;
   transition-duration: 80ms;
+}
+
+/* thumb parallax — inner image slides counter to the cursor-tilt */
+.tile-thumb {
+  transform: translate3d(var(--thumb-dx, 0), var(--thumb-dy, 0), 0);
+  transition: transform 140ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  will-change: transform;
+}
+
+/* label microshift on hover-entry */
+.tile-label {
+  transform: translateX(var(--label-dx, 0));
+  transition: transform 200ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+/* click-ripple — a 1px ring pulses out from the tile on press */
+.tile-interactive::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 1px solid var(--color-fg);
+  opacity: 0;
+  transform: scale(1);
+  pointer-events: none;
+}
+.tile-interactive:active::after {
+  animation: tile-ripple 460ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+@keyframes tile-ripple {
+  0%   { opacity: 0.9; transform: scale(1); }
+  100% { opacity: 0;   transform: scale(1.06); }
 }
 
 /* corner brackets appear on hover of interactive tiles */

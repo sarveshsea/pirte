@@ -27,12 +27,27 @@ export default function Tile({ label, code, to, children, className = '', style,
     // cap tilt to 1.6° to stay subtle
     el.style.setProperty('--tilt-x', `${(-ny * 1.6).toFixed(2)}deg`)
     el.style.setProperty('--tilt-y', `${(nx * 1.6).toFixed(2)}deg`)
+    // thumb parallax — inner translates counter to tilt direction
+    el.style.setProperty('--thumb-dx', `${(-nx * 8).toFixed(2)}px`)
+    el.style.setProperty('--thumb-dy', `${(-ny * 8).toFixed(2)}px`)
+    // cursor-local glow coords (percent)
+    el.style.setProperty('--mx-local', `${(((e.clientX - rect.left) / rect.width) * 100).toFixed(1)}%`)
+    el.style.setProperty('--my-local', `${(((e.clientY - rect.top) / rect.height) * 100).toFixed(1)}%`)
   }
   const onLeave = () => {
     const el = ref.current
     if (!el) return
     el.style.setProperty('--tilt-x', '0deg')
     el.style.setProperty('--tilt-y', '0deg')
+    el.style.setProperty('--thumb-dx', '0px')
+    el.style.setProperty('--thumb-dy', '0px')
+  }
+  const onEnter = () => {
+    const el = ref.current
+    if (!el) return
+    // quick nudge that relaxes back via css transition on --label-dx
+    el.style.setProperty('--label-dx', '3px')
+    requestAnimationFrame(() => { el.style.setProperty('--label-dx', '0px') })
   }
 
   const starBtn = onToggleStar ? (
@@ -59,6 +74,7 @@ export default function Tile({ label, code, to, children, className = '', style,
       ref={ref}
       onMouseMove={interactive ? onMove : undefined}
       onMouseLeave={interactive ? onLeave : undefined}
+      onMouseEnter={interactive ? onEnter : undefined}
       className={`tile group ${interactive ? 'tile-interactive' : ''} ${accent ? 'tile-accented' : ''} relative flex h-full flex-col ${className}`}
       style={mergedStyle}
     >
@@ -79,7 +95,7 @@ export default function Tile({ label, code, to, children, className = '', style,
         </span>
         {code && <span className={`tile-code ${onToggleStar ? 'mr-5' : ''} text-[var(--color-dim)]`}>{code}</span>}
       </header>
-      <div className="relative flex-1 overflow-hidden">{children}</div>
+      <div className="tile-thumb relative flex-1 overflow-hidden">{children}</div>
       {footer && (
         <footer className="relative border-t border-[var(--color-line)] px-4 py-2.5 text-[13px] text-[var(--color-dim)]">
           {footer}
