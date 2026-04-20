@@ -9,9 +9,11 @@ type TileProps = {
   className?: string
   style?: CSSProperties
   footer?: ReactNode
+  starred?: boolean
+  onToggleStar?: () => void
 }
 
-export default function Tile({ label, code, to, children, className = '', style, footer }: TileProps) {
+export default function Tile({ label, code, to, children, className = '', style, footer, starred, onToggleStar }: TileProps) {
   const ref = useRef<HTMLDivElement>(null)
   const interactive = !!to
 
@@ -32,12 +34,27 @@ export default function Tile({ label, code, to, children, className = '', style,
     el.style.setProperty('--tilt-y', '0deg')
   }
 
+  const starBtn = onToggleStar ? (
+    <button
+      type="button"
+      data-interactive
+      onClick={(e) => { e.preventDefault(); e.stopPropagation(); onToggleStar() }}
+      aria-label={starred ? 'unpin module' : 'pin module'}
+      title={starred ? 'unpin · remove from favorites' : 'pin · sort first on index'}
+      className={`absolute right-2 top-2 z-10 !border-0 !px-0 !py-0 text-[14px] transition-opacity ${
+        starred ? 'opacity-90 text-[var(--color-fg)]' : 'opacity-0 group-hover:opacity-60 text-[var(--color-dim)] hover:!text-[var(--color-fg)]'
+      }`}
+    >
+      {starred ? '★' : '☆'}
+    </button>
+  ) : null
+
   const body = (
     <div
       ref={ref}
       onMouseMove={interactive ? onMove : undefined}
       onMouseLeave={interactive ? onLeave : undefined}
-      className={`tile ${interactive ? 'tile-interactive' : ''} relative flex h-full flex-col ${className}`}
+      className={`tile group ${interactive ? 'tile-interactive' : ''} relative flex h-full flex-col ${className}`}
       style={style}
     >
       {interactive && (
@@ -48,9 +65,10 @@ export default function Tile({ label, code, to, children, className = '', style,
           <span className="tile-bracket br" aria-hidden />
         </>
       )}
+      {starBtn}
       <header className="flex items-center justify-between border-b border-[var(--color-line)] px-4 py-2.5 text-[11px] tracking-[0.06em] text-[var(--color-dim)]">
         <span>{label}</span>
-        {code && <span className="text-[var(--color-dim)]">{code}</span>}
+        {code && <span className={onToggleStar ? 'mr-5 text-[var(--color-dim)]' : 'text-[var(--color-dim)]'}>{code}</span>}
       </header>
       <div className="relative flex-1 overflow-hidden">{children}</div>
       {footer && <footer className="border-t border-[var(--color-line)] px-4 py-2.5 text-[11px] text-[var(--color-dim)]">{footer}</footer>}
