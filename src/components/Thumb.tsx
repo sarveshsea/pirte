@@ -432,3 +432,61 @@ export function ThumbKaleidoscope() {
   })
   return <canvas ref={ref} className="block h-full w-full" />
 }
+
+/* microbes thumb — static physarum-style pseudo-trail pattern. no sim runs;
+   this is a layout of coherent branching paths sampled from a few seeds that
+   diffuse through a grid, evoking slime-mold foraging networks. */
+export function ThumbMicrobes() {
+  const lines = useMemo(() => {
+    const cols = 38, rows = 14
+    const ramp = ' .·:+=*xX#'
+    // seed a handful of high-intensity points and diffuse a few times
+    let g = new Float32Array(cols * rows)
+    const pts = [
+      [8, 4], [20, 3], [30, 6], [12, 10], [24, 11], [33, 10], [4, 8], [17, 6], [28, 9],
+    ]
+    for (const [x, y] of pts) g[y * cols + x] = 1
+    // add anisotropic streaks between pairs to suggest trails
+    const streak = (x0: number, y0: number, x1: number, y1: number) => {
+      const n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0))
+      for (let k = 0; k <= n; k++) {
+        const t = k / n
+        const x = Math.round(x0 + (x1 - x0) * t)
+        const y = Math.round(y0 + (y1 - y0) * t)
+        if (x >= 0 && x < cols && y >= 0 && y < rows) g[y * cols + x] = Math.max(g[y * cols + x], 0.7)
+      }
+    }
+    streak(8, 4, 17, 6); streak(17, 6, 20, 3); streak(20, 3, 30, 6); streak(30, 6, 33, 10)
+    streak(17, 6, 24, 11); streak(24, 11, 28, 9); streak(8, 4, 12, 10); streak(12, 10, 24, 11)
+    // diffuse 3x
+    for (let pass = 0; pass < 3; pass++) {
+      const next = new Float32Array(cols * rows)
+      for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+          let s = 0, n = 0
+          for (let dy = -1; dy <= 1; dy++) {
+            for (let dx = -1; dx <= 1; dx++) {
+              const xx = x + dx, yy = y + dy
+              if (xx < 0 || xx >= cols || yy < 0 || yy >= rows) continue
+              s += g[yy * cols + xx]; n++
+            }
+          }
+          next[y * cols + x] = (s / n) * 0.94
+        }
+      }
+      g = next
+    }
+    const out: string[] = []
+    for (let y = 0; y < rows; y++) {
+      let line = ''
+      for (let x = 0; x < cols; x++) {
+        const v = Math.min(1, g[y * cols + x] * 2.2)
+        const i = Math.max(0, Math.min(ramp.length - 1, Math.floor(v * ramp.length)))
+        line += ramp[i]
+      }
+      out.push(line)
+    }
+    return out.join('\n')
+  }, [])
+  return <pre className="m-0 whitespace-pre text-[9px] leading-[1.0] text-[var(--color-fg)]">{lines}</pre>
+}

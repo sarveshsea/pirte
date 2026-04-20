@@ -65,6 +65,13 @@ const SECTIONS: Section[] = [
       { path: '/starfield', code: '12', label: 'starfield', desc: '3d ascii flythrough. mouse steers.', keybinds: ['mouse  steer', '↑ ↓  speed', 'space  warp', 'r  reset'] },
     ],
   },
+  {
+    title: 'science',
+    note: 'real biological phenomena rendered as ascii data-art.',
+    items: [
+      { path: '/microbes', code: '20', label: 'microbes', desc: 'physarum (jones 2010) · gray-scott morphogenesis (pearson 1993) · e.coli run-and-tumble (berg 1972) · fitzhugh-nagumo spiral waves. live parameters, metrics, and sparklines.', keybinds: ['← →  cycle preset', 'r  reseed', 'space  pause', '1–4  gray-scott regime'] },
+    ],
+  },
 ]
 
 const GLOBAL_KEYS: [string, string][] = [

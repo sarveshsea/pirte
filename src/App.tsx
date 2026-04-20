@@ -29,7 +29,7 @@ const Folds        = lazy(() => import('./routes/Folds'))
 const Orbit        = lazy(() => import('./routes/Orbit'))
 const Radio        = lazy(() => import('./routes/Radio'))
 const SpinnersPage = lazy(() => import('./routes/Spinners'))
-const Lenia        = lazy(() => import('./routes/Lenia'))
+const Microbes     = lazy(() => import('./routes/Microbes'))
 const Docs         = lazy(() => import('./routes/Docs'))
 const NotFound     = lazy(() => import('./routes/NotFound'))
 
@@ -52,7 +52,7 @@ const commands: Command[] = [
   { id: 'orbit',       label: 'orbit',       to: '/orbit',       hint: 'iss live · telemetry' },
   { id: 'radio',       label: 'radio',       to: '/radio',       hint: 'global stations · pin the globe' },
   { id: 'spinners',    label: 'spinners',    to: '/spinners',    hint: '54 terminal-style agent spinners' },
-  { id: 'lenia',       label: 'lenia',       to: '/lenia',       hint: 'biological ai · continuous ca · ascii' },
+  { id: 'microbes',    label: 'microbes',    to: '/microbes',    hint: 'real biology · physarum · turing · chemotaxis · fitzhugh' },
 ]
 
 const TRANSITION = { duration: 0.14, ease: [0.2, 0.7, 0.2, 1] as [number, number, number, number] }
@@ -98,7 +98,7 @@ function AnimatedRoutes() {
               <Route path="/orbit" element={<Orbit />} />
               <Route path="/radio" element={<Radio />} />
               <Route path="/spinners" element={<SpinnersPage />} />
-              <Route path="/lenia" element={<Lenia />} />
+              <Route path="/microbes" element={<Microbes />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>

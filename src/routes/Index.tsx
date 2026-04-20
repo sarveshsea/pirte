@@ -20,6 +20,7 @@ import {
   ThumbOrbit,
   ThumbRadio,
   ThumbSpinners,
+  ThumbMicrobes,
 } from '../components/Thumb'
 
 type Tag = 'visual' | 'interactive' | 'audio' | 'meditative' | 'live' | 'game'
@@ -42,6 +43,7 @@ const MODULES: Mod[] = [
   { to: '/orbit',        label: 'orbit',        code: '17', desc: 'iss · live from 400km',            thumb: <ThumbOrbit />,        span: 'lg:col-span-2',                tags: ['live'],                           accent: '#6ab8ff' },
   { to: '/radio',        label: 'radio',        code: '18', desc: 'global stations · spin the globe', thumb: <ThumbRadio />,        span: 'lg:col-span-2',                tags: ['live', 'audio', 'interactive'],   accent: '#ffb86a' },
   { to: '/spinners',     label: 'spinners',     code: '19', desc: '54 terminal-style spinners',        thumb: <ThumbSpinners />,                                           tags: ['visual'],                         accent: '#d8d8d8' },
+  { to: '/microbes',     label: 'microbes',     code: '20', desc: 'real biology · ascii data-art',     thumb: <ThumbMicrobes />,     span: 'lg:col-span-2',                tags: ['visual', 'live'],                 accent: '#b8d8a8' },
 ]
 
 const TAGS: (Tag | 'all' | 'pinned')[] = ['all', 'pinned', 'visual', 'interactive', 'audio', 'meditative', 'live', 'game']

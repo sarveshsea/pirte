@@ -132,6 +132,18 @@ export const ROUTE_SHORTCUTS: Record<string, Group> = {
       { keys: 'stream tabs', label: 'switch nasa live stream' },
     ],
   },
+  '/radio': {
+    heading: 'radio',
+    items: [
+      { keys: 'click cell',  label: 'tune to the most-voted station in that map cell' },
+      { keys: 'space',       label: 'play / pause current station' },
+      { keys: 'n / →',       label: 'next station in current filter' },
+      { keys: 'p / ←',       label: 'previous station in current filter' },
+      { keys: 's',           label: 'shuffle the filter' },
+      { keys: 'chips',       label: 'filter by country / genre' },
+      { keys: 'search',      label: 'filter by name, country, or tag' },
+    ],
+  },
   '/': {
     heading: 'index',
     items: [
@@ -143,6 +155,15 @@ export const ROUTE_SHORTCUTS: Record<string, Group> = {
     heading: 'time',
     items: [
       { keys: 'reset session', label: 'clear local session timer' },
+    ],
+  },
+  '/microbes': {
+    heading: 'microbes',
+    items: [
+      { keys: '← / →',  label: 'cycle sim (physarum · turing · chemotaxis · excitable)' },
+      { keys: 'space',  label: 'pause / resume' },
+      { keys: 'r',      label: 'reseed current sim' },
+      { keys: '1 – 4',  label: 'pick gray-scott regime (spots · stripes · solitons · coral)' },
     ],
   },
 }
