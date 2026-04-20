@@ -204,6 +204,42 @@ attribute vec2 position;
 void main() { gl_Position = vec4(position, 0.0, 1.0); }
 `
 
+// module-scope webgl singleton — one renderer + compiled shader lives across
+// all Dive open/closes so we don't stack contexts (browser caps at ~16 and
+// loseContext cleanup is async; rapidly re-opening used to deplete quickly).
+type DiveGL = {
+  renderer: Renderer
+  gl: WebGLRenderingContext | WebGL2RenderingContext
+  program: Program
+  mesh: Mesh
+}
+let _diveGL: DiveGL | null = null
+function getDiveGL(): DiveGL {
+  if (_diveGL) return _diveGL
+  const renderer = new Renderer({ dpr: Math.min(window.devicePixelRatio, 2), alpha: false })
+  const gl = renderer.gl
+  gl.canvas.style.width = '100%'
+  gl.canvas.style.height = '100%'
+  gl.canvas.style.display = 'block'
+  const geom = new Triangle(gl)
+  const program = new Program(gl, {
+    vertex: DIVE_VERT,
+    fragment: DIVE_FRAG,
+    uniforms: {
+      uRes: { value: [1, 1] },
+      uCenter: { value: [0, 0] as [number, number] },
+      uScale: { value: 1 },
+      uKind: { value: 0 },
+      uJuliaC: { value: [0, 0] as [number, number] },
+      uMaxIter: { value: 100 },
+      uHue: { value: 0 },
+    },
+  })
+  const mesh = new Mesh(gl, { geometry: geom, program })
+  _diveGL = { renderer, gl, program, mesh }
+  return _diveGL
+}
+
 function Dive({ piece, onClose }: { piece: Piece; onClose: () => void }) {
   const wrapRef = useRef<HTMLDivElement>(null)
   const [hud, setHud] = useState({ cx: piece.cx, cy: piece.cy, zoom: 1, maxIter: piece.maxIter })
@@ -212,28 +248,16 @@ function Dive({ piece, onClose }: { piece: Piece; onClose: () => void }) {
     const wrap = wrapRef.current
     if (!wrap) return
 
-    const renderer = new Renderer({ dpr: Math.min(window.devicePixelRatio, 2), alpha: false })
-    const gl = renderer.gl
-    gl.canvas.style.width = '100%'
-    gl.canvas.style.height = '100%'
-    gl.canvas.style.display = 'block'
-    wrap.appendChild(gl.canvas)
-
-    const geom = new Triangle(gl)
-    const program = new Program(gl, {
-      vertex: DIVE_VERT,
-      fragment: DIVE_FRAG,
-      uniforms: {
-        uRes: { value: [1, 1] },
-        uCenter: { value: [piece.cx, piece.cy] as [number, number] },
-        uScale: { value: piece.scale },
-        uKind: { value: KIND_INT[piece.kind] },
-        uJuliaC: { value: piece.jc ? [...piece.jc] : [0, 0] as [number, number] },
-        uMaxIter: { value: piece.maxIter },
-        uHue: { value: piece.hue },
-      },
-    })
-    const mesh = new Mesh(gl, { geometry: geom, program })
+    const { renderer, gl, program, mesh } = getDiveGL()
+    const canvas = gl.canvas as HTMLCanvasElement
+    // piece-specific initial uniform state
+    program.uniforms.uCenter.value = [piece.cx, piece.cy]
+    program.uniforms.uScale.value = piece.scale
+    program.uniforms.uKind.value = KIND_INT[piece.kind]
+    program.uniforms.uJuliaC.value = piece.jc ? [...piece.jc] : [0, 0]
+    program.uniforms.uMaxIter.value = piece.maxIter
+    program.uniforms.uHue.value = piece.hue
+    wrap.appendChild(canvas)
 
     const state = {
       center: [piece.cx, piece.cy] as [number, number],
@@ -245,7 +269,7 @@ function Dive({ piece, onClose }: { piece: Piece; onClose: () => void }) {
     const resize = () => {
       const rect = wrap.getBoundingClientRect()
       renderer.setSize(rect.width, rect.height)
-      program.uniforms.uRes.value = [gl.canvas.width, gl.canvas.height]
+      program.uniforms.uRes.value = [canvas.width, canvas.height]
     }
     resize()
     const ro = new ResizeObserver(resize)
@@ -345,14 +369,9 @@ function Dive({ piece, onClose }: { piece: Piece; onClose: () => void }) {
       wrap.removeEventListener('wheel', onWheel)
       window.removeEventListener('keydown', onKD)
       window.removeEventListener('keyup', onKU)
-      // explicit webgl teardown — browsers cap at ~16 live contexts; without
-      // loseContext() the gpu keeps this one pinned until GC which may never
-      // happen during a long session
-      try {
-        const ext = (gl as WebGLRenderingContext).getExtension('WEBGL_lose_context')
-        ext?.loseContext()
-      } catch { /* ignore */ }
-      gl.canvas.remove()
+      // detach the canvas but keep the singleton webgl context alive so the
+      // next dive doesn't recompile shaders or allocate a fresh context.
+      if (canvas.parentElement) canvas.parentElement.removeChild(canvas)
     }
   }, [piece, onClose])
 
