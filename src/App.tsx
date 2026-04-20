@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useState } from 'react'
 import { Routes, Route, useLocation } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import Cursor from './components/Cursor'
+import Splash from './components/Splash'
 import Spotlight from './components/Spotlight'
 import StatusBar from './components/StatusBar'
 import CommandPalette, { type Command } from './components/CommandPalette'
@@ -33,6 +34,7 @@ const SpinnersPage = lazy(() => import('./routes/Spinners'))
 const Microbes     = lazy(() => import('./routes/Microbes'))
 const Chroma       = lazy(() => import('./routes/Chroma'))
 const Bloom        = lazy(() => import('./routes/Bloom'))
+const Faces        = lazy(() => import('./routes/Faces'))
 const Docs         = lazy(() => import('./routes/Docs'))
 const NotFound     = lazy(() => import('./routes/NotFound'))
 
@@ -55,6 +57,7 @@ const commands: Command[] = [
   { id: 'microbes',    label: 'microbes',    to: '/microbes',    hint: 'real biology · physarum · turing · chemotaxis · fitzhugh' },
   { id: 'chroma',      label: 'chroma',      to: '/chroma',      hint: 'liquid color exploration · harmony · contrast' },
   { id: 'bloom',       label: 'bloom',       to: '/bloom',       hint: 'wet-on-wet watercolor · drag to paint' },
+  { id: 'faces',       label: 'faces',       to: '/faces',       hint: 'kaomoji gallery · click to copy' },
 ]
 
 const TRANSITION = { duration: 0.14, ease: [0.2, 0.7, 0.2, 1] as [number, number, number, number] }
@@ -105,6 +108,7 @@ function AnimatedRoutes() {
               <Route path="/microbes" element={<Microbes />} />
               <Route path="/chroma" element={<Chroma />} />
               <Route path="/bloom" element={<Bloom />} />
+              <Route path="/faces" element={<Faces />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
@@ -175,6 +179,7 @@ export default function App() {
       <Shortcuts open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
       <WM open={wmOpen} onClose={() => setWmOpen(false)} />
       <Cursor />
+      <Splash />
     </>
   )
 }
