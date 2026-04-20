@@ -55,7 +55,7 @@ export default function Breathe() {
       else s = 0.3
       scaleRef.current = s
       setRem(Math.max(0, durations[curPhase] - elapsed))
-      draw(s, curPhase, t, mode)
+      draw(preRef.current, wrapRef.current, s, curPhase, t, mode)
       raf = requestAnimationFrame(loop)
     }
     raf = requestAnimationFrame(loop)
@@ -65,33 +65,11 @@ export default function Breathe() {
 
   // draw once while paused (and once on mount for reduced-motion)
   useEffect(() => {
-    if (paused || prefersReducedMotion()) draw(scaleRef.current, phase, performance.now(), mode)
+    if (paused || prefersReducedMotion()) {
+      draw(preRef.current, wrapRef.current, scaleRef.current, phase, performance.now(), mode)
+    }
     /* eslint-disable-next-line */
   }, [paused, mode])
-
-  function draw(scale: number, curPhase: Phase, t: number, currentMode: Mode) {
-    const wrap = wrapRef.current
-    const pre = preRef.current
-    if (!wrap || !pre) return
-    const probe = document.createElement('span')
-    probe.textContent = 'M'
-    probe.style.visibility = 'hidden'
-    pre.appendChild(probe)
-    const cw = probe.getBoundingClientRect().width || 8
-    const ch = probe.getBoundingClientRect().height || 16
-    pre.removeChild(probe)
-    const rect = wrap.getBoundingClientRect()
-    const cols = Math.max(24, Math.floor(rect.width / cw))
-    const rows = Math.max(12, Math.floor(rect.height / ch))
-    const { chars, kinds } = currentMode === 'circle'
-      ? renderCircle(cols, rows, scale)
-      : renderWaveform(cols, rows, scale, t)
-    pre.innerHTML = toHTML(chars, kinds, curPhase)
-  }
-
-  function eased(p: number) {
-    return p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2
-  }
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -160,6 +138,31 @@ export default function Breathe() {
       </Tile>
     </div>
   )
+}
+
+function eased(p: number): number {
+  return p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2
+}
+
+function draw(
+  pre: HTMLPreElement | null, wrap: HTMLDivElement | null,
+  scale: number, curPhase: Phase, t: number, currentMode: Mode,
+) {
+  if (!pre || !wrap) return
+  const probe = document.createElement('span')
+  probe.textContent = 'M'
+  probe.style.visibility = 'hidden'
+  pre.appendChild(probe)
+  const cw = probe.getBoundingClientRect().width || 8
+  const ch = probe.getBoundingClientRect().height || 16
+  pre.removeChild(probe)
+  const rect = wrap.getBoundingClientRect()
+  const cols = Math.max(24, Math.floor(rect.width / cw))
+  const rows = Math.max(12, Math.floor(rect.height / ch))
+  const { chars, kinds } = currentMode === 'circle'
+    ? renderCircle(cols, rows, scale)
+    : renderWaveform(cols, rows, scale, t)
+  pre.innerHTML = toHTML(chars, kinds, curPhase)
 }
 
 function renderCircle(cols: number, rows: number, scale: number): { chars: string[][]; kinds: Kind[][] } {

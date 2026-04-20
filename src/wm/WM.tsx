@@ -184,7 +184,7 @@ export default function WM({ open, onClose }: Props) {
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-40 flex flex-col bg-[var(--color-bg)]">
+    <div className="fixed inset-x-0 top-0 z-40 flex flex-col bg-[var(--color-bg)]" style={{ bottom: '28px' }}>
       {/* top menubar */}
       <header className="flex shrink-0 items-center justify-between border-b border-[var(--color-line)] bg-[var(--color-surface)] px-4 py-2 text-[11px]">
         <div className="flex items-center gap-4">
