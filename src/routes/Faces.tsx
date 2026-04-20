@@ -1,157 +1,129 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { KAOMOJI } from '../data/kaomoji'
+import CopyToast from '../modules/faces/CopyToast'
+import EmptyState from '../modules/faces/EmptyState'
+import FaceTile from '../modules/faces/FaceTile'
+import RecentRow from '../modules/faces/RecentRow'
+import SearchBar, { type SearchBarHandle } from '../modules/faces/SearchBar'
+import { useCopy } from '../modules/faces/useCopy'
+import { useRecent } from '../modules/faces/useRecent'
 
-/* faces — click any to copy. type to search; tags are matched too so
-   "bear", "flip", "happy", "cry" all surface the right subset. */
+/* faces — kaomoji gallery. orchestration only.
+   components under src/modules/faces/; data in src/data/kaomoji.ts. */
+
+// ----- filter -----
+
+function matchesQuery(face: string, tags: readonly string[], q: string): boolean {
+  if (!q) return true
+  if (face.toLowerCase().includes(q)) return true
+  return tags.some((t) => t.includes(q))
+}
+
+// ----- adaptive spanning so wide kaomoji don't silently truncate -----
+// measured in unicode code points (not char count — emoji are 2, combining
+// marks skew, Array.from gives the right answer).
+const LONG_CODE_POINTS = 14
+const VERY_LONG_CODE_POINTS = 24
+
+function spanFor(face: string): string {
+  const n = Array.from(face).length
+  if (n >= VERY_LONG_CODE_POINTS) return 'col-span-2 sm:col-span-3'
+  if (n >= LONG_CODE_POINTS) return 'col-span-2'
+  return ''
+}
 
 export default function Faces() {
   const [query, setQuery] = useState('')
-  const [copied, setCopied] = useState<string | null>(null)
-  const copyTimer = useRef<number | null>(null)
-  const searchRef = useRef<HTMLInputElement>(null)
+  const { copy, lastCopied } = useCopy()
+  const { items: recent, remember, clear: clearRecent } = useRecent()
+  const searchRef = useRef<SearchBarHandle>(null)
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
     if (!q) return KAOMOJI
-    return KAOMOJI.filter((k) => {
-      if (k.face.toLowerCase().includes(q)) return true
-      return k.tags.some((t) => t.includes(q))
-    })
+    return KAOMOJI.filter((k) => matchesQuery(k.face.toLowerCase(), k.tags, q))
   }, [query])
 
-  const copy = async (face: string) => {
-    try {
-      await navigator.clipboard.writeText(face)
-    } catch {
-      // fallback: temp textarea (for environments without clipboard permission)
-      const ta = document.createElement('textarea')
-      ta.value = face
-      ta.style.position = 'fixed'
-      ta.style.opacity = '0'
-      document.body.appendChild(ta)
-      ta.select()
-      try { document.execCommand('copy') } catch { /* ignore */ }
-      document.body.removeChild(ta)
-    }
-    setCopied(face)
-    if (copyTimer.current) clearTimeout(copyTimer.current)
-    copyTimer.current = window.setTimeout(() => setCopied(null), 900)
-  }
+  const handleCopy = useCallback((face: string) => {
+    void copy(face).then((ok) => { if (ok) remember(face) })
+  }, [copy, remember])
 
-  // keyboard
+  const copyFirst = useCallback(() => {
+    if (filtered.length === 0) return
+    handleCopy(filtered[0].face)
+    setQuery('')
+  }, [filtered, handleCopy])
+
+  // global keys (outside inputs)
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      const inInput = e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement
+      const inInput =
+        e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement
       if (e.metaKey || e.ctrlKey || e.altKey) return
       if (!inInput && e.key === '/') {
         e.preventDefault()
         searchRef.current?.focus()
-        searchRef.current?.select()
-        return
-      }
-      if (e.key === 'Escape' && inInput) {
-        setQuery('')
-        searchRef.current?.blur()
         return
       }
       if (!inInput && (e.key === 'r' || e.key === 'R')) {
         if (filtered.length === 0) return
         const pick = filtered[Math.floor(Math.random() * filtered.length)]
-        copy(pick.face)
-        return
+        handleCopy(pick.face)
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [filtered])
-
-  const onSearchKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      if (filtered.length > 0) {
-        copy(filtered[0].face)
-        setQuery('')
-        searchRef.current?.blur()
-      }
-    }
-  }
+  }, [filtered, handleCopy])
 
   return (
     <div className="relative flex h-[calc(100vh-9rem)] w-full flex-col overflow-hidden rounded-xl border border-[var(--color-line)] bg-[var(--color-surface)]">
-      {/* sticky top bar */}
-      <header className="sticky top-0 z-10 flex items-center gap-3 border-b border-[var(--color-line)] bg-[var(--color-bg)]/80 px-4 py-3 backdrop-blur-md">
-        <div className="relative flex-1">
-          <input
-            ref={searchRef}
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={onSearchKey}
-            placeholder="search — happy · bear · flip · love · sad…"
-            className="w-full rounded-full border border-[var(--color-line)] bg-[var(--color-surface)] px-4 py-1.5 pr-16 text-[13px] text-[var(--color-fg)] outline-none focus:border-[var(--color-fg)]"
-            autoFocus
-          />
-          {query && (
-            <button
-              onClick={() => { setQuery(''); searchRef.current?.focus() }}
-              className="absolute right-9 top-1/2 -translate-y-1/2 rounded-full px-1.5 text-[12px] text-[var(--color-dim)] hover:text-[var(--color-fg)]"
-              title="clear · esc"
-            >×</button>
-          )}
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full border border-[var(--color-line)] bg-[var(--color-bg)] px-1.5 text-[10px] text-[var(--color-dim)]">
-            /
-          </span>
-        </div>
-        <span className="shrink-0 tabular-nums text-[11px] tracking-[0.1em] text-[var(--color-dim)]">
-          {filtered.length} / {KAOMOJI.length}
-        </span>
-      </header>
+      <SearchBar
+        ref={searchRef}
+        value={query}
+        onChange={setQuery}
+        onEnter={copyFirst}
+        count={filtered.length}
+        total={KAOMOJI.length}
+      />
 
-      {/* grid */}
-      <div className="flex-1 overflow-y-auto p-3">
+      <RecentRow
+        faces={recent}
+        copiedFace={lastCopied}
+        onCopy={handleCopy}
+        onClear={clearRecent}
+      />
+
+      <main
+        className="flex-1 overflow-y-auto p-3"
+        role="region"
+        aria-label="kaomoji gallery"
+      >
         {filtered.length === 0 ? (
-          <div className="grid h-full place-items-center text-[13px] text-[var(--color-dim)]">
-            no matches for "{query}" · try bear, flip, happy, cry, cat…
-          </div>
+          <EmptyState query={query} />
         ) : (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-2">
-            {filtered.map((k) => {
-              const isCopied = copied === k.face
-              return (
-                <button
-                  key={k.face}
-                  onClick={() => copy(k.face)}
-                  title={`copy · ${k.tags.join(' · ')}`}
-                  className={`group flex h-20 items-center justify-center overflow-hidden rounded-md border px-2 transition-all ${
-                    isCopied
-                      ? 'scale-[1.03] border-[var(--color-fg)] bg-[var(--color-fg)]/10'
-                      : 'border-[var(--color-line)] hover:scale-[1.02] hover:border-[var(--color-dim)] hover:bg-[var(--color-bg)]'
-                  }`}
-                  style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Yu Gothic", sans-serif' }}
-                >
-                  <span className="truncate text-[15px] leading-none text-[var(--color-fg)]">
-                    {k.face}
-                  </span>
-                </button>
-              )
-            })}
+          <div
+            className="grid grid-flow-row-dense grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-2"
+            role="list"
+          >
+            {filtered.map((k) => (
+              <FaceTile
+                key={k.face}
+                face={k.face}
+                tags={k.tags}
+                copied={lastCopied === k.face}
+                spanClass={spanFor(k.face)}
+                onCopy={handleCopy}
+              />
+            ))}
           </div>
         )}
-      </div>
+      </main>
 
-      {/* bottom hint strip */}
-      <div className="border-t border-[var(--color-line)] bg-[var(--color-bg)]/60 px-4 py-1.5 text-center text-[10px] tracking-[0.1em] text-[var(--color-dim)] backdrop-blur-sm">
+      <footer className="border-t border-[var(--color-line)] bg-[var(--color-bg)]/60 px-4 py-1.5 text-center text-[10px] tracking-[0.1em] text-[var(--color-dim)] backdrop-blur-sm">
         click to copy · / focus search · enter copy first · r random · esc clear
-      </div>
+      </footer>
 
-      {/* copied toast */}
-      {copied && (
-        <div
-          className="pointer-events-none absolute bottom-12 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded-full bg-black/85 px-4 py-2 text-[12px] text-white shadow-xl ring-1 ring-white/10 backdrop-blur-md"
-          style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
-        >
-          copied · <span className="font-bold">{copied}</span>
-        </div>
-      )}
+      <CopyToast face={lastCopied} />
     </div>
   )
 }
