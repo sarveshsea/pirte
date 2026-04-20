@@ -22,6 +22,7 @@ export const REGISTRY: RouteEntry[] = [
   { path: '/folds',        label: 'folds',        Component: lazy(() => import('../routes/Folds')) },
   { path: '/orbit',        label: 'orbit',        Component: lazy(() => import('../routes/Orbit')) },
   { path: '/microbes',     label: 'microbes',     Component: lazy(() => import('../routes/Microbes')) },
+  { path: '/chroma',       label: 'chroma',       Component: lazy(() => import('../routes/Chroma')) },
 ]
 
 export function byPath(p: string): RouteEntry | undefined {

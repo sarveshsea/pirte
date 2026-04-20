@@ -68,6 +68,7 @@ export default function Chroma() {
   const harm: Harmony[] = useMemo(() => harmonies(rgb), [rgb])
 
   // keep hex input in sync when color changes from other sources
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setHexInput(hex) }, [hex])
 
   // throttled url sync
@@ -173,7 +174,6 @@ export default function Chroma() {
   }, [rgb, harm])
 
   const onText = rgb.r * 0.299 + rgb.g * 0.587 + rgb.b * 0.114 > 150 ? '#000' : '#fff'
-  const compHex = rgbToHex(harm[0].swatches[1])
   const cComp = contrast(rgb, harm[0].swatches[1])
 
   return (
