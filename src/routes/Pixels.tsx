@@ -1,37 +1,60 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Tile from '../components/Tile'
-import { buildPuzzle, type Puzzle } from '../modules/pixelFill'
+import Slider from '../components/Slider'
+import {
+  buildFromFile, buildFromSeed, buildFromUrl,
+  type Puzzle, type PuzzleSource,
+} from '../modules/pixelFill'
 
-const SIZE = 32
-const COLORS = 8
+const DEFAULT_SIZE = 32
+const DEFAULT_COLORS = 8
 
 export default function Pixels() {
-  const [puzzle, setPuzzle] = useState<Puzzle | null>(null)
-  const [filled, setFilled] = useState<Uint8Array | null>(null)
+  const [size, setSize]       = useState(DEFAULT_SIZE)
+  const [colors, setColors]   = useState(DEFAULT_COLORS)
+  const [puzzle, setPuzzle]   = useState<Puzzle | null>(null)
+  const [filled, setFilled]   = useState<Uint8Array | null>(null)
   const [selected, setSelected] = useState(0)
   const [loading, setLoading] = useState(false)
-  const [seed, setSeed] = useState(() => Math.random().toString(36).slice(2, 8))
+  const [error, setError]     = useState<string | null>(null)
+  const [urlInput, setUrlInput] = useState('')
+  const [isDragging, setIsDragging] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const idleTimer = useRef<number | null>(null)
   const autoTimer = useRef<number | null>(null)
 
-  const load = async (s: string) => {
+  const applyPuzzle = (p: Puzzle) => {
+    setPuzzle(p)
+    setFilled(new Uint8Array(p.size * p.size))
+    setSelected(0)
+    setError(null)
+  }
+
+  const runBuild = useCallback(async (builder: () => Promise<Puzzle>) => {
     setLoading(true)
+    setError(null)
     try {
-      const p = await buildPuzzle(SIZE, COLORS, s)
-      setPuzzle(p)
-      setFilled(new Uint8Array(SIZE * SIZE))
+      const p = await builder()
+      applyPuzzle(p)
+    } catch (e) {
+      setError((e as Error)?.message ?? 'failed to process image')
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  useEffect(() => { load(seed) /* eslint-disable-next-line */ }, [seed])
+  // initial image
+  useEffect(() => {
+    const seed = Math.random().toString(36).slice(2, 8)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    runBuild(() => buildFromSeed(size, colors, seed))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const pct = puzzle && filled
     ? Math.round((Array.from(filled).filter((v) => v === 1).length / filled.length) * 100)
     : 0
 
-  // idle auto-solve after 30s of no interaction
   const resetIdle = () => {
     if (idleTimer.current) clearTimeout(idleTimer.current)
     if (autoTimer.current) clearInterval(autoTimer.current)
@@ -68,7 +91,7 @@ export default function Pixels() {
       setFilled(copy)
     } else {
       const copy = new Uint8Array(filled)
-      copy[i] = 2 // wrong — briefly flashes
+      copy[i] = 2
       setFilled(copy)
       setTimeout(() => {
         setFilled((prev) => {
@@ -81,27 +104,75 @@ export default function Pixels() {
     }
   }
 
-  const newImage = () => {
-    resetIdle()
-    setSeed(Math.random().toString(36).slice(2, 8))
+  const onFile = (file: File | null | undefined) => {
+    if (!file) return
+    if (!file.type.startsWith('image/')) { setError('not an image'); return }
+    runBuild(() => buildFromFile(file, size, colors))
   }
 
+  const onSurpriseMe = () => {
+    const seed = Math.random().toString(36).slice(2, 8)
+    runBuild(() => buildFromSeed(size, colors, seed))
+  }
+
+  const onLoadUrl = () => {
+    const u = urlInput.trim()
+    if (!u) return
+    runBuild(() => buildFromUrl(u, size, colors))
+  }
+
+  // reprocess the current source whenever size/colors change
+  const rebuildCurrent = () => {
+    if (!puzzle) return
+    const src = puzzle.source
+    if (src.kind === 'random')      runBuild(() => buildFromSeed(size, colors, src.seed))
+    else if (src.kind === 'url')    runBuild(() => buildFromUrl(src.url, size, colors))
+    // uploaded files can't be re-read without stashing the image; offer surprise instead
+  }
+
+  const sourceLabel = (s: PuzzleSource | undefined) =>
+    !s ? '—' :
+    s.kind === 'upload' ? `upload · ${s.name}` :
+    s.kind === 'url'    ? `url · ${truncate(s.url, 32)}` :
+                          `random · ${s.seed}`
+
+  const sizeDim = puzzle?.size ?? size
+
   return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_280px]">
-      <Tile label="pixels · paint by number" code="05" footer={<span>{pct}% filled · select a color, click cells · idle 30s auto-solves</span>}>
-        <div className="grid h-[72vh] place-items-center p-4">
-          {loading && <span className="text-[11px] tracking-[0.1em] text-[var(--color-dim)]">loading image…</span>}
+    <div
+      className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_280px]"
+      onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
+      onDragLeave={() => setIsDragging(false)}
+      onDrop={(e) => {
+        e.preventDefault()
+        setIsDragging(false)
+        onFile(e.dataTransfer?.files?.[0])
+      }}
+    >
+      <Tile
+        label="pixels · paint by number"
+        code="05"
+        footer={
+          <div className="flex items-center justify-between">
+            <span>{pct}% filled · {sourceLabel(puzzle?.source)}</span>
+            <span>click cells · idle 30s auto-solves · drop an image anywhere</span>
+          </div>
+        }
+      >
+        <div className="relative grid h-[72vh] place-items-center p-4">
+          {loading && <span className="text-[11px] tracking-[0.1em] text-[var(--color-dim)]">processing image…</span>}
+          {error && !loading && <span className="text-[11px] tracking-[0.1em] text-[#ff7a7a]">{error}</span>}
           {puzzle && filled && !loading && (
             <div
               className="grid aspect-square max-h-full max-w-full border border-[var(--color-line)]"
               style={{
-                gridTemplateColumns: `repeat(${puzzle.size}, 1fr)`,
-                gridTemplateRows: `repeat(${puzzle.size}, 1fr)`,
+                gridTemplateColumns: `repeat(${sizeDim}, 1fr)`,
+                gridTemplateRows: `repeat(${sizeDim}, 1fr)`,
                 width: 'min(72vh, 100%)',
                 height: 'min(72vh, 100%)',
               }}
             >
-              {Array.from({ length: puzzle.size * puzzle.size }).map((_, i) => {
+              {Array.from({ length: sizeDim * sizeDim }).map((_, i) => {
                 const n = puzzle.cells[i]
                 const st = filled[i]
                 const rgb = puzzle.palette[n]
@@ -120,10 +191,60 @@ export default function Pixels() {
               })}
             </div>
           )}
+          {isDragging && (
+            <div className="pointer-events-none absolute inset-0 grid place-items-center border-2 border-dashed border-[var(--color-fg)] bg-[var(--color-bg)]/60 text-[12px] tracking-[0.1em] text-[var(--color-fg)]">
+              drop to process
+            </div>
+          )}
         </div>
       </Tile>
 
       <div className="flex flex-col gap-6">
+        <Tile label="image source">
+          <div className="flex flex-col gap-2 p-3 text-[11px] tracking-[0.06em]">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => onFile(e.target.files?.[0])}
+            />
+            <button data-interactive onClick={() => fileInputRef.current?.click()}>
+              upload image
+            </button>
+            <div className="flex gap-1">
+              <input
+                type="text"
+                value={urlInput}
+                onChange={(e) => setUrlInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') onLoadUrl() }}
+                placeholder="paste image url"
+                className="min-w-0 flex-1 border border-[var(--color-line)] bg-transparent px-2 py-1 text-[11px] text-[var(--color-fg)] placeholder:text-[var(--color-dim)] focus:border-[var(--color-fg)] focus:outline-none"
+              />
+              <button data-interactive onClick={onLoadUrl}>load</button>
+            </div>
+            <button data-interactive onClick={onSurpriseMe}>surprise me</button>
+          </div>
+        </Tile>
+
+        <Tile label="pixelation">
+          <div className="flex flex-col gap-3 p-3">
+            <Slider label="size"   min={16} max={64} step={4} value={size}   onChange={setSize}   format={(v) => `${v}×${v}`} />
+            <Slider label="colors" min={4}  max={16} step={1} value={colors} onChange={setColors} format={(v) => `${v}`} />
+            <button
+              data-interactive
+              onClick={rebuildCurrent}
+              disabled={!puzzle || puzzle.source.kind === 'upload'}
+              className="text-[11px] tracking-[0.06em] disabled:opacity-40"
+            >
+              reprocess
+            </button>
+            <span className="text-[10px] text-[var(--color-dim)]">
+              reprocess works for random and url sources. for uploads, re-upload to apply new settings.
+            </span>
+          </div>
+        </Tile>
+
         <Tile label="palette">
           <div className="grid grid-cols-4 gap-2 p-3">
             {puzzle?.palette.map((rgb, i) => (
@@ -142,21 +263,31 @@ export default function Pixels() {
 
         <Tile label="actions">
           <div className="flex flex-col gap-2 p-3 text-[11px] tracking-[0.06em]">
-            <button data-interactive onClick={newImage}>new image</button>
-            <button data-interactive onClick={() => puzzle && setFilled(new Uint8Array(puzzle.size * puzzle.size))}>reset</button>
+            <button data-interactive onClick={() => puzzle && setFilled(new Uint8Array(puzzle.size * puzzle.size))}>reset fills</button>
             <button data-interactive onClick={() => puzzle && setFilled(new Uint8Array(puzzle.cells.map(() => 1)))}>solve</button>
           </div>
         </Tile>
 
-        <Tile label="info">
-          <div className="flex flex-col gap-1 p-3 text-[11px] text-[var(--color-dim)]">
-            <span>size · {SIZE}×{SIZE}</span>
-            <span>colors · {COLORS}</span>
-            <span>seed · <span className="text-[var(--color-fg)]">{seed}</span></span>
-            <span>progress · <span className="text-[var(--color-fg)]">{pct}%</span></span>
-          </div>
-        </Tile>
+        {puzzle?.thumbUrl && (
+          <Tile label="preview">
+            <div className="p-3">
+              <img
+                src={puzzle.thumbUrl}
+                alt="quantized preview"
+                className="block w-full border border-[var(--color-line)]"
+                style={{ imageRendering: 'pixelated' }}
+              />
+              <span className="mt-2 block text-[10px] text-[var(--color-dim)]">
+                {puzzle.size}×{puzzle.size} · {puzzle.palette.length} colors · {pct}% filled
+              </span>
+            </div>
+          </Tile>
+        )}
       </div>
     </div>
   )
+}
+
+function truncate(s: string, n: number): string {
+  return s.length <= n ? s : s.slice(0, n - 1) + '…'
 }
