@@ -114,7 +114,7 @@ export default function Cursor() {
           const a = angle + (i / 3) * Math.PI * 2
           const ox = cx + Math.cos(a) * orbitR
           const oy = cy + Math.sin(a) * orbitR
-          ctx.fillStyle = `rgba(255, 220, 240, ${(overAmt * 0.9).toFixed(3)})`
+          ctx.fillStyle = `rgba(255, 240, 215, ${(overAmt * 0.9).toFixed(3)})`
           ctx.beginPath()
           ctx.arc(ox, oy, 2 + overAmt * 0.6, 0, Math.PI * 2)
           ctx.fill()
