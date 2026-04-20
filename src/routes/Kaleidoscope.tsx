@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import Tile from '../components/Tile'
 import Slider from '../components/Slider'
-import { fitCanvas, prefersReducedMotion } from '../lib/canvas'
+import { prefersReducedMotion } from '../lib/canvas'
 import { createKaleidoscope } from '../modules/kaleidoscope/engine'
 import { PALETTES, PALETTE_NAMES } from '../modules/kaleidoscope/palettes'
 
@@ -16,7 +16,8 @@ function clampNum(v: unknown, lo: number, hi: number, fb: number): number {
 }
 
 export default function Kaleidoscope() {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const preRef  = useRef<HTMLPreElement>(null)
+  const wrapRef = useRef<HTMLDivElement>(null)
   const [params, setParams] = useSearchParams()
 
   const [n,     setN]     = useState(() => clampInt(params.get('n'), 3, 12, 6))
@@ -43,7 +44,6 @@ export default function Kaleidoscope() {
     return () => clearTimeout(t)
   }, [n, scale, speed, palIdx, sound, setParams])
 
-  // push setters into engine on change
   useEffect(() => { engine.setN(n) }, [engine, n])
   useEffect(() => { engine.setScale(scale) }, [engine, scale])
   useEffect(() => { engine.setSpeed(speed) }, [engine, speed])
@@ -51,39 +51,46 @@ export default function Kaleidoscope() {
   useEffect(() => { engine.setPalette(palIdx) }, [engine, palIdx])
   useEffect(() => { engine.setSoundOn(sound) }, [engine, sound])
 
-  // raf + resize + pointer
   useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const ctx = canvas.getContext('2d')!
+    const pre = preRef.current
+    const wrap = wrapRef.current
+    if (!pre || !wrap) return
     let raf = 0
+    let cellW = 8
+    let cellH = 16
 
-    const resize = () => {
-      fitCanvas(canvas, ctx)
-      const rect = canvas.getBoundingClientRect()
-      engine.setSize(rect.width, rect.height)
+    const measure = () => {
+      const probe = document.createElement('span')
+      probe.textContent = 'M'
+      probe.style.visibility = 'hidden'
+      pre.appendChild(probe)
+      cellW = probe.getBoundingClientRect().width || 8
+      cellH = probe.getBoundingClientRect().height || 16
+      pre.removeChild(probe)
+      const rect = wrap.getBoundingClientRect()
+      const cols = Math.max(30, Math.floor(rect.width / cellW))
+      const rows = Math.max(18, Math.floor(rect.height / cellH))
+      engine.setSize(cols, rows)
     }
-    resize()
-    const ro = new ResizeObserver(resize)
-    ro.observe(canvas)
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(wrap)
 
     const reduce = prefersReducedMotion()
-
     const loop = (now: number) => {
-      engine.frame(ctx, now)
+      pre.innerHTML = engine.frame(now)
       if (!reduce) raf = requestAnimationFrame(loop)
     }
-    if (reduce) engine.frame(ctx, performance.now())
+    if (reduce) pre.innerHTML = engine.frame(performance.now())
     else raf = requestAnimationFrame(loop)
 
-    const toLocal = (e: PointerEvent | MouseEvent): { x: number; y: number } => {
-      const rect = canvas.getBoundingClientRect()
+    const toLocal = (e: PointerEvent): { x: number; y: number } => {
+      const rect = wrap.getBoundingClientRect()
       const cx = rect.left + rect.width / 2
       const cy = rect.top + rect.height / 2
-      const r = Math.min(rect.width, rect.height) * 0.48
+      const r = Math.min(rect.width, rect.height) * 0.5
       return { x: (e.clientX - cx) / r, y: (e.clientY - cy) / r }
     }
-
     const onMove = (e: PointerEvent) => {
       const p = toLocal(e)
       engine.setCursor(p.x, p.y)
@@ -91,25 +98,22 @@ export default function Kaleidoscope() {
     }
     const onLeave = () => engine.setCursorActive(false)
     const onDown = (e: PointerEvent) => {
-      const rect = canvas.getBoundingClientRect()
-      const cx = rect.left + rect.width / 2
-      const cy = rect.top + rect.height / 2
-      engine.click(e.clientX - cx, e.clientY - cy)
+      const rect = wrap.getBoundingClientRect()
+      engine.click(e.clientX - rect.left, e.clientY - rect.top, cellW, cellH)
     }
-    canvas.addEventListener('pointermove', onMove)
-    canvas.addEventListener('pointerleave', onLeave)
-    canvas.addEventListener('pointerdown', onDown)
+    wrap.addEventListener('pointermove', onMove)
+    wrap.addEventListener('pointerleave', onLeave)
+    wrap.addEventListener('pointerdown', onDown)
 
     return () => {
       ro.disconnect()
       if (raf) cancelAnimationFrame(raf)
-      canvas.removeEventListener('pointermove', onMove)
-      canvas.removeEventListener('pointerleave', onLeave)
-      canvas.removeEventListener('pointerdown', onDown)
+      wrap.removeEventListener('pointermove', onMove)
+      wrap.removeEventListener('pointerleave', onLeave)
+      wrap.removeEventListener('pointerdown', onDown)
     }
   }, [engine])
 
-  // keyboard shortcuts
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
@@ -130,9 +134,15 @@ export default function Kaleidoscope() {
       <Tile
         label={`kaleidoscope · ${paletteName}`}
         code="07"
-        footer={<span>tilt the cursor · click to drop · c palette · m sound · space {paused ? 'resume' : 'pause'}</span>}
+        footer={<span>cursor warps · click pulses · c palette · m sound · space {paused ? 'resume' : 'pause'}</span>}
       >
-        <canvas ref={canvasRef} className="block h-[72vh] w-full" />
+        <div ref={wrapRef} className="relative h-[72vh] w-full overflow-hidden">
+          <pre
+            ref={preRef}
+            className="m-0 h-full w-full whitespace-pre text-[12px] leading-[1.0]"
+            style={{ tabSize: 1 }}
+          />
+        </div>
       </Tile>
       <Tile label="params">
         <div className="flex h-full flex-col gap-3 p-3">
@@ -159,7 +169,7 @@ export default function Kaleidoscope() {
             </button>
           </div>
           <div className="mt-3 text-[11px] leading-relaxed text-[var(--color-dim)]">
-            shards obey cursor gravity. each mirror-wall hit tinkles. ambient drone pitches with symmetry.
+            spiral streams always spin · perlin field drifts and rotates · click to drop expanding rings · cursor bends the field toward you.
           </div>
         </div>
       </Tile>
