@@ -11,7 +11,6 @@ export const REGISTRY: RouteEntry[] = [
   { path: '/fractals',     label: 'fractals',     Component: lazy(() => import('../routes/Fractals')) },
   { path: '/attractors',   label: 'attractors',   Component: lazy(() => import('../routes/Attractors')) },
   { path: '/ascii',        label: 'ascii',        Component: lazy(() => import('../routes/Ascii')) },
-  { path: '/terminal',     label: 'terminal',     Component: lazy(() => import('../routes/Terminal')) },
   { path: '/pixels',       label: 'pixels',       Component: lazy(() => import('../routes/Pixels')) },
   { path: '/time',         label: 'time',         Component: lazy(() => import('../routes/Time')) },
   { path: '/kaleidoscope', label: 'kaleidoscope', Component: lazy(() => import('../routes/Kaleidoscope')) },

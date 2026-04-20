@@ -5,7 +5,6 @@ export const ROUTE_ORDER = [
   { path: '/fractals',     label: 'fractals',     code: '01' },
   { path: '/attractors',   label: 'attractors',   code: '02' },
   { path: '/ascii',        label: 'ascii',        code: '03' },
-  { path: '/terminal',     label: 'terminal',     code: '04' },
   { path: '/pixels',       label: 'pixels',       code: '05' },
   { path: '/time',         label: 'time',         code: '06' },
   { path: '/kaleidoscope', label: 'kaleidoscope', code: '07' },
@@ -19,6 +18,7 @@ export const ROUTE_ORDER = [
   { path: '/radio',        label: 'radio',        code: '18' },
   { path: '/spinners',     label: 'spinners',     code: '19' },
   { path: '/microbes',     label: 'microbes',     code: '20' },
+  { path: '/chroma',       label: 'chroma',       code: '21' },
 ]
 
 export default function PageNav() {

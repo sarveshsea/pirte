@@ -42,13 +42,6 @@ export const ROUTE_SHORTCUTS: Record<string, Group> = {
       { keys: 'space', label: 'randomize params (clifford / dejong)' },
     ],
   },
-  '/terminal': {
-    heading: 'terminal',
-    items: [
-      { keys: '← / →', label: 'cycle scenes' },
-      { keys: 'space', label: 'pause / resume' },
-    ],
-  },
   '/kaleidoscope': {
     heading: 'kaleidoscope',
     items: [

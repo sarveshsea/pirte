@@ -4,7 +4,6 @@ import { CITIES, formatTime } from '../lib/clock'
 import { getSessionStart, formatElapsed } from '../lib/session'
 import { getFavs, toggleFav } from '../lib/favs'
 import {
-  ThumbMatrix,
   ThumbClifford,
   ThumbAscii,
   ThumbMandelbrot,
@@ -30,7 +29,6 @@ const MODULES: Mod[] = [
   { to: '/fractals',     label: 'fractals',     code: '01', desc: 'mandelbrot · julia',              thumb: <ThumbMandelbrot />,   span: 'lg:col-span-2 lg:row-span-2', tags: ['visual', 'interactive'],          accent: '#6a8cff' },
   { to: '/attractors',   label: 'attractors',   code: '02', desc: 'lorenz · clifford · dejong',      thumb: <ThumbClifford />,                                           tags: ['visual', 'interactive'],          accent: '#b48cff' },
   { to: '/ascii',        label: 'ascii',        code: '03', desc: 'image → text',                    thumb: <ThumbAscii />,                                              tags: ['visual', 'interactive'],          accent: '#e8c878' },
-  { to: '/terminal',     label: 'terminal',     code: '04', desc: 'rain · donut · life · flow · 30', thumb: <ThumbMatrix />,       span: 'lg:col-span-2',                tags: ['visual'],                         accent: '#40ff80' },
   { to: '/kaleidoscope', label: 'kaleidoscope', code: '07', desc: 'n-fold mirror',                   thumb: <ThumbKaleidoscope />,                                       tags: ['visual', 'meditative'],           accent: '#d46cff' },
   { to: '/pixels',       label: 'pixels',       code: '05', desc: 'fill game',                       thumb: <ThumbPixels />,                                             tags: ['game', 'interactive'],            accent: '#ff6a88' },
   { to: '/time',         label: 'time',         code: '06', desc: 'global clocks',                   thumb: <ThumbTime />,         span: 'lg:col-span-2',                tags: ['live'],                           accent: '#7ac4c4' },

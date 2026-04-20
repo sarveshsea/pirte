@@ -17,7 +17,6 @@ const Index        = lazy(() => import('./routes/Index'))
 const Fractals     = lazy(() => import('./routes/Fractals'))
 const Attractors   = lazy(() => import('./routes/Attractors'))
 const Ascii        = lazy(() => import('./routes/Ascii'))
-const Terminal     = lazy(() => import('./routes/Terminal'))
 const Pixels       = lazy(() => import('./routes/Pixels'))
 const Time         = lazy(() => import('./routes/Time'))
 const Kaleidoscope = lazy(() => import('./routes/Kaleidoscope'))
@@ -31,6 +30,7 @@ const Orbit        = lazy(() => import('./routes/Orbit'))
 const Radio        = lazy(() => import('./routes/Radio'))
 const SpinnersPage = lazy(() => import('./routes/Spinners'))
 const Microbes     = lazy(() => import('./routes/Microbes'))
+const Chroma       = lazy(() => import('./routes/Chroma'))
 const Docs         = lazy(() => import('./routes/Docs'))
 const NotFound     = lazy(() => import('./routes/NotFound'))
 
@@ -40,7 +40,6 @@ const commands: Command[] = [
   { id: 'fractals',    label: 'fractals',    to: '/fractals',    hint: 'mandelbrot + julia' },
   { id: 'attractors',  label: 'attractors',  to: '/attractors',  hint: 'lorenz / clifford / dejong' },
   { id: 'ascii',       label: 'ascii',       to: '/ascii',       hint: 'image → text' },
-  { id: 'terminal',    label: 'terminal',    to: '/terminal',    hint: 'rain / donut / life / flow / rule-30' },
   { id: 'pixels',      label: 'pixels',      to: '/pixels',      hint: 'image → paint-by-number' },
   { id: 'time',        label: 'time',        to: '/time',        hint: 'global clocks' },
   { id: 'kaleidoscope', label: 'kaleidoscope', to: '/kaleidoscope', hint: 'n-fold mirror' },
@@ -54,6 +53,7 @@ const commands: Command[] = [
   { id: 'radio',       label: 'radio',       to: '/radio',       hint: 'global stations · pin the globe' },
   { id: 'spinners',    label: 'spinners',    to: '/spinners',    hint: '54 terminal-style agent spinners' },
   { id: 'microbes',    label: 'microbes',    to: '/microbes',    hint: 'real biology · physarum · turing · chemotaxis · fitzhugh' },
+  { id: 'chroma',      label: 'chroma',      to: '/chroma',      hint: 'liquid color exploration · harmony · contrast' },
 ]
 
 const TRANSITION = { duration: 0.14, ease: [0.2, 0.7, 0.2, 1] as [number, number, number, number] }
@@ -91,7 +91,6 @@ function AnimatedRoutes() {
               <Route path="/fractals" element={<Fractals />} />
               <Route path="/attractors" element={<Attractors />} />
               <Route path="/ascii" element={<Ascii />} />
-              <Route path="/terminal" element={<Terminal />} />
               <Route path="/pixels" element={<Pixels />} />
               <Route path="/time" element={<Time />} />
               <Route path="/kaleidoscope" element={<Kaleidoscope />} />
@@ -105,6 +104,7 @@ function AnimatedRoutes() {
               <Route path="/radio" element={<Radio />} />
               <Route path="/spinners" element={<SpinnersPage />} />
               <Route path="/microbes" element={<Microbes />} />
+              <Route path="/chroma" element={<Chroma />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>

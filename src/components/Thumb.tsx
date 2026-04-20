@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, type RefObject } from 'react'
 import { fitCanvas, prefersReducedMotion } from '../lib/canvas'
-import { createMatrixRain } from '../modules/matrixRain'
 import { stepClifford, DEFAULTS } from '../modules/attractors'
 import { renderKaleidoscope } from '../modules/kaleidoscope'
 import { RAMPS } from '../modules/asciiConvert'
@@ -59,15 +58,6 @@ function useThrottledRaf(
   }, deps)
 }
 
-export function ThumbMatrix() {
-  const preRef = useRef<HTMLPreElement>(null)
-  const scene = useMemo(() => createMatrixRain(), [])
-  useEffect(() => { scene.reset(32, 14) }, [scene])
-  useThrottledRaf((t) => {
-    if (preRef.current) preRef.current.textContent = scene.frame(t)
-  }, [scene], preRef)
-  return <pre ref={preRef} className="m-0 whitespace-pre text-[9px] leading-[1.0] text-[var(--color-fg)]" />
-}
 
 export function ThumbClifford() {
   const ref = useRef<HTMLCanvasElement>(null)
@@ -516,4 +506,44 @@ export function ThumbMicrobes() {
     return out.join('\n')
   }, [])
   return <pre className="m-0 whitespace-pre text-[9px] leading-[1.0] text-[var(--color-fg)]">{lines}</pre>
+}
+
+export function ThumbChroma() {
+  const ref = useRef<HTMLCanvasElement>(null)
+  useThrottledRaf((t) => {
+    const c = ref.current; if (!c) return
+    const ctx = c.getContext('2d')!
+    fitCanvas(c, ctx)
+    const rect = c.getBoundingClientRect()
+    const W = rect.width, H = rect.height
+    ctx.fillStyle = '#08080b'
+    ctx.fillRect(0, 0, W, H)
+    const colors = ['#6a8cff', '#ff6a88', '#50ffd8', '#ffb86a']
+    ctx.globalCompositeOperation = 'lighter'
+    for (let i = 0; i < colors.length; i++) {
+      const a = t * 0.0005 + (i * Math.PI * 2) / colors.length
+      const rad = Math.min(W, H) * 0.3
+      const cx = W / 2 + Math.cos(a) * rad * 0.6
+      const cy = H / 2 + Math.sin(a * 0.7) * rad * 0.6
+      const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.min(W, H) * 0.55)
+      g.addColorStop(0,   colors[i] + 'aa')
+      g.addColorStop(0.5, colors[i] + '22')
+      g.addColorStop(1,   '#00000000')
+      ctx.fillStyle = g
+      ctx.fillRect(0, 0, W, H)
+    }
+    ctx.globalCompositeOperation = 'source-over'
+    // faint glass pane in the middle
+    const pw = W * 0.55, ph = H * 0.42
+    const px = (W - pw) / 2, py = (H - ph) / 2
+    ctx.fillStyle = 'rgba(255,255,255,0.07)'
+    ctx.fillRect(px, py, pw, ph)
+    ctx.strokeStyle = 'rgba(255,255,255,0.14)'
+    ctx.strokeRect(px + 0.5, py + 0.5, pw - 1, ph - 1)
+    ctx.fillStyle = '#e8e8e8'
+    ctx.font = '10px ui-monospace, monospace'
+    ctx.textBaseline = 'middle'
+    ctx.fillText('Aa  #6a8cff', px + 10, py + ph / 2)
+  })
+  return <canvas ref={ref} className="block h-full w-full" />
 }

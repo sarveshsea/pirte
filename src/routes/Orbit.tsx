@@ -12,22 +12,51 @@ type ISSData = {
   timestamp: number
 }
 
-const STREAMS = [
-  { id: 'H999s0lxddA',  label: 'nasa earth',    hint: 'nasa · 24/7 earth from iss' },
-  { id: '21X5lGlDOfg',  label: 'nasa hd',       hint: 'nasa · legacy hd feed' },
-  { id: 'xRPjKQtRXR8',  label: 'nasa tv',       hint: 'nasa · public channel' },
+// youtube live_stream?channel=... auto-resolves to whatever's live on that
+// channel right now, so the embed stays valid even as nasa rotates video ids.
+// if a channel isn't live, youtube shows "offline" — that's honest and fine.
+type Stream = { kind: 'channel' | 'video'; id: string; label: string; hint: string }
+const STREAMS: readonly Stream[] = [
+  { kind: 'channel', id: 'UCLA_DiR1FfKNvjuUpBHmylQ', label: 'nasa live',       hint: 'nasa · auto-resolves to current live stream' },
+  { kind: 'channel', id: 'UCSUu1lih2RifWkKtDOJdsBA', label: 'nasa spaceflight', hint: 'nasa spaceflight · mission coverage + launches' },
+  { kind: 'channel', id: 'UCIBaDdAbGlFDeS33shmlD0A', label: 'esa',             hint: 'european space agency · live programming' },
 ] as const
+
+function streamSrc(s: Stream): string {
+  const common = 'autoplay=1&mute=1&modestbranding=1&rel=0&iv_load_policy=3&controls=1'
+  return s.kind === 'channel'
+    ? `https://www.youtube-nocookie.com/embed/live_stream?channel=${s.id}&${common}`
+    : `https://www.youtube-nocookie.com/embed/${s.id}?${common}`
+}
 
 const ISS_CONTINUOUS_START = new Date('2000-11-02T09:21:00Z').getTime()
 
-function useISS(pollMs = 4000) {
+type Status = 'idle' | 'loading' | 'ok' | 'slow' | 'error'
+
+function useISS(pollMs = 4000, timeoutMs = 8000) {
   const [data, setData] = useState<ISSData | null>(null)
   const [err, setErr] = useState<string | null>(null)
+  const [status, setStatus] = useState<Status>('idle')
+
   useEffect(() => {
     let cancelled = false
+    let intervalId: number | null = null
+    let slowTimer: number | null = null
+
     const load = async () => {
+      const ac = new AbortController()
+      // surface "slow api" after 2.5s so the ui doesn't look frozen
+      slowTimer = window.setTimeout(() => {
+        if (!cancelled) setStatus((s) => (s === 'loading' ? 'slow' : s))
+      }, 2500)
+      // hard timeout so a stuck fetch doesn't hang forever
+      const killer = window.setTimeout(() => ac.abort(), timeoutMs)
+      setStatus((s) => (s === 'ok' ? 'ok' : 'loading'))
       try {
-        const res = await fetch('https://api.wheretheiss.at/v1/satellites/25544', { cache: 'no-store' })
+        const res = await fetch('https://api.wheretheiss.at/v1/satellites/25544', {
+          cache: 'no-store',
+          signal: ac.signal,
+        })
         if (!res.ok) throw new Error(`http ${res.status}`)
         const j = await res.json()
         if (cancelled) return
@@ -40,15 +69,30 @@ function useISS(pollMs = 4000) {
           timestamp: j.timestamp,
         })
         setErr(null)
+        setStatus('ok')
       } catch (e) {
-        if (!cancelled) setErr(e instanceof Error ? e.message : 'unknown')
+        if (cancelled) return
+        const msg = e instanceof Error
+          ? (e.name === 'AbortError' ? `timeout after ${timeoutMs / 1000}s` : e.message)
+          : 'unknown'
+        setErr(msg)
+        setStatus('error')
+      } finally {
+        if (slowTimer) { clearTimeout(slowTimer); slowTimer = null }
+        clearTimeout(killer)
       }
     }
+
     load()
-    const id = setInterval(load, pollMs)
-    return () => { cancelled = true; clearInterval(id) }
-  }, [pollMs])
-  return { data, err }
+    intervalId = window.setInterval(load, pollMs)
+    return () => {
+      cancelled = true
+      if (intervalId) clearInterval(intervalId)
+      if (slowTimer) clearTimeout(slowTimer)
+    }
+  }, [pollMs, timeoutMs])
+
+  return { data, err, status }
 }
 
 /* ascii world map with iss position marker */
@@ -136,7 +180,7 @@ function MissionClock() {
 export default function Orbit() {
   const [streamIdx, setStreamIdx] = useState(0)
   const stream = STREAMS[streamIdx]
-  const { data: iss, err } = useISS(4000)
+  const { data: iss, err, status } = useISS(4000)
   const wrapRef = useRef<HTMLDivElement>(null)
 
   // trail of past positions
@@ -184,7 +228,7 @@ export default function Orbit() {
           <div className="relative aspect-video w-full bg-black">
             <iframe
               key={stream.id}
-              src={`https://www.youtube-nocookie.com/embed/${stream.id}?autoplay=1&mute=1&modestbranding=1&rel=0&iv_load_policy=3&controls=1`}
+              src={streamSrc(stream)}
               title={`iss live · ${stream.label}`}
               className="absolute inset-0 h-full w-full"
               allow="autoplay; encrypted-media; picture-in-picture"
@@ -210,7 +254,21 @@ export default function Orbit() {
 
       {/* right column — telemetry + mission clock */}
       <div className="flex flex-col gap-6">
-        <Tile label="telemetry" code="25544" footer={<span>{err ? `api err · ${err}` : `updated ${sinceUpdate}s ago · tick ${tick}`}</span>}>
+        <Tile
+          label="telemetry"
+          code="25544"
+          footer={
+            <span>
+              {err
+                ? `api err · ${err}`
+                : status === 'slow'
+                  ? `slow api · still waiting · tick ${tick}`
+                  : status === 'loading'
+                    ? `fetching · tick ${tick}`
+                    : `updated ${sinceUpdate}s ago · tick ${tick}`}
+            </span>
+          }
+        >
           <div className="flex flex-col gap-3 p-4 text-[12px]">
             {iss ? (
               <>
@@ -220,10 +278,14 @@ export default function Orbit() {
                 <Row label="vel" value={`${Math.round(iss.velocity).toLocaleString()} km/h`} />
                 <Row label="vis" value={iss.visibility} />
               </>
+            ) : err ? (
+              <div className="text-[#ff4b5e]">{err}</div>
             ) : (
-              <div className="text-[var(--color-dim)]">fetching telemetry…</div>
+              <div className="text-[var(--color-dim)]">
+                {status === 'slow' ? 'wheretheiss.at is slow today · hang on…' : 'fetching telemetry…'}
+              </div>
             )}
-            <div className="mt-2 text-[13px] text-[var(--color-dim)]">source · wheretheiss.at · norad 25544</div>
+            <div className="mt-2 text-[13px] text-[var(--color-dim)]">source · api.wheretheiss.at · norad 25544</div>
           </div>
         </Tile>
 
