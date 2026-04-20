@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import Tile from '../components/Tile'
 import Slider from '../components/Slider'
 import { fitCanvas, prefersReducedMotion } from '../lib/canvas'
@@ -12,13 +13,53 @@ import {
   type AttractorKind,
 } from '../modules/attractors'
 
+function parseNumTuple(s: string | null, n: number): number[] | null {
+  if (!s) return null
+  const parts = s.split(',').map((v) => parseFloat(v))
+  if (parts.length !== n || parts.some((v) => !Number.isFinite(v))) return null
+  return parts
+}
+
 export default function Attractors() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const [kind, setKind] = useState<AttractorKind>('clifford')
-  const [lorenz, setLorenz] = useState(DEFAULTS.lorenz)
-  const [clifford, setClifford] = useState(DEFAULTS.clifford)
-  const [dejong, setDejong] = useState(DEFAULTS.dejong)
-  const [trail, setTrail] = useState(0.06)
+  const [params, setParams] = useSearchParams()
+
+  const initialKind = (() => {
+    const k = params.get('k')
+    return k === 'lorenz' || k === 'clifford' || k === 'dejong' ? k : 'clifford'
+  })() as AttractorKind
+  const cliffTuple = parseNumTuple(params.get('abcd'), 4)
+  const dejongTuple = parseNumTuple(params.get('dj'), 4)
+  const lorTuple = parseNumTuple(params.get('srb'), 3)
+
+  const [kind, setKind] = useState<AttractorKind>(initialKind)
+  const [lorenz, setLorenz] = useState(
+    lorTuple ? { sigma: lorTuple[0], rho: lorTuple[1], beta: lorTuple[2] } : DEFAULTS.lorenz,
+  )
+  const [clifford, setClifford] = useState(
+    cliffTuple ? { a: cliffTuple[0], b: cliffTuple[1], c: cliffTuple[2], d: cliffTuple[3] } : DEFAULTS.clifford,
+  )
+  const [dejong, setDejong] = useState(
+    dejongTuple ? { a: dejongTuple[0], b: dejongTuple[1], c: dejongTuple[2], d: dejongTuple[3] } : DEFAULTS.dejong,
+  )
+  const [trail, setTrail] = useState(() => {
+    const t = parseFloat(params.get('t') ?? '')
+    return Number.isFinite(t) && t >= 0.01 && t <= 0.3 ? t : 0.06
+  })
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setParams((p) => {
+        p.set('k', kind)
+        p.set('abcd', [clifford.a, clifford.b, clifford.c, clifford.d].map((v) => v.toFixed(3)).join(','))
+        p.set('dj',   [dejong.a, dejong.b, dejong.c, dejong.d].map((v) => v.toFixed(3)).join(','))
+        p.set('srb',  [lorenz.sigma, lorenz.rho, lorenz.beta].map((v) => v.toFixed(3)).join(','))
+        p.set('t', trail.toFixed(3))
+        return p
+      }, { replace: true })
+    }, 300)
+    return () => clearTimeout(t)
+  }, [kind, clifford, dejong, lorenz, trail, setParams])
 
   useEffect(() => {
     const canvas = canvasRef.current

@@ -1,8 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Renderer, Program, Mesh, Triangle } from 'ogl'
 import Tile from '../components/Tile'
 
 type Mode = 'mandelbrot' | 'julia'
+
+function parsePair(s: string | null): [number, number] | null {
+  if (!s) return null
+  const [a, b] = s.split(',').map((v) => parseFloat(v))
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return null
+  return [a, b]
+}
 
 const FRAG = /* glsl */ `
 precision highp float;
@@ -58,10 +66,34 @@ const DEFAULT_JULIA_C: [number, number] = [-0.8, 0.156]
 
 export default function Fractals() {
   const wrapRef = useRef<HTMLDivElement>(null)
-  const [mode, setMode] = useState<Mode>('mandelbrot')
-  const [info, setInfo] = useState({ x: 0, y: 0, scale: DEFAULT_SCALE })
+  const [params, setParams] = useSearchParams()
+  const initialMode: Mode = params.get('m') === 'julia' ? 'julia' : 'mandelbrot'
+  const initialCenter = parsePair(params.get('c')) ?? [...DEFAULT_CENTER[initialMode]] as [number, number]
+  const initialScale = (() => {
+    const v = parseFloat(params.get('z') ?? '')
+    return Number.isFinite(v) && v > 0 ? v : DEFAULT_SCALE
+  })()
+  const initialJuliaC = parsePair(params.get('jc')) ?? DEFAULT_JULIA_C
+  const [mode, setMode] = useState<Mode>(initialMode)
+  const [info, setInfo] = useState({ x: initialCenter[0], y: initialCenter[1], scale: initialScale })
   const modeRef = useRef(mode)
   modeRef.current = mode
+  const juliaCRef = useRef<[number, number]>(initialJuliaC)
+
+  // debounced URL writer — fires once per settle point, not per frame
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setParams((p) => {
+        p.set('m', mode)
+        p.set('c', `${info.x.toFixed(5)},${info.y.toFixed(5)}`)
+        p.set('z', info.scale.toFixed(5))
+        if (mode === 'julia') p.set('jc', `${juliaCRef.current[0].toFixed(4)},${juliaCRef.current[1].toFixed(4)}`)
+        else p.delete('jc')
+        return p
+      }, { replace: true })
+    }, 500)
+    return () => clearTimeout(t)
+  }, [mode, info.x, info.y, info.scale, setParams])
 
   useEffect(() => {
     const wrap = wrapRef.current
@@ -79,10 +111,10 @@ export default function Fractals() {
       fragment: FRAG,
       uniforms: {
         uRes: { value: [1, 1] },
-        uCenter: { value: [...DEFAULT_CENTER.mandelbrot] },
-        uScale: { value: DEFAULT_SCALE },
-        uMode: { value: 0 },
-        uJuliaC: { value: [...DEFAULT_JULIA_C] },
+        uCenter: { value: [...initialCenter] },
+        uScale: { value: initialScale },
+        uMode: { value: initialMode === 'julia' ? 1 : 0 },
+        uJuliaC: { value: [...initialJuliaC] },
         uIterScale: { value: 1 },
         uTime: { value: 0 },
       },
@@ -90,10 +122,10 @@ export default function Fractals() {
     const mesh = new Mesh(gl, { geometry: geom, program })
 
     const state = {
-      center: [...DEFAULT_CENTER.mandelbrot] as [number, number],
-      scale: DEFAULT_SCALE,
-      juliaC: [...DEFAULT_JULIA_C] as [number, number],
-      mode: 0,
+      center: [...initialCenter] as [number, number],
+      scale: initialScale,
+      juliaC: [...initialJuliaC] as [number, number],
+      mode: initialMode === 'julia' ? 1 : 0,
     }
 
     const resize = () => {
@@ -149,6 +181,7 @@ export default function Fractals() {
         const nx = (e.clientX - rect.left) / rect.width
         const ny = (e.clientY - rect.top) / rect.height
         state.juliaC = [(nx - 0.5) * 2 * 1.3, (0.5 - ny) * 2 * 1.3]
+        juliaCRef.current = state.juliaC
       }
       render()
     }

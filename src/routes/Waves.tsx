@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import Tile from '../components/Tile'
 import Slider from '../components/Slider'
 import { SynthEngine, TRACKS, STEPS, keyToFreq, type Track } from '../modules/synth'
@@ -10,13 +11,42 @@ const DEFAULT_PATTERN: Record<Track, number[]> = {
   bass:  [0, 3, 6, 8, 11, 14],
 }
 
+// encode/decode pattern as 16-char hex: 4 tracks × 4-char uint16 mask
+function encodePattern(p: Record<Track, boolean[]>): string {
+  return TRACKS.map((t) => {
+    let mask = 0
+    for (let i = 0; i < STEPS; i++) if (p[t][i]) mask |= 1 << i
+    return mask.toString(16).padStart(4, '0')
+  }).join('')
+}
+function decodePattern(s: string | null): Record<Track, boolean[]> | null {
+  if (!s || s.length !== 16) return null
+  const out = {} as Record<Track, boolean[]>
+  for (let t = 0; t < TRACKS.length; t++) {
+    const chunk = s.slice(t * 4, t * 4 + 4)
+    const mask = parseInt(chunk, 16)
+    if (!Number.isFinite(mask)) return null
+    const arr = new Array(STEPS).fill(false)
+    for (let i = 0; i < STEPS; i++) arr[i] = !!(mask & (1 << i))
+    out[TRACKS[t]] = arr
+  }
+  return out
+}
+
 export default function Waves() {
+  const [params, setParams] = useSearchParams()
   const engineRef = useRef<SynthEngine | null>(null)
   const [ready, setReady] = useState(false)
   const [playing, setPlaying] = useState(false)
   const [step, setStep] = useState(0)
-  const [bpm, setBpm] = useState(120)
-  const [swing, setSwing] = useState(0)
+  const [bpm, setBpm] = useState(() => {
+    const v = parseInt(params.get('bpm') ?? '', 10)
+    return Number.isFinite(v) && v >= 60 && v <= 180 ? v : 120
+  })
+  const [swing, setSwing] = useState(() => {
+    const v = parseFloat(params.get('sw') ?? '')
+    return Number.isFinite(v) && v >= 0 && v <= 1 ? v : 0
+  })
   const [muted, setMuted] = useState(false)
   const [patternsVersion, setPatternsVersion] = useState(0)
   const scopeRef = useRef<HTMLPreElement>(null)
@@ -24,7 +54,14 @@ export default function Waves() {
 
   useEffect(() => {
     const eng = new SynthEngine()
-    for (const t of TRACKS) for (const s of DEFAULT_PATTERN[t]) eng.patterns[t][s] = true
+    const fromUrl = decodePattern(params.get('p'))
+    if (fromUrl) {
+      for (const t of TRACKS) eng.patterns[t] = fromUrl[t]
+    } else {
+      for (const t of TRACKS) for (const s of DEFAULT_PATTERN[t]) eng.patterns[t][s] = true
+    }
+    eng.bpm = bpm
+    eng.swing = swing
     eng.setOnStep((s) => setStep(s))
     engineRef.current = eng
     setReady(true)
@@ -34,7 +71,23 @@ export default function Waves() {
       if (eng.ctx.state !== 'closed') eng.ctx.close().catch(() => {})
       engineRef.current = null
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // debounced URL sync for bpm/swing/pattern
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const eng = engineRef.current
+      if (!eng) return
+      setParams((p) => {
+        p.set('bpm', String(bpm))
+        p.set('sw', swing.toFixed(2))
+        p.set('p', encodePattern(eng.patterns))
+        return p
+      }, { replace: true })
+    }, 400)
+    return () => clearTimeout(t)
+  }, [bpm, swing, patternsVersion, setParams])
 
   useEffect(() => { if (engineRef.current) engineRef.current.bpm = bpm }, [bpm])
   useEffect(() => { if (engineRef.current) engineRef.current.swing = swing }, [swing])

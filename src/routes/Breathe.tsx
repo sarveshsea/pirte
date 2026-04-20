@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import Tile from '../components/Tile'
 import Slider from '../components/Slider'
 import { prefersReducedMotion } from '../lib/canvas'
@@ -7,17 +8,37 @@ import { setSound, tick as audioTick } from '../modules/breathe/audio'
 
 type Mode = 'circle' | 'waveform'
 
+function parsePattern(s: string | null): [number, number, number, number] | null {
+  if (!s) return null
+  const parts = s.split('-').map((n) => parseInt(n, 10))
+  if (parts.length !== 4 || parts.some((n) => !Number.isFinite(n) || n < 0 || n > 15)) return null
+  return parts as [number, number, number, number]
+}
+
 export default function Breathe() {
-  const [inhale, setInhale]   = useState(4)
-  const [hold1, setHold1]     = useState(4)
-  const [exhale, setExhale]   = useState(4)
-  const [hold2, setHold2]     = useState(4)
+  const [params, setParams] = useSearchParams()
+  const pat = parsePattern(params.get('p'))
+  const [inhale, setInhale]   = useState(pat ? pat[0] : 4)
+  const [hold1, setHold1]     = useState(pat ? pat[1] : 4)
+  const [exhale, setExhale]   = useState(pat ? pat[2] : 4)
+  const [hold2, setHold2]     = useState(pat ? pat[3] : 4)
   const [paused, setPaused]   = useState(false)
   const [cycle, setCycle]     = useState(0)
   const [phase, setPhase]     = useState<Phase>('inhale')
   const [remaining, setRem]   = useState(inhale)
-  const [mode, setMode]       = useState<Mode>('circle')
+  const [mode, setMode]       = useState<Mode>((params.get('mode') === 'waveform' ? 'waveform' : 'circle'))
   const [sound, setSoundUI]   = useState(false)
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setParams((p) => {
+        p.set('p', `${inhale}-${hold1}-${exhale}-${hold2}`)
+        p.set('mode', mode)
+        return p
+      }, { replace: true })
+    }, 300)
+    return () => clearTimeout(t)
+  }, [inhale, hold1, exhale, hold2, mode, setParams])
   const preRef = useRef<HTMLPreElement>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
   const scaleRef = useRef(0.3)

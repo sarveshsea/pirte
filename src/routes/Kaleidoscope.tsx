@@ -1,15 +1,39 @@
 import { useEffect, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import Tile from '../components/Tile'
 import Slider from '../components/Slider'
 import { fitCanvas, prefersReducedMotion } from '../lib/canvas'
 import { renderKaleidoscope } from '../modules/kaleidoscope'
 
+function clampInt(v: unknown, lo: number, hi: number, fb: number): number {
+  const n = typeof v === 'string' ? parseInt(v, 10) : NaN
+  return Number.isFinite(n) && n >= lo && n <= hi ? n : fb
+}
+function clampNum(v: unknown, lo: number, hi: number, fb: number): number {
+  const n = typeof v === 'string' ? parseFloat(v) : NaN
+  return Number.isFinite(n) && n >= lo && n <= hi ? n : fb
+}
+
 export default function Kaleidoscope() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const [n, setN] = useState(6)
-  const [scale, setScale] = useState(18)
-  const [speed, setSpeed] = useState(0.6)
+  const [params, setParams] = useSearchParams()
+  const [n, setN] = useState(() => clampInt(params.get('n'), 3, 12, 6))
+  const [scale, setScale] = useState(() => clampInt(params.get('s'), 4, 60, 18))
+  const [speed, setSpeed] = useState(() => clampNum(params.get('v'), 0, 2, 0.6))
   const [paused, setPaused] = useState(false)
+
+  // throttle URL writes to avoid history spam
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setParams((p) => {
+        p.set('n', String(n))
+        p.set('s', String(scale))
+        p.set('v', speed.toFixed(2))
+        return p
+      }, { replace: true })
+    }, 300)
+    return () => clearTimeout(t)
+  }, [n, scale, speed, setParams])
 
   useEffect(() => {
     const canvas = canvasRef.current
