@@ -1,246 +1,330 @@
 import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Renderer, Program, Mesh, Triangle } from 'ogl'
-import Tile from '../components/Tile'
+import { mulberry32, hashString } from '../lib/rng'
 
-type Mode = 'mandelbrot' | 'julia'
+type Kind = 'mandelbrot' | 'julia' | 'burningship' | 'tricorn'
 
-function parsePair(s: string | null): [number, number] | null {
-  if (!s) return null
-  const [a, b] = s.split(',').map((v) => parseFloat(v))
-  if (!Number.isFinite(a) || !Number.isFinite(b)) return null
-  return [a, b]
+type Piece = {
+  id: string
+  kind: Kind
+  cx: number
+  cy: number
+  scale: number
+  jc?: [number, number]
+  hue: number
+  maxIter: number
 }
 
-const FRAG = /* glsl */ `
-precision highp float;
-uniform vec2 uRes;
-uniform vec2 uCenter;
-uniform float uScale;
-uniform int uMode; // 0 mandelbrot, 1 julia
-uniform vec2 uJuliaC;
-uniform float uIterScale;
-uniform float uTime;
+// juicy mandelbrot regions — each (cx, cy, scale)
+const MANDEL_SPOTS: [number, number, number][] = [
+  [-0.75,      0,           2.8],    // classic
+  [-0.745,     0.113,       0.04],   // seahorse valley
+  [-0.7463,    0.1102,      0.006],  // deep seahorse
+  [-1.25,      0,           0.25],   // elephant valley
+  [0.2815,     0.0085,      0.01],   // mini-mandelbrot
+  [-1.4,       0,           0.18],   // antenna
+  [-0.1011,    0.9563,      0.05],   // spirals north
+  [-1.7749,    0,           0.08],   // minibrot on real axis
+  [0.3602,     0.1001,      0.004],  // double spiral
+]
 
-vec3 hsv2rgb(vec3 c) {
-  vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
-  vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
-  return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
-}
+// lovely julia constants near the boundary
+const JULIA_CS: [number, number][] = [
+  [-0.8,     0.156],
+  [0.285,    0.01],
+  [-0.4,     0.6],
+  [0.355,    0.355],
+  [-0.7269,  0.1889],
+  [-0.75,    0],
+  [-0.70176, -0.3842],
+  [0.285,    0.013],
+  [-0.835,   -0.2321],
+  [-0.1,     0.651],
+  [-0.123,   0.745],
+  [0.37,    -0.1],
+]
 
-void main() {
-  vec2 uv = (gl_FragCoord.xy - 0.5 * uRes) / min(uRes.x, uRes.y);
-  vec2 p = uCenter + uv * uScale;
-  vec2 z = (uMode == 1) ? p : vec2(0.0);
-  vec2 c = (uMode == 1) ? uJuliaC : p;
-  float maxIter = 240.0 * uIterScale;
-  float i = 0.0;
-  for (float k = 0.0; k < 1200.0; k++) {
-    if (k >= maxIter) break;
-    float zx = z.x * z.x - z.y * z.y + c.x;
-    float zy = 2.0 * z.x * z.y + c.y;
-    z = vec2(zx, zy);
-    if (dot(z, z) > 256.0) { i = k; break; }
-    i = k;
+function randomPiece(rand: () => number, id: string): Piece {
+  // weight julia more heavily — they're the juiciest visually
+  const roll = rand()
+  let kind: Kind
+  if (roll < 0.48) kind = 'julia'
+  else if (roll < 0.78) kind = 'mandelbrot'
+  else if (roll < 0.9) kind = 'burningship'
+  else kind = 'tricorn'
+
+  let cx = 0, cy = 0, scale = 3
+  let jc: [number, number] | undefined
+
+  if (kind === 'mandelbrot') {
+    const [sx, sy, ss] = MANDEL_SPOTS[Math.floor(rand() * MANDEL_SPOTS.length)]
+    cx = sx + (rand() - 0.5) * ss * 0.2
+    cy = sy + (rand() - 0.5) * ss * 0.2
+    scale = ss * (0.7 + rand() * 0.6)
+  } else if (kind === 'julia') {
+    const [jx, jy] = JULIA_CS[Math.floor(rand() * JULIA_CS.length)]
+    jc = [jx + (rand() - 0.5) * 0.02, jy + (rand() - 0.5) * 0.02]
+    cx = 0; cy = 0
+    scale = 2.6 + rand() * 0.4
+  } else if (kind === 'burningship') {
+    cx = -0.5 + (rand() - 0.5) * 0.4
+    cy = -0.55 + (rand() - 0.5) * 0.4
+    scale = 2.8 + rand() * 0.6
+  } else {
+    cx = -0.1 + (rand() - 0.5) * 0.4
+    cy = 0
+    scale = 2.8 + rand() * 0.6
   }
-  float smooth_i = i - log2(log2(max(dot(z, z), 2.0))) + 4.0;
-  if (i >= maxIter - 1.0) {
-    gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
-    return;
+
+  return {
+    id,
+    kind,
+    cx, cy, scale, jc,
+    hue: rand(),
+    maxIter: 110 + Math.floor(rand() * 90),
   }
-  float m = pow(smooth_i / maxIter, 0.55);
-  float hue = fract(smooth_i * 0.018 + uTime * 0.04 + 0.62);
-  vec3 col = hsv2rgb(vec3(hue, 0.55, m));
-  gl_FragColor = vec4(col, 1.0);
 }
-`
 
-const VERT = /* glsl */ `
-attribute vec2 position;
-void main() { gl_Position = vec4(position, 0.0, 1.0); }
-`
+function hsv2rgb(h: number, s: number, v: number): [number, number, number] {
+  const i = Math.floor(h * 6)
+  const f = h * 6 - i
+  const p = v * (1 - s)
+  const q = v * (1 - f * s)
+  const t = v * (1 - (1 - f) * s)
+  let r = 0, g = 0, b = 0
+  switch (i % 6) {
+    case 0: r = v; g = t; b = p; break
+    case 1: r = q; g = v; b = p; break
+    case 2: r = p; g = v; b = t; break
+    case 3: r = p; g = q; b = v; break
+    case 4: r = t; g = p; b = v; break
+    case 5: r = v; g = p; b = q; break
+  }
+  return [r * 255, g * 255, b * 255]
+}
 
-const DEFAULT_CENTER = { mandelbrot: [-0.5, 0] as [number, number], julia: [0, 0] as [number, number] }
-const DEFAULT_SCALE = 3
-const DEFAULT_JULIA_C: [number, number] = [-0.8, 0.156]
+function renderPiece(canvas: HTMLCanvasElement, p: Piece) {
+  const ctx = canvas.getContext('2d')!
+  const w = canvas.width, h = canvas.height
+  const img = ctx.createImageData(w, h)
+  const data = img.data
+  const maxIter = p.maxIter
+  const aspect = w / h
 
-export default function Fractals() {
-  const wrapRef = useRef<HTMLDivElement>(null)
-  const [params, setParams] = useSearchParams()
-  const initialMode: Mode = params.get('m') === 'julia' ? 'julia' : 'mandelbrot'
-  const initialCenter = parsePair(params.get('c')) ?? [...DEFAULT_CENTER[initialMode]] as [number, number]
-  const initialScale = (() => {
-    const v = parseFloat(params.get('z') ?? '')
-    return Number.isFinite(v) && v > 0 ? v : DEFAULT_SCALE
-  })()
-  const initialJuliaC = parsePair(params.get('jc')) ?? DEFAULT_JULIA_C
-  const [mode, setMode] = useState<Mode>(initialMode)
-  const [info, setInfo] = useState({ x: initialCenter[0], y: initialCenter[1], scale: initialScale })
-  const modeRef = useRef(mode)
-  modeRef.current = mode
-  const juliaCRef = useRef<[number, number]>(initialJuliaC)
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const px = p.cx + ((x / w) - 0.5) * p.scale * aspect
+      const py = p.cy + ((y / h) - 0.5) * p.scale
 
-  // debounced URL writer — fires once per settle point, not per frame
+      let zx: number, zy: number, cx: number, cy: number
+      if (p.kind === 'julia') {
+        zx = px; zy = py; cx = p.jc![0]; cy = p.jc![1]
+      } else {
+        zx = 0; zy = 0; cx = px; cy = py
+      }
+
+      let i = 0
+      let m = 0
+      for (; i < maxIter; i++) {
+        const zx2 = zx * zx, zy2 = zy * zy
+        m = zx2 + zy2
+        if (m > 256) break
+        let nx: number, ny: number
+        if (p.kind === 'burningship') {
+          nx = zx2 - zy2 + cx
+          ny = 2 * Math.abs(zx * zy) + cy
+        } else if (p.kind === 'tricorn') {
+          nx = zx2 - zy2 + cx
+          ny = -2 * zx * zy + cy
+        } else {
+          nx = zx2 - zy2 + cx
+          ny = 2 * zx * zy + cy
+        }
+        zx = nx; zy = ny
+      }
+
+      const idx = (y * w + x) * 4
+      if (i >= maxIter) {
+        data[idx] = 6; data[idx + 1] = 6; data[idx + 2] = 10; data[idx + 3] = 255
+      } else {
+        const smooth = i + 1 - Math.log2(Math.max(1e-6, Math.log2(Math.max(m, 2)) / 2))
+        const tnorm = Math.pow(Math.max(0, smooth / maxIter), 0.55)
+        const hue = (p.hue + tnorm * 0.35) % 1
+        const [r, g, b] = hsv2rgb(hue, 0.45 + tnorm * 0.3, 0.12 + tnorm * 0.88)
+        data[idx] = r | 0; data[idx + 1] = g | 0; data[idx + 2] = b | 0; data[idx + 3] = 255
+      }
+    }
+  }
+  ctx.putImageData(img, 0, 0)
+}
+
+function pieceLabel(p: Piece): string {
+  if (p.kind === 'julia') {
+    const [jx, jy] = p.jc!
+    return `c = ${jx.toFixed(3)} ${jy >= 0 ? '+' : '-'} ${Math.abs(jy).toFixed(3)}i · iter ${p.maxIter}`
+  }
+  if (p.kind === 'mandelbrot') {
+    return `@ (${p.cx.toFixed(3)}, ${p.cy.toFixed(3)}) · z×${(2.8 / p.scale).toFixed(2)}`
+  }
+  return `@ (${p.cx.toFixed(2)}, ${p.cy.toFixed(2)}) · z×${(2.8 / p.scale).toFixed(2)}`
+}
+
+/* ------------------ tile: lazy-renders on scroll into view ------------------ */
+
+function FractalTile({ piece, onRegenerate }: { piece: Piece; onRegenerate: () => void }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const [rendered, setRendered] = useState(false)
+  const [hover, setHover] = useState(false)
+
   useEffect(() => {
-    const t = setTimeout(() => {
-      setParams((p) => {
-        p.set('m', mode)
-        p.set('c', `${info.x.toFixed(5)},${info.y.toFixed(5)}`)
-        p.set('z', info.scale.toFixed(5))
-        if (mode === 'julia') p.set('jc', `${juliaCRef.current[0].toFixed(4)},${juliaCRef.current[1].toFixed(4)}`)
-        else p.delete('jc')
-        return p
-      }, { replace: true })
-    }, 500)
-    return () => clearTimeout(t)
-  }, [mode, info.x, info.y, info.scale, setParams])
-
-  useEffect(() => {
-    const wrap = wrapRef.current
-    if (!wrap) return
-    const renderer = new Renderer({ dpr: Math.min(window.devicePixelRatio, 2), alpha: false })
-    const gl = renderer.gl
-    gl.canvas.style.width = '100%'
-    gl.canvas.style.height = '100%'
-    gl.canvas.style.display = 'block'
-    wrap.appendChild(gl.canvas)
-
-    const geom = new Triangle(gl)
-    const program = new Program(gl, {
-      vertex: VERT,
-      fragment: FRAG,
-      uniforms: {
-        uRes: { value: [1, 1] },
-        uCenter: { value: [...initialCenter] },
-        uScale: { value: initialScale },
-        uMode: { value: initialMode === 'julia' ? 1 : 0 },
-        uJuliaC: { value: [...initialJuliaC] },
-        uIterScale: { value: 1 },
-        uTime: { value: 0 },
+    const el = canvasRef.current
+    if (!el) return
+    let cancelled = false
+    const obs = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting && !rendered && !cancelled) {
+            // defer 1 rAF so the placeholder shows first
+            requestAnimationFrame(() => {
+              if (cancelled) return
+              renderPiece(el, piece)
+              setRendered(true)
+            })
+            obs.disconnect()
+            return
+          }
+        }
       },
-    })
-    const mesh = new Mesh(gl, { geometry: geom, program })
-
-    const state = {
-      center: [...initialCenter] as [number, number],
-      scale: initialScale,
-      juliaC: [...initialJuliaC] as [number, number],
-      mode: initialMode === 'julia' ? 1 : 0,
-    }
-
-    const resize = () => {
-      const rect = wrap.getBoundingClientRect()
-      renderer.setSize(rect.width, rect.height)
-      program.uniforms.uRes.value = [gl.canvas.width, gl.canvas.height]
-    }
-    resize()
-    const ro = new ResizeObserver(resize)
-    ro.observe(wrap)
-
-    const render = () => {
-      program.uniforms.uCenter.value = state.center
-      program.uniforms.uScale.value = state.scale
-      program.uniforms.uMode.value = state.mode
-      program.uniforms.uJuliaC.value = state.juliaC
-      program.uniforms.uTime.value = performance.now() * 0.001
-      renderer.render({ scene: mesh })
-      setInfo({ x: state.center[0], y: state.center[1], scale: state.scale })
-    }
-    let animRaf = 0
-    const animate = () => {
-      render()
-      animRaf = requestAnimationFrame(animate)
-    }
-    animate()
-
-    const screenToWorld = (px: number, py: number): [number, number] => {
-      const rect = wrap.getBoundingClientRect()
-      const nx = (px - rect.left - rect.width / 2) / Math.min(rect.width, rect.height)
-      const ny = (rect.height / 2 - (py - rect.top)) / Math.min(rect.width, rect.height)
-      return [state.center[0] + nx * state.scale, state.center[1] + ny * state.scale]
-    }
-
-    let dragging = false
-    let lastX = 0, lastY = 0
-    const onDown = (e: PointerEvent) => {
-      dragging = true
-      lastX = e.clientX; lastY = e.clientY
-      ;(e.target as Element).setPointerCapture?.(e.pointerId)
-    }
-    const onMove = (e: PointerEvent) => {
-      const rect = wrap.getBoundingClientRect()
-      if (dragging) {
-        const dx = (e.clientX - lastX) / Math.min(rect.width, rect.height)
-        const dy = (e.clientY - lastY) / Math.min(rect.width, rect.height)
-        state.center[0] -= dx * state.scale
-        state.center[1] += dy * state.scale
-        lastX = e.clientX; lastY = e.clientY
-      }
-      if (modeRef.current === 'julia' && !dragging) {
-        // julia c tracks cursor in viewport normalized space for live interaction
-        const nx = (e.clientX - rect.left) / rect.width
-        const ny = (e.clientY - rect.top) / rect.height
-        state.juliaC = [(nx - 0.5) * 2 * 1.3, (0.5 - ny) * 2 * 1.3]
-        juliaCRef.current = state.juliaC
-      }
-      render()
-    }
-    const onUp = (e: PointerEvent) => {
-      dragging = false
-      ;(e.target as Element).releasePointerCapture?.(e.pointerId)
-    }
-    const onWheel = (e: WheelEvent) => {
-      e.preventDefault()
-      const factor = Math.pow(1.0015, e.deltaY)
-      const [wx, wy] = screenToWorld(e.clientX, e.clientY)
-      state.center[0] = wx + (state.center[0] - wx) * factor
-      state.center[1] = wy + (state.center[1] - wy) * factor
-      state.scale *= factor
-      render()
-    }
-    const onKey = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement) return
-      if (e.key.toLowerCase() === 'm') { state.mode = 0; modeRef.current = 'mandelbrot'; setMode('mandelbrot'); state.center = [...DEFAULT_CENTER.mandelbrot]; state.scale = DEFAULT_SCALE; render() }
-      if (e.key.toLowerCase() === 'j') { state.mode = 1; modeRef.current = 'julia'; setMode('julia'); state.center = [...DEFAULT_CENTER.julia]; state.scale = DEFAULT_SCALE; render() }
-      if (e.key.toLowerCase() === 'r') {
-        state.center = [...(state.mode === 0 ? DEFAULT_CENTER.mandelbrot : DEFAULT_CENTER.julia)]
-        state.scale = DEFAULT_SCALE
-        render()
-      }
-    }
-
-    wrap.addEventListener('pointerdown', onDown)
-    wrap.addEventListener('pointermove', onMove)
-    wrap.addEventListener('pointerup', onUp)
-    wrap.addEventListener('wheel', onWheel, { passive: false })
-    window.addEventListener('keydown', onKey)
-
-    return () => {
-      ro.disconnect()
-      if (animRaf) cancelAnimationFrame(animRaf)
-      wrap.removeEventListener('pointerdown', onDown)
-      wrap.removeEventListener('pointermove', onMove)
-      wrap.removeEventListener('pointerup', onUp)
-      wrap.removeEventListener('wheel', onWheel)
-      window.removeEventListener('keydown', onKey)
-      gl.canvas.remove()
-    }
-  }, [])
+      { rootMargin: '300px 0px' },
+    )
+    obs.observe(el)
+    return () => { cancelled = true; obs.disconnect() }
+  }, [piece.id, rendered])
 
   return (
-    <Tile
-      label={`fractals · ${mode}`}
-      code="01"
-      footer={
-        <div className="flex items-center justify-between">
-          <span>m mandelbrot · j julia · r reset · drag pan · wheel zoom</span>
-          <span className="tabular-nums">
-            c ({info.x.toFixed(4)}, {info.y.toFixed(4)}) · z ×{(DEFAULT_SCALE / info.scale).toFixed(2)}
-          </span>
-        </div>
-      }
+    <figure
+      className="flex flex-col gap-2"
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
     >
-      <div ref={wrapRef} className="h-[72vh] w-full" />
-    </Tile>
+      <button
+        data-interactive
+        onClick={onRegenerate}
+        className="group relative block aspect-square w-full overflow-hidden !rounded-[6px] !border !border-[var(--color-line)] !p-0 hover:!border-[var(--color-fg)]"
+        style={{ background: '#070710' }}
+        title="click to regenerate"
+      >
+        <canvas ref={canvasRef} width={256} height={256} className="block h-full w-full" />
+        {!rendered && (
+          <div className="absolute inset-0 grid place-items-center text-[10px] tracking-[0.18em] text-[var(--color-dim)]">
+            rendering…
+          </div>
+        )}
+        {hover && rendered && (
+          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-2 py-1.5 text-[10px] tracking-[0.08em] text-[var(--color-fg)]">
+            ↻ regenerate
+          </div>
+        )}
+      </button>
+      <figcaption className="flex items-start justify-between gap-2 text-[11px] leading-[1.35]">
+        <div>
+          <div className="text-[var(--color-fg)]">{piece.kind}</div>
+          <div className="break-all text-[var(--color-dim)]">{pieceLabel(piece)}</div>
+        </div>
+        <span className="shrink-0 text-[10px] tracking-[0.1em] text-[var(--color-dim)]">#{piece.id.slice(0, 4)}</span>
+      </figcaption>
+    </figure>
+  )
+}
+
+/* ------------------ route ------------------ */
+
+const PAGE = 12
+
+export default function Fractals() {
+  const [params, setParams] = useSearchParams()
+  const [seedRoot] = useState(() => {
+    const fromUrl = params.get('seed')
+    return fromUrl || Math.random().toString(36).slice(2, 10)
+  })
+  const [pieces, setPieces] = useState<Piece[]>(() => {
+    const base = hashString(seedRoot)
+    return Array.from({ length: PAGE }, (_, i) =>
+      randomPiece(mulberry32(base + i * 101), `${seedRoot}.${i}`),
+    )
+  })
+  const sentinelRef = useRef<HTMLDivElement>(null)
+  const loadingRef = useRef(false)
+
+  // keep the seed in the URL so refresh → same first page
+  useEffect(() => {
+    if (params.get('seed') === seedRoot) return
+    setParams((p) => { p.set('seed', seedRoot); return p }, { replace: true })
+  }, [seedRoot, params, setParams])
+
+  // infinite scroll: append more when sentinel nears viewport
+  useEffect(() => {
+    const el = sentinelRef.current
+    if (!el) return
+    const obs = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting) && !loadingRef.current) {
+          loadingRef.current = true
+          setPieces((ps) => {
+            const base = hashString(seedRoot) + ps.length * 101
+            const more = Array.from({ length: PAGE }, (_, i) =>
+              randomPiece(mulberry32(base + i), `${seedRoot}.${ps.length + i}`),
+            )
+            return [...ps, ...more]
+          })
+          setTimeout(() => { loadingRef.current = false }, 120)
+        }
+      },
+      { rootMargin: '600px 0px' },
+    )
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [seedRoot])
+
+  const regenerate = (id: string) => {
+    setPieces((ps) => ps.map((p) => (p.id === id ? randomPiece(Math.random, `${seedRoot}.re.${Math.random().toString(36).slice(2, 6)}`) : p)))
+  }
+
+  const newSeed = () => {
+    const s = Math.random().toString(36).slice(2, 10)
+    setParams((p) => { p.set('seed', s); return p }, { replace: true })
+    const base = hashString(s)
+    setPieces(Array.from({ length: PAGE }, (_, i) =>
+      randomPiece(mulberry32(base + i * 101), `${s}.${i}`),
+    ))
+  }
+
+  return (
+    <div className="flex w-full flex-col gap-6">
+      <header className="flex flex-wrap items-end justify-between gap-3 border-b border-[var(--color-line)] pb-4">
+        <div>
+          <h1 className="text-[32px] leading-none tracking-[-0.02em] text-[var(--color-fg)]">fractals</h1>
+          <div className="mt-2 text-[11px] tracking-[0.12em] text-[var(--color-dim)]">
+            generative · mandelbrot · julia · burning ship · tricorn · scroll for more
+          </div>
+        </div>
+        <div className="flex items-center gap-3 text-[11px] text-[var(--color-dim)]">
+          <span className="tabular-nums">{pieces.length} rendered</span>
+          <span className="text-[var(--color-line)]">·</span>
+          <span>seed <span className="text-[var(--color-fg)]">{seedRoot}</span></span>
+          <button data-interactive onClick={newSeed} className="!px-3 !py-1 text-[11px]">+ new seed</button>
+        </div>
+      </header>
+
+      <section className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+        {pieces.map((p) => (
+          <FractalTile key={p.id} piece={p} onRegenerate={() => regenerate(p.id)} />
+        ))}
+      </section>
+
+      <div ref={sentinelRef} className="grid h-24 place-items-center text-[11px] tracking-[0.2em] text-[var(--color-dim)]">
+        generating more…
+      </div>
+    </div>
   )
 }

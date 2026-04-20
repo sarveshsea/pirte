@@ -31,11 +31,9 @@ export const ROUTE_SHORTCUTS: Record<string, Group> = {
   '/fractals': {
     heading: 'fractals',
     items: [
-      { keys: 'drag',  label: 'pan' },
-      { keys: 'wheel', label: 'zoom toward cursor' },
-      { keys: 'm',     label: 'mandelbrot' },
-      { keys: 'j',     label: 'julia · c follows cursor' },
-      { keys: 'r',     label: 'reset camera' },
+      { keys: 'scroll',         label: 'generate more fractals' },
+      { keys: 'click tile',     label: 'regenerate just that one' },
+      { keys: '+ new seed',     label: 'start a fresh feed (shareable via ?seed=)' },
     ],
   },
   '/attractors': {
