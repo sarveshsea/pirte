@@ -41,6 +41,57 @@ pre, code, kbd, samp, .font-mono, [data-mono] {
   font-variant-ligatures: none;
 }
 
+/* route transitions — css-only crossfade that replaced framer-motion
+   (~40kb gzip off main bundle). keyed wrapper re-mounts each nav; the
+   enter animation runs once per route. exit has no animation because
+   the previous route is unmounted before the new one mounts. */
+.route-animate {
+  animation: route-enter 180ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  will-change: opacity, transform, filter;
+}
+@keyframes route-enter {
+  from { opacity: 0; transform: translateY(6px); filter: blur(2px); }
+  to   { opacity: 1; transform: translateY(0);   filter: blur(0);   }
+}
+
+/* splash intro — also css-only now. stages map to classes; settle reads
+   measured-logo coords from the --splash-* custom properties. */
+.splash-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  opacity: 1;
+  transition: opacity 500ms cubic-bezier(0.5, 0, 0.3, 1);
+}
+.splash-backdrop.splash-fading { opacity: 0; pointer-events: none; }
+
+.splash-shape {
+  will-change: transform, opacity;
+  animation: splash-enter 450ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  transform-origin: center center;
+}
+@keyframes splash-enter {
+  from { opacity: 0; transform: scale(0.6); }
+  to   { opacity: 1; transform: scale(1);   }
+}
+.splash-settle .splash-shape,
+.splash-fading .splash-shape {
+  animation: splash-settle 800ms cubic-bezier(0.5, 0, 0.2, 1) forwards;
+}
+@keyframes splash-settle {
+  from {
+    opacity: 1;
+    transform: scale(1) translate(0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: scale(var(--splash-scale, 0.2))
+               translate(var(--splash-tx, 0), var(--splash-ty, 0));
+  }
+}
+
 /* matte deep-space canvas — quant grid, no mood gradients */
 body {
   background-color: var(--color-bg);

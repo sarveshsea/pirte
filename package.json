@@ -13,7 +13,6 @@
     "@fontsource-variable/jetbrains-mono": "^5.2.8",
     "@fontsource-variable/manrope": "^5.2.8",
     "@tailwindcss/vite": "^4.2.2",
-    "framer-motion": "^12.38.0",
     "ogl": "^1.0.11",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",

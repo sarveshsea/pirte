@@ -1,6 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { Routes, Route, useLocation } from 'react-router-dom'
-import { AnimatePresence, motion } from 'framer-motion'
 import Cursor from './components/Cursor'
 import Splash from './components/Splash'
 import Spotlight from './components/Spotlight'
@@ -12,7 +11,6 @@ import RouteError from './components/RouteError'
 import GridBackground from './components/GridBackground'
 import WM from './wm/WM'
 import { DotsSpinner } from './components/spinners'
-import { prefersReducedMotion } from './lib/canvas'
 import { usePersistedBg } from './bg/usePersistedBg'
 import { nextBg, type BgName } from './bg/registry'
 
@@ -60,8 +58,6 @@ const commands: Command[] = [
   { id: 'faces',       label: 'faces',       to: '/faces',       hint: 'kaomoji gallery · click to copy' },
 ]
 
-const TRANSITION = { duration: 0.14, ease: [0.2, 0.7, 0.2, 1] as [number, number, number, number] }
-
 function RouteLoader() {
   return (
     <div className="grid place-items-center gap-3 py-24 text-[13px] tracking-[0.18em] text-[var(--color-dim)]">
@@ -71,50 +67,41 @@ function RouteLoader() {
   )
 }
 
+// keyed wrapper re-mounts on pathname change → css keyframe plays on enter.
+// no exit animation (previously a 140ms blur-out via framer-motion); the
+// tradeoff is ~40KB gzip off the main bundle. reduced-motion users get no
+// animation at all via the @media override in globals.css.
 function AnimatedRoutes() {
   const location = useLocation()
-  // blur + translate on route transitions is disorienting for altered/motion-sensitive users
-  const reduce = prefersReducedMotion()
-  const initial = reduce ? { opacity: 0 } : { opacity: 0, y: 6, filter: 'blur(2px)' }
-  const animate = reduce ? { opacity: 1 } : { opacity: 1, y: 0, filter: 'blur(0px)' }
-  const exit    = reduce ? { opacity: 0 } : { opacity: 0, y: -4, filter: 'blur(2px)' }
   return (
-    <AnimatePresence mode="wait" initial={false}>
-      <motion.div
-        key={location.pathname}
-        initial={initial}
-        animate={animate}
-        exit={exit}
-        transition={TRANSITION}
-      >
-        <RouteError resetKey={location.pathname}>
-          <Suspense fallback={<RouteLoader />}>
-            <Routes location={location}>
-              <Route path="/" element={<Index />} />
-              <Route path="/docs" element={<Docs />} />
-              <Route path="/fractals" element={<Fractals />} />
-              <Route path="/attractors" element={<Attractors />} />
-              <Route path="/ascii" element={<Ascii />} />
-              <Route path="/pixels" element={<Pixels />} />
-              <Route path="/time" element={<Time />} />
-              <Route path="/kaleidoscope" element={<Kaleidoscope />} />
-              <Route path="/sprites" element={<Sprites />} />
-              <Route path="/waves" element={<Waves />} />
-              <Route path="/breathe" element={<Breathe />} />
-              <Route path="/starfield" element={<Starfield />} />
-              <Route path="/orbit" element={<Orbit />} />
-              <Route path="/radio" element={<Radio />} />
-              <Route path="/spinners" element={<SpinnersPage />} />
-              <Route path="/microbes" element={<Microbes />} />
-              <Route path="/chroma" element={<Chroma />} />
-              <Route path="/bloom" element={<Bloom />} />
-              <Route path="/faces" element={<Faces />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Suspense>
-        </RouteError>
-      </motion.div>
-    </AnimatePresence>
+    <div key={location.pathname} className="route-animate">
+      <RouteError resetKey={location.pathname}>
+        <Suspense fallback={<RouteLoader />}>
+          <Routes location={location}>
+            <Route path="/" element={<Index />} />
+            <Route path="/docs" element={<Docs />} />
+            <Route path="/fractals" element={<Fractals />} />
+            <Route path="/attractors" element={<Attractors />} />
+            <Route path="/ascii" element={<Ascii />} />
+            <Route path="/pixels" element={<Pixels />} />
+            <Route path="/time" element={<Time />} />
+            <Route path="/kaleidoscope" element={<Kaleidoscope />} />
+            <Route path="/sprites" element={<Sprites />} />
+            <Route path="/waves" element={<Waves />} />
+            <Route path="/breathe" element={<Breathe />} />
+            <Route path="/starfield" element={<Starfield />} />
+            <Route path="/orbit" element={<Orbit />} />
+            <Route path="/radio" element={<Radio />} />
+            <Route path="/spinners" element={<SpinnersPage />} />
+            <Route path="/microbes" element={<Microbes />} />
+            <Route path="/chroma" element={<Chroma />} />
+            <Route path="/bloom" element={<Bloom />} />
+            <Route path="/faces" element={<Faces />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Suspense>
+      </RouteError>
+    </div>
   )
 }
 
