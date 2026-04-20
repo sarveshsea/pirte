@@ -53,14 +53,25 @@ body {
   background-size: 24px 24px, 96px 96px, 96px 96px, auto, auto;
 }
 
-/* cursor-follow spotlight — screen-blended, under overlays */
+/* cursor-follow spotlight — cosmic wash, screen-blended, under overlays */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
   pointer-events: none;
   z-index: 20;
-  background: radial-gradient(520px circle at var(--mx, 50%) var(--my, 50%), rgba(255, 255, 255, 0.045), transparent 60%);
+  background:
+    radial-gradient(
+      720px circle at var(--mx, 50%) var(--my, 50%),
+      rgba(200, 180, 255, 0.11),
+      rgba(150, 120, 220, 0.05) 30%,
+      transparent 62%
+    ),
+    radial-gradient(
+      320px circle at var(--mx, 50%) var(--my, 50%),
+      rgba(255, 235, 210, 0.06),
+      transparent 55%
+    );
   mix-blend-mode: screen;
   transition: opacity 200ms ease;
 }
@@ -155,18 +166,20 @@ input[type="text"], input[type="search"], input[type="color"] {
 }
 .tile-interactive:hover {
   --lift: -2px;
-  border-color: rgba(237, 237, 237, 0.45);
+  border-color: rgba(237, 237, 237, 0.55);
   background:
     radial-gradient(
-      240px circle at var(--mx-local, 50%) var(--my-local, 50%),
-      rgba(255, 255, 255, 0.055),
-      transparent 50%
+      320px circle at var(--mx-local, 50%) var(--my-local, 50%),
+      rgba(255, 245, 235, 0.14),
+      rgba(200, 180, 255, 0.06) 35%,
+      transparent 62%
     ),
     var(--color-surface);
   box-shadow:
-    0 1px 0 0 rgba(255, 255, 255, 0.05) inset,
-    0 20px 48px -20px rgba(0, 0, 0, 0.85),
-    0 0 0 1px rgba(237, 237, 237, 0.03);
+    0 1px 0 0 rgba(255, 255, 255, 0.08) inset,
+    0 24px 56px -18px rgba(0, 0, 0, 0.88),
+    0 0 0 1px rgba(237, 237, 237, 0.05),
+    0 0 48px -16px rgba(200, 180, 255, 0.35);
 }
 .tile-interactive:active {
   --scale: 0.985;

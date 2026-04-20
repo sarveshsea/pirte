@@ -120,11 +120,11 @@ export default function App() {
   const [wmOpen, setWmOpen] = useState(false)
   const [bg, setBg] = usePersistedBg()
   const cycleBg = () => setBg(nextBg(bg))
-  const bgCommands: Command[] = (['ink', 'flow', 'life', 'off'] as BgName[]).map((n) => ({
+  const bgCommands: Command[] = (['cosmos', 'flow', 'life', 'off'] as BgName[]).map((n) => ({
     id: `bg-${n}`,
     label: `bg: ${n}`,
-    hint: n === 'off' ? 'static gradients only'
-        : n === 'ink' ? 'domain-warped color wash'
+    hint: n === 'off'    ? 'static gradients only'
+        : n === 'cosmos' ? 'nebula + parallax stars + comets'
         : 'living wallpaper',
     run: () => setBg(n),
   }))

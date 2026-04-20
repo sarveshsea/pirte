@@ -6,11 +6,11 @@ const KEY = 'pirte:bg'
 function read(): BgName {
   try {
     const v = localStorage.getItem(KEY)
-    // rain was retired; any returning users land on ink
-    if (v === 'rain') return 'ink'
+    // retired programs → fall forward to cosmos
+    if (v === 'rain' || v === 'ink') return 'cosmos'
     if (v && (BG_NAMES as string[]).includes(v)) return v as BgName
   } catch { /* ignore */ }
-  return 'ink'
+  return 'cosmos'
 }
 
 export function usePersistedBg(): [BgName, (n: BgName) => void] {
