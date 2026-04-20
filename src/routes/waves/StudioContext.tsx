@@ -37,6 +37,7 @@ type StudioAPI = {
   setTrackSendA: (i: number, v: number) => void
   setTrackSendB: (i: number, v: number) => void
   triggerTrack: (i: number, note?: number) => void
+  loadSample: (i: number, buf: ArrayBuffer, name: string) => Promise<void>
   // master fx
   setMasterBitcrush: (p: Partial<BitcrushParams>) => void
   setMasterDelay: (p: Partial<DelayParams>) => void
@@ -142,6 +143,19 @@ export function StudioProvider({ children }: { children: ReactNode }) {
     setTrackSendA: (i, v) => mutTrack(i, (t) => { t.sendA = v }),
     setTrackSendB: (i, v) => mutTrack(i, (t) => { t.sendB = v }),
     triggerTrack: (i, note = 60) => { engineRef.current?.triggerManual(i, note) },
+    loadSample: async (i, buf, name) => {
+      const eng = engineRef.current
+      if (!eng) return
+      const audioBuf = await eng.ctx.decodeAudioData(buf.slice(0))
+      // swap voice to sampler if it isn't already
+      const pattern = findPattern(projectRef.current, projectRef.current.activePattern)
+      const t = pattern.tracks[i]
+      if (!t) return
+      if (t.voice !== 'sampler') { t.voice = 'sampler'; t.voiceParams = {}; eng.syncTrack(i) }
+      eng.setTrackSample(i, audioBuf, 60)
+      t.sampleSlot = { kind: 'user', dataUrl: '', name }
+      bump()
+    },
     setMasterBitcrush: (p) => {
       Object.assign(projectRef.current.master.bitcrush, p)
       engineRef.current?.syncMaster(); bump()
