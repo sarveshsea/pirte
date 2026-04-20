@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { prefersReducedMotion } from '../lib/canvas'
 
 export default function Cursor() {
   const ref = useRef<HTMLDivElement>(null)
@@ -8,6 +9,9 @@ export default function Cursor() {
   const overInteractive = useRef(false)
 
   useEffect(() => {
+    // honor reduce-motion — hide the custom cursor and restore the native one via body css
+    if (prefersReducedMotion()) return
+
     const onMove = (e: MouseEvent) => {
       target.current.x = e.clientX
       target.current.y = e.clientY
@@ -35,6 +39,8 @@ export default function Cursor() {
       if (raf.current) cancelAnimationFrame(raf.current)
     }
   }, [])
+
+  if (prefersReducedMotion()) return null
 
   return (
     <div

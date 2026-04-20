@@ -259,6 +259,10 @@ input[type="text"], input[type="search"], input[type="color"] {
   }
   .tile-interactive { transform: none; }
   body::before { opacity: 0; }
+  /* custom cursor is hidden in js when reduced-motion is on — restore native */
+  body, a, button, input, select, textarea, [role="button"], [data-interactive] {
+    cursor: auto;
+  }
 }
 
 @media (pointer: coarse) {
