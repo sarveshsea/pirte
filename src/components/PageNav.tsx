@@ -19,6 +19,8 @@ export const ROUTE_ORDER = [
   { path: '/cyber',        label: 'cyber',        code: '15' },
   { path: '/folds',        label: 'folds',        code: '16' },
   { path: '/orbit',        label: 'orbit',        code: '17' },
+  { path: '/radio',        label: 'radio',        code: '18' },
+  { path: '/spinners',     label: 'spinners',     code: '19' },
 ]
 
 export default function PageNav() {

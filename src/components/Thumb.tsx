@@ -10,6 +10,7 @@ import { makeStars, stepStars, renderStars, type Star } from '../modules/starfie
 import { createWorld, presetRope, step as partStep, render as partRender, type World } from '../modules/particles'
 import { MAJOR } from '../modules/tarot'
 import { parseMap } from '../modules/doom/map'
+import { DotsSpinner, ArcSpinner, PulseSpinner, WaveSpinner, BounceSpinner, EarthSpinner } from './spinners'
 
 const TARGET_FPS = 24
 const FRAME_MS = 1000 / TARGET_FPS
@@ -485,6 +486,19 @@ export function ThumbRadio() {
     <pre className="m-0 grid h-full w-full place-items-center whitespace-pre text-[9px] leading-[1.0] text-[var(--color-fg)]">
       {lines}
     </pre>
+  )
+}
+
+export function ThumbSpinners() {
+  return (
+    <div className="grid h-full w-full grid-cols-3 grid-rows-2 place-items-center text-[var(--color-fg)]">
+      <DotsSpinner size={20} color="var(--color-fg)" />
+      <ArcSpinner size={20} color="var(--color-fg)" />
+      <PulseSpinner size={20} color="var(--color-fg)" />
+      <WaveSpinner size={20} color="var(--color-fg)" />
+      <BounceSpinner size={20} color="var(--color-fg)" />
+      <EarthSpinner size={20} color="var(--color-fg)" />
+    </div>
   )
 }
 
