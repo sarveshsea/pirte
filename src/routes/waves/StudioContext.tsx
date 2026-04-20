@@ -6,7 +6,10 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { WavesEngine } from '../../modules/waves/engine'
-import { makeProject, findPattern } from '../../modules/waves/pattern'
+import { clearPattern, copyPattern, findPattern, makeProject } from '../../modules/waves/pattern'
+import {
+  History, clearAutosave, exportProject, importProject, loadAutosave, saveAutosave,
+} from '../../modules/waves/project'
 import type {
   BitcrushParams, CompParams, DelayParams, FilterType, LimiterParams,
   PatternId, Project, ReverbParams, Track, VoiceKind,
@@ -38,6 +41,18 @@ type StudioAPI = {
   setTrackSendB: (i: number, v: number) => void
   triggerTrack: (i: number, note?: number) => void
   loadSample: (i: number, buf: ArrayBuffer, name: string) => Promise<void>
+  // pattern ops
+  copyActivePatternTo: (id: PatternId) => void
+  clearActivePattern: () => void
+  // undo / redo
+  undo: () => void
+  redo: () => void
+  canUndo: boolean
+  canRedo: boolean
+  // project i/o
+  exportProject: () => void
+  importProject: (file: File) => Promise<void>
+  resetProject: () => void
   // master fx
   setMasterBitcrush: (p: Partial<BitcrushParams>) => void
   setMasterDelay: (p: Partial<DelayParams>) => void
@@ -56,8 +71,9 @@ const Ctx = createContext<StudioAPI | null>(null)
 
 export function StudioProvider({ children }: { children: ReactNode }) {
   // project kept in a ref so mutations don't churn React on every step
-  const projectRef = useRef<Project>(makeProject())
+  const projectRef = useRef<Project>(loadAutosave() ?? makeProject())
   const engineRef = useRef<WavesEngine | null>(null)
+  const historyRef = useRef<History>(new History())
   const [rev, setRev] = useState(0)
   const [ready, setReady] = useState(false)
   const [playing, setPlaying] = useState(false)
@@ -65,12 +81,25 @@ export function StudioProvider({ children }: { children: ReactNode }) {
 
   const bump = useCallback(() => setRev((r) => r + 1), [])
 
+  // snapshot before any mutation
+  const snapshot = useCallback(() => {
+    historyRef.current.push(projectRef.current)
+  }, [])
+
+  // autosave on project changes
+  useEffect(() => {
+    if (!ready) return
+    const id = setTimeout(() => saveAutosave(projectRef.current), 500)
+    return () => clearTimeout(id)
+  }, [rev, ready])
+
   useEffect(() => {
     const eng = new WavesEngine(projectRef.current)
     eng.setCallbacks({
       onStep: (s) => setStep(s),
     })
     engineRef.current = eng
+    historyRef.current.push(projectRef.current)
     setReady(true)
     return () => {
       eng.stop()
@@ -78,6 +107,19 @@ export function StudioProvider({ children }: { children: ReactNode }) {
       engineRef.current = null
     }
   }, [])
+
+  // replace entire project (undo/redo/import)
+  const replaceProject = useCallback((p: Project) => {
+    projectRef.current = p
+    const eng = engineRef.current
+    if (eng) {
+      eng.replaceProject(p)
+      eng.syncMaster()
+      for (let i = 0; i < p.patterns[0].tracks.length; i++) eng.syncTrack(i)
+      eng.recomputeSolo()
+    }
+    bump()
+  }, [bump])
 
   const mutTrack = useCallback((i: number, f: (t: Track) => void) => {
     const p = projectRef.current
@@ -125,6 +167,7 @@ export function StudioProvider({ children }: { children: ReactNode }) {
       const pattern = findPattern(p, p.activePattern)
       const cell = pattern.tracks[i]?.steps[s]
       if (!cell) return
+      snapshot()
       cell.on = !cell.on
       bump()
     },
@@ -176,12 +219,48 @@ export function StudioProvider({ children }: { children: ReactNode }) {
       Object.assign(projectRef.current.master.limiter, p)
       engineRef.current?.syncMaster(); bump()
     },
+    copyActivePatternTo: (to) => {
+      const p = projectRef.current
+      if (to === p.activePattern) return
+      snapshot()
+      copyPattern(p, p.activePattern, to)
+      bump()
+    },
+    clearActivePattern: () => {
+      snapshot()
+      clearPattern(projectRef.current, projectRef.current.activePattern)
+      bump()
+    },
+    undo: () => {
+      const prev = historyRef.current.undo()
+      if (prev) replaceProject(prev)
+    },
+    redo: () => {
+      const next = historyRef.current.redo()
+      if (next) replaceProject(next)
+    },
+    canUndo: historyRef.current.canUndo(),
+    canRedo: historyRef.current.canRedo(),
+    exportProject: () => exportProject(projectRef.current, `waves-${projectRef.current.name}-${Date.now()}.json`),
+    importProject: async (file) => {
+      const p = await importProject(file)
+      historyRef.current.clear()
+      historyRef.current.push(p)
+      replaceProject(p)
+    },
+    resetProject: () => {
+      const p = makeProject()
+      clearAutosave()
+      historyRef.current.clear()
+      historyRef.current.push(p)
+      replaceProject(p)
+    },
     readTimeDomain: (out) => engineRef.current?.readTimeDomain(out),
     readFrequency: (out) => engineRef.current?.readFrequency(out),
     getTrackLevel: (i) => engineRef.current?.getTrackLevel(i) ?? [0, 0],
     getCompGR: () => engineRef.current?.getCompGR() ?? 0,
     getLimiterGR: () => engineRef.current?.getLimiterGR() ?? 0,
-  }), [rev, ready, playing, step, bump, mutTrack])
+  }), [rev, ready, playing, step, bump, mutTrack, snapshot, replaceProject])
 
   return <Ctx.Provider value={api}>{children}</Ctx.Provider>
 }

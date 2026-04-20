@@ -1,11 +1,14 @@
+import { useRef, useState } from 'react'
 import Slider from '../../components/Slider'
 import { Knob } from '../../components/waves/primitives'
-import { PATTERN_IDS } from '../../modules/waves/types'
+import { PATTERN_IDS, type PatternId } from '../../modules/waves/types'
 import { useStudio } from './StudioContext'
 
 export default function Transport() {
   const s = useStudio()
   const p = s.project
+  const [copyTarget, setCopyTarget] = useState<PatternId | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   return (
     <div className="flex flex-wrap items-center gap-4 p-3">
@@ -22,16 +25,62 @@ export default function Transport() {
           <button
             key={id}
             data-interactive
-            onClick={() => s.setActivePattern(id)}
+            onClick={() => {
+              if (copyTarget !== null) {
+                s.copyActivePatternTo(id)
+                setCopyTarget(null)
+              } else {
+                s.setActivePattern(id)
+              }
+            }}
             className={`!px-3 !py-1.5 !text-[12px] tabular-nums ${
               p.activePattern === id
                 ? '!border-[var(--color-fg)] !text-[var(--color-fg)]'
-                : '!border-[var(--color-line)] !text-[var(--color-dim)]'
+                : copyTarget !== null
+                  ? '!border-[#6ab8ff] !text-[#6ab8ff]'
+                  : '!border-[var(--color-line)] !text-[var(--color-dim)]'
             }`}
           >
             {id}
           </button>
         ))}
+        <button
+          data-interactive
+          onClick={() => setCopyTarget(copyTarget === null ? p.activePattern : null)}
+          className={`!px-2 !py-1.5 !text-[11px] ${copyTarget !== null ? '!border-[#6ab8ff] !text-[#6ab8ff]' : '!border-[var(--color-line)] !text-[var(--color-dim)]'}`}
+          title={copyTarget !== null ? `copy ${copyTarget} → click destination` : `copy active pattern (${p.activePattern}) to…`}
+        >
+          {copyTarget !== null ? `copy ${copyTarget} →` : 'copy'}
+        </button>
+        <button
+          data-interactive
+          onClick={s.clearActivePattern}
+          className="!px-2 !py-1.5 !text-[11px] !border-[var(--color-line)] !text-[var(--color-dim)]"
+          title={`clear pattern ${p.activePattern}`}
+        >
+          clear
+        </button>
+      </div>
+
+      <div className="flex items-center gap-1">
+        <button
+          data-interactive
+          onClick={s.undo}
+          disabled={!s.canUndo}
+          className={`!px-2 !py-1.5 !text-[11px] ${s.canUndo ? '' : '!opacity-40'}`}
+          title="undo (z)"
+        >
+          ↶
+        </button>
+        <button
+          data-interactive
+          onClick={s.redo}
+          disabled={!s.canRedo}
+          className={`!px-2 !py-1.5 !text-[11px] ${s.canRedo ? '' : '!opacity-40'}`}
+          title="redo (shift+z)"
+        >
+          ↷
+        </button>
       </div>
 
       <div className="flex min-w-[160px] flex-1 items-center gap-2">
@@ -52,6 +101,36 @@ export default function Transport() {
         accent="#50ffd8"
         format={(v) => `${Math.round(v * 100)}`}
       />
+
+      <div className="flex items-center gap-1">
+        <button
+          data-interactive
+          onClick={s.exportProject}
+          className="!px-2 !py-1.5 !text-[11px] !text-[var(--color-dim)]"
+          title="export project as json"
+        >
+          export
+        </button>
+        <button
+          data-interactive
+          onClick={() => fileInputRef.current?.click()}
+          className="!px-2 !py-1.5 !text-[11px] !text-[var(--color-dim)]"
+          title="import project json"
+        >
+          import
+        </button>
+        <input
+          type="file"
+          accept="application/json"
+          className="hidden"
+          ref={fileInputRef}
+          onChange={(e) => {
+            const f = e.target.files?.[0]
+            if (f) s.importProject(f)
+            if (fileInputRef.current) fileInputRef.current.value = ''
+          }}
+        />
+      </div>
 
       <span className="ml-auto font-mono tabular-nums text-[13px] text-[var(--color-dim)]">
         step {String(s.step + 1).padStart(2, '0')}
