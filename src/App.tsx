@@ -133,8 +133,8 @@ export default function App() {
           setShortcutsOpen((v) => !v)
         }
       }
-      // alt+space toggles the tiling WM overlay
-      if (e.altKey && e.key === ' ') {
+      // shift+space toggles the tiling WM overlay
+      if (e.shiftKey && e.key === ' ' && !e.metaKey && !e.ctrlKey && !e.altKey) {
         e.preventDefault()
         setWmOpen((v) => !v)
       }

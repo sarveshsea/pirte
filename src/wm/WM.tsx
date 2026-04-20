@@ -131,16 +131,24 @@ export default function WM({ open, onClose }: Props) {
   useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => {
-      if (!e.altKey) return
+      if (!e.shiftKey) return
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
       const k = e.key.toLowerCase()
 
       // prevent browser shortcuts
       const intercept = () => { e.preventDefault(); e.stopPropagation() }
 
+      // resize: shift+ctrl+h/j/k/l (checked before plain focus so ctrl-variant wins)
+      if (e.ctrlKey && focus && ws.root) {
+        if (k === 'h') { intercept(); updateWs((w) => w.root ? { ...w, root: resizeSplit(w.root, focus, -0.05) } : w); return }
+        if (k === 'l') { intercept(); updateWs((w) => w.root ? { ...w, root: resizeSplit(w.root, focus, +0.05) } : w); return }
+        if (k === 'k') { intercept(); updateWs((w) => w.root ? { ...w, root: resizeSplit(w.root, focus, -0.05) } : w); return }
+        if (k === 'j') { intercept(); updateWs((w) => w.root ? { ...w, root: resizeSplit(w.root, focus, +0.05) } : w); return }
+      }
+
       if (e.key === 'Enter') {
         intercept()
-        openLauncher(e.shiftKey ? 'split-v' : 'split-h')
+        openLauncher(e.ctrlKey ? 'split-v' : 'split-h')
         return
       }
       if (k === 'd') { intercept(); openLauncher('swap'); return }
@@ -150,14 +158,6 @@ export default function WM({ open, onClose }: Props) {
       if (k === 'l' || e.key === 'ArrowRight') { intercept(); focusDir('right'); return }
       if (k === 'k' || e.key === 'ArrowUp')    { intercept(); focusDir('up');    return }
       if (k === 'j' || e.key === 'ArrowDown')  { intercept(); focusDir('down');  return }
-
-      // resize: alt+shift+h/j/k/l
-      if (e.shiftKey && focus && ws.root) {
-        if (k === 'h') { intercept(); updateWs((w) => w.root ? { ...w, root: resizeSplit(w.root, focus, -0.05) } : w); return }
-        if (k === 'l') { intercept(); updateWs((w) => w.root ? { ...w, root: resizeSplit(w.root, focus, +0.05) } : w); return }
-        if (k === 'k') { intercept(); updateWs((w) => w.root ? { ...w, root: resizeSplit(w.root, focus, -0.05) } : w); return }
-        if (k === 'j') { intercept(); updateWs((w) => w.root ? { ...w, root: resizeSplit(w.root, focus, +0.05) } : w); return }
-      }
 
       const n = parseInt(e.key, 10)
       if (!Number.isNaN(n) && n >= 1 && n <= state.workspaces.length) {
@@ -199,7 +199,7 @@ export default function WM({ open, onClose }: Props) {
                 data-interactive
                 onClick={() => switchWorkspace(i)}
                 className={`!px-2 !py-0.5 !text-[11px] ${i === state.current ? '!border-[var(--color-fg)] text-[var(--color-fg)]' : '!border-[var(--color-line)]'}`}
-                title={`workspace ${i + 1} · alt+${i + 1}`}
+                title={`workspace ${i + 1} · shift+${i + 1}`}
               >
                 {i + 1}
                 <span className="ml-1 text-[10px] text-[var(--color-dim)]">{allLeaves(w.root).length || '·'}</span>
@@ -208,7 +208,7 @@ export default function WM({ open, onClose }: Props) {
           </div>
         </div>
         <div className="flex items-center gap-3 text-[var(--color-dim)]">
-          <span>alt+enter split · alt+d swap · alt+q close · alt+hjkl focus · alt+⇧hjkl resize · alt+space exit</span>
+          <span>⇧enter split · ⇧⌃enter split-v · ⇧d swap · ⇧q close · ⇧hjkl focus · ⇧⌃hjkl resize · ⇧space exit</span>
           <button data-interactive onClick={onClose} className="!px-2 !py-0.5 text-[var(--color-dim)] hover:text-[var(--color-fg)]">× exit wm</button>
         </div>
       </header>
@@ -286,7 +286,7 @@ function EmptyWorkspace({ onOpen }: { onOpen: () => void }) {
     <div className="flex h-full w-full items-center justify-center border border-dashed border-[var(--color-line)] text-[12px] text-[var(--color-dim)]">
       <div className="flex flex-col items-center gap-2">
         <span className="tracking-[0.15em]">empty workspace</span>
-        <button data-interactive onClick={onOpen} className="!px-3 !py-1 text-[var(--color-fg)]">alt+enter · open module</button>
+        <button data-interactive onClick={onOpen} className="!px-3 !py-1 text-[var(--color-fg)]">⇧enter · open module</button>
       </div>
     </div>
   )

@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@import '@fontsource-variable/plus-jakarta-sans';
 @import '@fontsource-variable/jetbrains-mono';
 
 @theme {
@@ -8,6 +9,7 @@
   --color-dim: #8a8a8a;
   --color-line: #2a2a2a;
   --color-glow: rgba(237, 237, 237, 0.04);
+  --font-sans: 'Plus Jakarta Sans Variable', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'JetBrains Mono Variable', ui-monospace, monospace;
   --radius-none: 0;
 }
@@ -25,12 +27,18 @@ html, body, #root {
 html {
   background: var(--color-bg);
   color: var(--color-fg);
-  font-family: var(--font-mono);
-  font-size: 13px;
-  line-height: 1.5;
-  font-variant-ligatures: none;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.55;
+  letter-spacing: -0.005em;
   -webkit-font-smoothing: antialiased;
-  text-rendering: geometricPrecision;
+  text-rendering: optimizeLegibility;
+}
+
+/* ascii art, spinners, tabular numerics stay monospace */
+pre, code, kbd, samp, .font-mono, [data-mono] {
+  font-family: var(--font-mono);
+  font-variant-ligatures: none;
 }
 
 /* layered canvas: fine dot grid + coarse line grid + soft washes */

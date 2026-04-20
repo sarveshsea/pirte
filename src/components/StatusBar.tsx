@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { getSessionStart, formatElapsed } from '../lib/session'
 import { formatUTC } from '../lib/clock'
+import { rafLoop } from '../lib/rafLoop'
 
 type Props = { onPalette: () => void; onShortcuts?: () => void; onWM?: () => void }
 
@@ -20,29 +21,23 @@ export default function StatusBar({ onPalette, onShortcuts, onWM }: Props) {
   useEffect(() => {
     let frames = 0
     let last = performance.now()
-    let raf = 0
-    const loop = (t: number) => {
+    return rafLoop((t) => {
       frames++
       if (t - last >= 1000) {
         setFps(Math.round((frames * 1000) / (t - last)))
         frames = 0
         last = t
       }
-      raf = requestAnimationFrame(loop)
-    }
-    raf = requestAnimationFrame(loop)
-    return () => cancelAnimationFrame(raf)
+    })
   }, [])
 
   // rAF-throttled cursor coord tracking
   useEffect(() => {
-    let raf = 0
     let pending = { x: 0, y: 0 }
     const onMove = (e: PointerEvent) => { pending = { x: e.clientX, y: e.clientY } }
-    const tick = () => { setCoord(pending); raf = requestAnimationFrame(tick) }
     window.addEventListener('pointermove', onMove, { passive: true })
-    raf = requestAnimationFrame(tick)
-    return () => { window.removeEventListener('pointermove', onMove); if (raf) cancelAnimationFrame(raf) }
+    const stop = rafLoop(() => setCoord(pending))
+    return () => { window.removeEventListener('pointermove', onMove); stop() }
   }, [])
 
   const route = loc.pathname === '/' ? '/index' : loc.pathname

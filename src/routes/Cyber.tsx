@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import Tile from '../components/Tile'
 import { prefersReducedMotion } from '../lib/canvas'
+import { rafLoop } from '../lib/rafLoop'
 
 const KATAKANA = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789{}[]<>/\\'
 const NEON_CYAN = '#00f0ff'
@@ -25,10 +26,9 @@ const CYBER_VARS: CSSProperties & Record<string, string> = {
 function GlitchText({ text, className = '' }: { text: string; className?: string }) {
   const [display, setDisplay] = useState(text)
   useEffect(() => {
-    let raf = 0
     let holdUntil = 0
     const timeouts = new Set<number>()
-    const tick = (t: number) => {
+    const stop = rafLoop((t) => {
       if (t > holdUntil && Math.random() < 0.08) {
         const chars = text.split('')
         const swaps = 1 + Math.floor(Math.random() * 2)
@@ -44,11 +44,9 @@ function GlitchText({ text, className = '' }: { text: string; className?: string
         }, 70 + Math.random() * 90)
         timeouts.add(id)
       }
-      raf = requestAnimationFrame(tick)
-    }
-    raf = requestAnimationFrame(tick)
+    })
     return () => {
-      cancelAnimationFrame(raf)
+      stop()
       for (const id of timeouts) window.clearTimeout(id)
       timeouts.clear()
     }
@@ -70,7 +68,6 @@ function KatakanaRain() {
     const c = ref.current
     if (!c) return
     const ctx = c.getContext('2d')!
-    let raf = 0
     let drops: { y: number; speed: number }[] = []
     let cols = 0
     const FONT = 15
@@ -93,11 +90,9 @@ function KatakanaRain() {
     ro.observe(c)
 
     const reduce = prefersReducedMotion()
-    let last = performance.now()
-    const tick = (t: number) => {
+    if (reduce) return () => { ro.disconnect() }
+    const stop = rafLoop((_t, dt) => {
       const rect = c.getBoundingClientRect()
-      const dt = Math.min(0.08, (t - last) / 1000)
-      last = t
       // trail fade: slight purple residue
       ctx.fillStyle = 'rgba(10, 0, 20, 0.18)'
       ctx.fillRect(0, 0, rect.width, rect.height)
@@ -106,16 +101,13 @@ function KatakanaRain() {
         const d = drops[i]
         const y = d.y * FONT
         const ch = KATAKANA[Math.floor(Math.random() * KATAKANA.length)]
-        // neon trail
         ctx.fillStyle = NEON_CYAN + 'b0'
         ctx.fillText(ch, i * FONT, y)
-        // bright head
         ctx.fillStyle = '#ffffff'
         ctx.shadowColor = NEON_CYAN
         ctx.shadowBlur = 10
         ctx.fillText(ch, i * FONT, y + FONT)
         ctx.shadowBlur = 0
-        // rare magenta pop
         if (Math.random() < 0.008) {
           ctx.fillStyle = NEON_MAG
           ctx.shadowColor = NEON_MAG
@@ -129,10 +121,8 @@ function KatakanaRain() {
           d.speed = 0.4 + Math.random() * 0.9
         }
       }
-      if (!reduce) raf = requestAnimationFrame(tick)
-    }
-    raf = requestAnimationFrame(tick)
-    return () => { ro.disconnect(); if (raf) cancelAnimationFrame(raf) }
+    })
+    return () => { ro.disconnect(); stop() }
   }, [])
   return <canvas ref={ref} className="block h-full w-full" />
 }

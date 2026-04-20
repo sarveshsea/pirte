@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import Tile from '../components/Tile'
 import Slider from '../components/Slider'
 import { SynthEngine, TRACKS, STEPS, keyToFreq, type Track } from '../modules/synth'
+import { rafLoop } from '../lib/rafLoop'
 
 const DEFAULT_PATTERN: Record<Track, number[]> = {
   kick:  [0, 4, 8, 12],
@@ -104,7 +105,6 @@ export default function Waves() {
     const eng = engineRef.current!
     const timeBuf = new Uint8Array(new ArrayBuffer(eng.analyser.fftSize))
     const freqBuf = new Uint8Array(new ArrayBuffer(eng.analyser.frequencyBinCount))
-    let raf = 0
 
     const render = () => {
       // OSCILLOSCOPE — build a cols × rows grid where each column is a sample of the waveform
@@ -145,10 +145,8 @@ export default function Waves() {
         }
         specRef.current.textContent = grid.map((r) => r.join('')).join('\n')
       }
-      raf = requestAnimationFrame(render)
     }
-    raf = requestAnimationFrame(render)
-    return () => { if (raf) cancelAnimationFrame(raf) }
+    return rafLoop(render)
   }, [ready])
 
   // keyboard synth + transport
