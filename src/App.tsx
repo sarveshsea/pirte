@@ -10,6 +10,7 @@ import PageNav from './components/PageNav'
 import RouteError from './components/RouteError'
 import WM from './wm/WM'
 import { DotsSpinner } from './components/spinners'
+import { prefersReducedMotion } from './lib/canvas'
 
 // route chunks — each becomes its own js file via vite code-splitting
 const Index        = lazy(() => import('./routes/Index'))
@@ -68,13 +69,18 @@ function RouteLoader() {
 
 function AnimatedRoutes() {
   const location = useLocation()
+  // blur + translate on route transitions is disorienting for altered/motion-sensitive users
+  const reduce = prefersReducedMotion()
+  const initial = reduce ? { opacity: 0 } : { opacity: 0, y: 6, filter: 'blur(2px)' }
+  const animate = reduce ? { opacity: 1 } : { opacity: 1, y: 0, filter: 'blur(0px)' }
+  const exit    = reduce ? { opacity: 0 } : { opacity: 0, y: -4, filter: 'blur(2px)' }
   return (
     <AnimatePresence mode="wait" initial={false}>
       <motion.div
         key={location.pathname}
-        initial={{ opacity: 0, y: 6, filter: 'blur(2px)' }}
-        animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-        exit={{ opacity: 0, y: -4, filter: 'blur(2px)' }}
+        initial={initial}
+        animate={animate}
+        exit={exit}
         transition={TRANSITION}
       >
         <RouteError resetKey={location.pathname}>
