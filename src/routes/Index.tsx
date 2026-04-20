@@ -22,30 +22,32 @@ import {
   ThumbFolds,
   ThumbOrbit,
   ThumbRadio,
+  ThumbSpinners,
 } from '../components/Thumb'
 
 type Tag = 'visual' | 'interactive' | 'audio' | 'meditative' | 'live' | 'game'
-type Mod = { to: string; label: string; code: string; desc: string; thumb: ReactNode; span?: string; tags: Tag[] }
+type Mod = { to: string; label: string; code: string; desc: string; thumb: ReactNode; span?: string; tags: Tag[]; accent: string }
 
 const MODULES: Mod[] = [
-  { to: '/fractals',     label: 'fractals',     code: '01', desc: 'mandelbrot · julia',              thumb: <ThumbMandelbrot />,   span: 'lg:col-span-2 lg:row-span-2', tags: ['visual', 'interactive'] },
-  { to: '/attractors',   label: 'attractors',   code: '02', desc: 'lorenz · clifford · dejong',      thumb: <ThumbClifford />,                                           tags: ['visual', 'interactive'] },
-  { to: '/ascii',        label: 'ascii',        code: '03', desc: 'image → text',                    thumb: <ThumbAscii />,                                              tags: ['visual', 'interactive'] },
-  { to: '/terminal',     label: 'terminal',     code: '04', desc: 'rain · donut · life · flow · 30', thumb: <ThumbMatrix />,       span: 'lg:col-span-2',                tags: ['visual'] },
-  { to: '/kaleidoscope', label: 'kaleidoscope', code: '07', desc: 'n-fold mirror',                   thumb: <ThumbKaleidoscope />,                                       tags: ['visual', 'meditative'] },
-  { to: '/pixels',       label: 'pixels',       code: '05', desc: 'fill game',                       thumb: <ThumbPixels />,                                             tags: ['game', 'interactive'] },
-  { to: '/time',         label: 'time',         code: '06', desc: 'global clocks',                   thumb: <ThumbTime />,         span: 'lg:col-span-2',                tags: ['live'] },
-  { to: '/sprites',      label: 'sprites',      code: '08', desc: 'ascii playground',                thumb: <ThumbSprites />,      span: 'lg:col-span-2',                tags: ['visual', 'interactive', 'meditative'] },
-  { to: '/waves',        label: 'waves',        code: '09', desc: 'edm scope + sequencer',            thumb: <ThumbWaves />,        span: 'lg:col-span-2',                tags: ['audio', 'interactive'] },
-  { to: '/doom',         label: 'doom',         code: '10', desc: 'e1m1 ascii homage',                thumb: <ThumbDoom />,         span: 'lg:col-span-2',                tags: ['game', 'interactive'] },
-  { to: '/breathe',      label: 'breathe',      code: '11', desc: 'box-breathing guide',              thumb: <ThumbBreathe />,                                            tags: ['meditative'] },
-  { to: '/starfield',    label: 'starfield',    code: '12', desc: '3d flythrough',                    thumb: <ThumbStarfield />,    span: 'lg:col-span-2',                tags: ['visual', 'interactive', 'meditative'] },
-  { to: '/tarot',        label: 'tarot',        code: '13', desc: 'random draw',                      thumb: <ThumbTarot />,                                              tags: ['game', 'meditative'] },
-  { to: '/particles',    label: 'particles',    code: '14', desc: 'verlet physics',                   thumb: <ThumbParticles />,    span: 'lg:col-span-2',                tags: ['interactive', 'visual'] },
-  { to: '/cyber',        label: 'cyber',        code: '15', desc: 'night city // v2.077',             thumb: <ThumbCyber />,        span: 'lg:col-span-2',                tags: ['visual'] },
-  { to: '/folds',        label: 'folds',        code: '16', desc: 'generative gallery',               thumb: <ThumbFolds />,        span: 'lg:col-span-2',                tags: ['visual'] },
-  { to: '/orbit',        label: 'orbit',        code: '17', desc: 'iss · live from 400km',            thumb: <ThumbOrbit />,        span: 'lg:col-span-2',                tags: ['live'] },
-  { to: '/radio',        label: 'radio',        code: '18', desc: 'global stations · spin the globe', thumb: <ThumbRadio />,        span: 'lg:col-span-2',                tags: ['live', 'audio', 'interactive'] },
+  { to: '/fractals',     label: 'fractals',     code: '01', desc: 'mandelbrot · julia',              thumb: <ThumbMandelbrot />,   span: 'lg:col-span-2 lg:row-span-2', tags: ['visual', 'interactive'],          accent: '#6a8cff' },
+  { to: '/attractors',   label: 'attractors',   code: '02', desc: 'lorenz · clifford · dejong',      thumb: <ThumbClifford />,                                           tags: ['visual', 'interactive'],          accent: '#b48cff' },
+  { to: '/ascii',        label: 'ascii',        code: '03', desc: 'image → text',                    thumb: <ThumbAscii />,                                              tags: ['visual', 'interactive'],          accent: '#e8c878' },
+  { to: '/terminal',     label: 'terminal',     code: '04', desc: 'rain · donut · life · flow · 30', thumb: <ThumbMatrix />,       span: 'lg:col-span-2',                tags: ['visual'],                         accent: '#40ff80' },
+  { to: '/kaleidoscope', label: 'kaleidoscope', code: '07', desc: 'n-fold mirror',                   thumb: <ThumbKaleidoscope />,                                       tags: ['visual', 'meditative'],           accent: '#d46cff' },
+  { to: '/pixels',       label: 'pixels',       code: '05', desc: 'fill game',                       thumb: <ThumbPixels />,                                             tags: ['game', 'interactive'],            accent: '#ff6a88' },
+  { to: '/time',         label: 'time',         code: '06', desc: 'global clocks',                   thumb: <ThumbTime />,         span: 'lg:col-span-2',                tags: ['live'],                           accent: '#7ac4c4' },
+  { to: '/sprites',      label: 'sprites',      code: '08', desc: 'ascii playground',                thumb: <ThumbSprites />,      span: 'lg:col-span-2',                tags: ['visual', 'interactive', 'meditative'], accent: '#ff8a5a' },
+  { to: '/waves',        label: 'waves',        code: '09', desc: 'edm scope + sequencer',            thumb: <ThumbWaves />,        span: 'lg:col-span-2',                tags: ['audio', 'interactive'],           accent: '#50ffd8' },
+  { to: '/doom',         label: 'doom',         code: '10', desc: 'e1m1 ascii homage',                thumb: <ThumbDoom />,         span: 'lg:col-span-2',                tags: ['game', 'interactive'],            accent: '#e04a1c' },
+  { to: '/breathe',      label: 'breathe',      code: '11', desc: 'box-breathing guide',              thumb: <ThumbBreathe />,                                            tags: ['meditative'],                     accent: '#88ccff' },
+  { to: '/starfield',    label: 'starfield',    code: '12', desc: '3d flythrough',                    thumb: <ThumbStarfield />,    span: 'lg:col-span-2',                tags: ['visual', 'interactive', 'meditative'], accent: '#c0b8ff' },
+  { to: '/tarot',        label: 'tarot',        code: '13', desc: 'random draw',                      thumb: <ThumbTarot />,                                              tags: ['game', 'meditative'],             accent: '#e8c050' },
+  { to: '/particles',    label: 'particles',    code: '14', desc: 'verlet physics',                   thumb: <ThumbParticles />,    span: 'lg:col-span-2',                tags: ['interactive', 'visual'],          accent: '#e09040' },
+  { to: '/cyber',        label: 'cyber',        code: '15', desc: 'night city // v2.077',             thumb: <ThumbCyber />,        span: 'lg:col-span-2',                tags: ['visual'],                         accent: '#ff2db8' },
+  { to: '/folds',        label: 'folds',        code: '16', desc: 'generative gallery',               thumb: <ThumbFolds />,        span: 'lg:col-span-2',                tags: ['visual'],                         accent: '#9ad08a' },
+  { to: '/orbit',        label: 'orbit',        code: '17', desc: 'iss · live from 400km',            thumb: <ThumbOrbit />,        span: 'lg:col-span-2',                tags: ['live'],                           accent: '#6ab8ff' },
+  { to: '/radio',        label: 'radio',        code: '18', desc: 'global stations · spin the globe', thumb: <ThumbRadio />,        span: 'lg:col-span-2',                tags: ['live', 'audio', 'interactive'],   accent: '#ffb86a' },
+  { to: '/spinners',     label: 'spinners',     code: '19', desc: '54 terminal-style spinners',        thumb: <ThumbSpinners />,                                           tags: ['visual'],                         accent: '#d8d8d8' },
 ]
 
 const TAGS: (Tag | 'all' | 'pinned')[] = ['all', 'pinned', 'visual', 'interactive', 'audio', 'meditative', 'live', 'game']
@@ -135,6 +137,7 @@ export default function Index() {
             footer={<span>{m.desc}</span>}
             starred={favs.includes(m.to)}
             onToggleStar={() => onToggleFav(m.to)}
+            accent={m.accent}
           >
             <div className="h-full w-full">{m.thumb}</div>
           </Tile>

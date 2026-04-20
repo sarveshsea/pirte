@@ -11,9 +11,10 @@ type TileProps = {
   footer?: ReactNode
   starred?: boolean
   onToggleStar?: () => void
+  accent?: string
 }
 
-export default function Tile({ label, code, to, children, className = '', style, footer, starred, onToggleStar }: TileProps) {
+export default function Tile({ label, code, to, children, className = '', style, footer, starred, onToggleStar, accent }: TileProps) {
   const ref = useRef<HTMLDivElement>(null)
   const interactive = !!to
 
@@ -49,13 +50,17 @@ export default function Tile({ label, code, to, children, className = '', style,
     </button>
   ) : null
 
+  const mergedStyle = accent
+    ? { ...style, ['--tile-accent' as string]: accent } as CSSProperties
+    : style
+
   const body = (
     <div
       ref={ref}
       onMouseMove={interactive ? onMove : undefined}
       onMouseLeave={interactive ? onLeave : undefined}
-      className={`tile group ${interactive ? 'tile-interactive' : ''} relative flex h-full flex-col ${className}`}
-      style={style}
+      className={`tile group ${interactive ? 'tile-interactive' : ''} ${accent ? 'tile-accented' : ''} relative flex h-full flex-col ${className}`}
+      style={mergedStyle}
     >
       {interactive && (
         <>
@@ -65,13 +70,22 @@ export default function Tile({ label, code, to, children, className = '', style,
           <span className="tile-bracket br" aria-hidden />
         </>
       )}
+      {accent && interactive && <span className="tile-sheen" aria-hidden />}
       {starBtn}
       <header className="flex items-center justify-between border-b border-[var(--color-line)] px-4 py-2.5 text-[11px] tracking-[0.06em] text-[var(--color-dim)]">
-        <span>{label}</span>
-        {code && <span className={onToggleStar ? 'mr-5 text-[var(--color-dim)]' : 'text-[var(--color-dim)]'}>{code}</span>}
+        <span className="tile-label flex items-center gap-2">
+          {accent && <span className="tile-dot" aria-hidden />}
+          {label}
+        </span>
+        {code && <span className={`tile-code ${onToggleStar ? 'mr-5' : ''} text-[var(--color-dim)]`}>{code}</span>}
       </header>
       <div className="relative flex-1 overflow-hidden">{children}</div>
-      {footer && <footer className="border-t border-[var(--color-line)] px-4 py-2.5 text-[11px] text-[var(--color-dim)]">{footer}</footer>}
+      {footer && (
+        <footer className="relative border-t border-[var(--color-line)] px-4 py-2.5 text-[11px] text-[var(--color-dim)]">
+          {footer}
+          {interactive && <span className="tile-chevron" aria-hidden>→</span>}
+        </footer>
+      )}
     </div>
   )
 
