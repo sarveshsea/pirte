@@ -15,7 +15,38 @@ function Shortcuts() {
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement | null
       if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return
-      if (e.key === ' ') { e.preventDefault(); s.toggleTransport() }
+      if (e.metaKey || e.ctrlKey || e.altKey) return
+      const k = e.key
+
+      // transport
+      if (k === ' ') { e.preventDefault(); s.toggleTransport(); return }
+
+      // undo / redo
+      if ((k === 'z' || k === 'Z') && !e.shiftKey) { e.preventDefault(); s.undo(); return }
+      if (k === 'Z' && e.shiftKey)                 { e.preventDefault(); s.redo(); return }
+
+      // patterns 1..8 → A..H
+      if (k >= '1' && k <= '8') {
+        const ids = ['A','B','C','D','E','F','G','H'] as const
+        const idx = k.charCodeAt(0) - '1'.charCodeAt(0)
+        e.preventDefault()
+        s.setActivePattern(ids[idx])
+        return
+      }
+
+      // clear active pattern
+      if (k === 'c' || k === 'C') { e.preventDefault(); s.clearActivePattern(); return }
+
+      // bpm nudge
+      if (k === ',') { e.preventDefault(); s.setBpm(Math.max(40, s.project.bpm - 1));  return }
+      if (k === '.') { e.preventDefault(); s.setBpm(Math.min(240, s.project.bpm + 1)); return }
+
+      // numpad 1..9 → trigger tracks 1..9
+      const np = parseInt(e.code.replace('Numpad', ''), 10)
+      if (Number.isFinite(np) && np >= 1 && np <= 9) {
+        e.preventDefault()
+        s.triggerTrack(np - 1, 60)
+      }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
