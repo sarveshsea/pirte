@@ -7,6 +7,7 @@ import StatusBar from './components/StatusBar'
 import CommandPalette, { type Command } from './components/CommandPalette'
 import Shortcuts from './components/Shortcuts'
 import PageNav from './components/PageNav'
+import WM from './wm/WM'
 import Index from './routes/Index'
 import Fractals from './routes/Fractals'
 import Attractors from './routes/Attractors'
@@ -90,6 +91,7 @@ function AnimatedRoutes() {
 export default function App() {
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
+  const [wmOpen, setWmOpen] = useState(false)
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -105,6 +107,11 @@ export default function App() {
           setShortcutsOpen((v) => !v)
         }
       }
+      // alt+space toggles the tiling WM overlay
+      if (e.altKey && e.key === ' ') {
+        e.preventDefault()
+        setWmOpen((v) => !v)
+      }
       if (e.key === 'Escape') { setPaletteOpen(false); setShortcutsOpen(false) }
     }
     window.addEventListener('keydown', onKey)
@@ -118,9 +125,14 @@ export default function App() {
         <PageNav />
         <AnimatedRoutes />
       </main>
-      <StatusBar onPalette={() => setPaletteOpen(true)} onShortcuts={() => setShortcutsOpen(true)} />
+      <StatusBar
+        onPalette={() => setPaletteOpen(true)}
+        onShortcuts={() => setShortcutsOpen(true)}
+        onWM={() => setWmOpen(true)}
+      />
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} commands={commands} />
       <Shortcuts open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
+      <WM open={wmOpen} onClose={() => setWmOpen(false)} />
       <Cursor />
     </>
   )

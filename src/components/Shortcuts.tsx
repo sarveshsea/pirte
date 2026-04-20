@@ -1,5 +1,5 @@
 import { useLocation } from 'react-router-dom'
-import { GLOBAL, ROUTE_SHORTCUTS, type Group } from '../data/shortcuts'
+import { GLOBAL, ROUTE_SHORTCUTS, WM_GROUP, type Group } from '../data/shortcuts'
 
 type Props = { open: boolean; onClose: () => void }
 
@@ -7,7 +7,7 @@ export default function Shortcuts({ open, onClose }: Props) {
   const loc = useLocation()
   if (!open) return null
   const routeGroup: Group | undefined = ROUTE_SHORTCUTS[loc.pathname]
-  const groups: Group[] = routeGroup ? [routeGroup, GLOBAL] : [GLOBAL]
+  const groups: Group[] = routeGroup ? [routeGroup, GLOBAL, WM_GROUP] : [GLOBAL, WM_GROUP]
 
   return (
     <div

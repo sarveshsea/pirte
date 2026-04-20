@@ -4,11 +4,26 @@ export type Group = { heading: string; items: Shortcut[] }
 export const GLOBAL: Group = {
   heading: 'global',
   items: [
-    { keys: '⌘ k',  label: 'command palette — jump to any module' },
-    { keys: '?',    label: 'this overlay' },
-    { keys: 'esc',  label: 'dismiss any overlay' },
-    { keys: '[ / ]', label: 'prev / next module' },
-    { keys: 'h',    label: 'back to index' },
+    { keys: '⌘ k',      label: 'command palette — jump to any module' },
+    { keys: '?',        label: 'this overlay' },
+    { keys: 'alt space', label: 'toggle tiling window manager' },
+    { keys: 'esc',      label: 'dismiss any overlay' },
+    { keys: '[ / ]',    label: 'prev / next module' },
+    { keys: 'h',        label: 'back to index' },
+  ],
+}
+
+export const WM_GROUP: Group = {
+  heading: 'window manager',
+  items: [
+    { keys: 'alt enter',   label: 'split focused pane horizontally (opens launcher)' },
+    { keys: 'alt ⇧ enter', label: 'split focused pane vertically' },
+    { keys: 'alt d',       label: 'swap module in focused pane' },
+    { keys: 'alt q',       label: 'close focused pane' },
+    { keys: 'alt 1–4',     label: 'switch workspace' },
+    { keys: 'alt h j k l', label: 'focus neighbour (← ↓ ↑ →)' },
+    { keys: 'alt ⇧ h/l',   label: 'resize split (shrink / grow horizontally)' },
+    { keys: 'alt space',   label: 'exit window manager' },
   ],
 }
 
