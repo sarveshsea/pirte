@@ -3,8 +3,8 @@
 @import '@fontsource-variable/jetbrains-mono';
 
 @theme {
-  --color-bg: #0a0a0c;
-  --color-surface: #131317;
+  --color-bg: #07070a;
+  --color-surface: #111116;
   --color-fg: #ededed;
   --color-dim: #a8a8a8;
   --color-line: #2a2a2a;
@@ -41,36 +41,28 @@ pre, code, kbd, samp, .font-mono, [data-mono] {
   font-variant-ligatures: none;
 }
 
-/* deep-space canvas: faint dot grid + coarse line grid + subtle washes */
+/* matte deep-space canvas — quant grid, no mood gradients */
 body {
   background-color: var(--color-bg);
   background-image:
-    radial-gradient(rgba(180, 190, 210, 0.055) 1px, transparent 1px),
-    linear-gradient(to right,  rgba(160, 170, 190, 0.018) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(160, 170, 190, 0.018) 1px, transparent 1px),
-    radial-gradient(1200px 700px at 20% 10%, rgba(140, 180, 220, 0.035), transparent 65%),
-    radial-gradient(900px 550px at 85% 85%, rgba(220, 210, 180, 0.020), transparent 65%);
-  background-size: 24px 24px, 96px 96px, 96px 96px, auto, auto;
+    radial-gradient(rgba(180, 190, 210, 0.04) 1px, transparent 1px),
+    linear-gradient(to right,  rgba(160, 170, 190, 0.014) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(160, 170, 190, 0.014) 1px, transparent 1px);
+  background-size: 24px 24px, 96px 96px, 96px 96px;
 }
 
-/* cursor-follow spotlight — cool starlight wash, screen-blended */
+/* cursor-follow spotlight — matte starlight, barely there */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
   pointer-events: none;
   z-index: 20;
-  background:
-    radial-gradient(
-      640px circle at var(--mx, 50%) var(--my, 50%),
-      rgba(200, 220, 255, 0.075),
-      transparent 62%
-    ),
-    radial-gradient(
-      260px circle at var(--mx, 50%) var(--my, 50%),
-      rgba(255, 245, 230, 0.05),
-      transparent 60%
-    );
+  background: radial-gradient(
+    480px circle at var(--mx, 50%) var(--my, 50%),
+    rgba(200, 220, 255, 0.04),
+    transparent 58%
+  );
   mix-blend-mode: screen;
   transition: opacity 200ms ease;
 }

@@ -16,7 +16,6 @@ type Star = {
   phase: number
   twinkleRate: number
   r: number; g: number; b: number
-  hasHalo: boolean
   hasSpikes: boolean
 }
 
@@ -49,10 +48,10 @@ function starColor(): { r: number; g: number; b: number } {
 
 function starSize(): number {
   const r = Math.random()
-  if (r < 0.86) return 0.25 + Math.random() * 0.55  // microscopic pinpricks
-  if (r < 0.97) return 0.80 + Math.random() * 0.70  // small
-  if (r < 0.993) return 1.50 + Math.random() * 0.90 // medium
-  return 2.40 + Math.random() * 1.30                // rare, bright, spiked
+  if (r < 0.93) return 0.18 + Math.random() * 0.45  // microscopic (≤0.63px)
+  if (r < 0.986) return 0.62 + Math.random() * 0.55 // small
+  if (r < 0.997) return 1.18 + Math.random() * 0.65 // medium
+  return 1.85 + Math.random() * 0.75                // rare bright (≤2.6px)
 }
 
 // milky-way band — rotated 8.6° from horizontal (sin 0.15)
@@ -94,20 +93,20 @@ export function createCosmos(): BgProgram {
       nebCtx = nebOff.getContext('2d', { alpha: true })
       if (nebCtx) nebImg = nebCtx.createImageData(nw, nh)
 
-      // denser than before for the zoomed-out feel
+      // denser — true zoomed-out field
       const target = Math.floor(
-        Math.max(3200, Math.min(9000, (viewW * viewH) / 320))
+        Math.max(5500, Math.min(12000, (viewW * viewH) / 220))
       )
       stars = []
 
-      // ── 1. globular clusters: 3–5 tight dense groups
-      const numClusters = 3 + Math.floor(Math.random() * 3)
+      // ── 1. globular clusters: 4–7 tight dense groups
+      const numClusters = 4 + Math.floor(Math.random() * 4)
       for (let c = 0; c < numClusters; c++) {
         const cx = Math.random() * viewW
         const cy = Math.random() * viewH
         // cluster radius + member count scale with size
-        const rad = 22 + Math.random() * 45
-        const n = 40 + Math.floor(Math.random() * 70)
+        const rad = 18 + Math.random() * 38
+        const n = 55 + Math.floor(Math.random() * 90)
         for (let i = 0; i < n; i++) {
           // biased-radial: r² gives center concentration
           const u = (Math.random() + Math.random() + Math.random()) / 3
@@ -156,21 +155,21 @@ export function createCosmos(): BgProgram {
       pY += (targetPY - pY) * k
 
       // ───────────────────────────────────────────────────────────
-      // 1. NEBULA — thin wisps concentrated along the galactic band
+      // 1. NEBULA — matte dust whispers along the galactic band
       // ───────────────────────────────────────────────────────────
       const data = nebImg.data
       const cxPx = cursor.x / NEB_SCALE
       const cyPx = cursor.y / NEB_SCALE
-      const cursorRad = 160 / NEB_SCALE
+      const cursorRad = 140 / NEB_SCALE
       const cursorRad2 = cursorRad * cursorRad
       const bandWidthNeb = bandWidth / NEB_SCALE
       const bandInv2 = 1 / (2 * bandWidthNeb * bandWidthNeb)
 
       for (let y = 0; y < nh; y++) {
         for (let x = 0; x < nw; x++) {
-          // higher-frequency noise = smaller, more numerous features → distant
-          const nx = x * 0.040
-          const ny = y * 0.040
+          // high-freq noise: smaller + denser features → reads far-away
+          const nx = x * 0.058
+          const ny = y * 0.058
 
           let wx = 0, wy = 0
           if (cursor.active) {
@@ -208,35 +207,32 @@ export function createCosmos(): BgProgram {
           const bd = (y - nh / 2) * BAND_COS - (x - nw / 2) * BAND_SIN
           const band = Math.exp(-(bd * bd) * bandInv2)
 
-          // threshold is lower (more nebula) inside the band
-          const threshold = 0.58 - band * 0.12
+          // higher threshold — less nebula coverage, more pure black
+          const threshold = 0.64 - band * 0.10
 
           const idx = (y * nw + x) * 4
           if (mix < threshold) { data[idx + 3] = 0; continue }
 
           const cm = Math.min(1, (mix - threshold) / (1 - threshold))
 
-          // palette: cold navy → teal → cyan-white → rare warm amber
+          // matte palette: cool dust, cold → neutral white peak, no amber
           let R: number, G: number, B: number
-          if (cm < 0.55) {
-            const u = cm / 0.55
-            R = 0.03 + u * (0.08 - 0.03)
-            G = 0.06 + u * (0.28 - 0.06)
-            B = 0.18 + u * (0.38 - 0.18)
-          } else if (cm < 0.85) {
-            const u = (cm - 0.55) / 0.30
-            R = 0.08 + u * (0.30 - 0.08)
-            G = 0.28 + u * (0.55 - 0.28)
-            B = 0.38 + u * (0.62 - 0.38)
+          if (cm < 0.60) {
+            const u = cm / 0.60
+            // navy (0.02, 0.04, 0.14) → slate-blue (0.10, 0.20, 0.32)
+            R = 0.02 + u * (0.10 - 0.02)
+            G = 0.04 + u * (0.20 - 0.04)
+            B = 0.14 + u * (0.32 - 0.14)
           } else {
-            const u = (cm - 0.85) / 0.15
-            R = 0.30 + u * (0.75 - 0.30)
-            G = 0.55 + u * 0
-            B = 0.62 + u * (0.30 - 0.62)
+            const u = (cm - 0.60) / 0.40
+            // slate-blue → cool off-white (0.42, 0.48, 0.55)
+            R = 0.10 + u * (0.42 - 0.10)
+            G = 0.20 + u * (0.48 - 0.20)
+            B = 0.32 + u * (0.55 - 0.32)
           }
 
-          // gentle alpha, scaled again by band so edges of frame stay black
-          const alpha = cm * 22 * (0.5 + band * 0.6)  // peaks ~0.085
+          // matte alpha — barely there, peaks ~0.055, band-scaled
+          const alpha = cm * 14 * (0.35 + band * 0.65)
 
           data[idx]     = (R * 255) | 0
           data[idx + 1] = (G * 255) | 0
@@ -254,8 +250,8 @@ export function createCosmos(): BgProgram {
       // ───────────────────────────────────────────────────────────
       // 2. STARS — crisp, color-varied, with spikes on the brightest
       // ───────────────────────────────────────────────────────────
-      const maxParallax = Math.min(viewW, viewH) * 0.018  // zoomed-out tiny sway
-      const twinkleBase = t * 0.001
+      const maxParallax = Math.min(viewW, viewH) * 0.009  // very subtle sway — distant
+      const twinkleBase = t * 0.0009
 
       for (let i = 0; i < stars.length; i++) {
         const s = stars[i]
@@ -265,14 +261,14 @@ export function createCosmos(): BgProgram {
         px = ((px % viewW) + viewW) % viewW
         py = ((py % viewH) + viewH) % viewH
 
+        // calmer twinkle for matte feel
         const tw =
-          0.55 +
-          0.45 *
+          0.65 +
+          0.35 *
             Math.sin(twinkleBase * s.twinkleRate + s.phase) *
-            (0.55 + 0.45 * noise2(s.phase + twinkleBase * 0.4, s.depth * 7))
-        const alpha = 0.5 + 0.5 * tw * (0.55 + s.depth * 0.45)
-        // twinkle drives size too — subtle
-        const size = s.size * (0.90 + tw * 0.18)
+            (0.6 + 0.4 * noise2(s.phase + twinkleBase * 0.4, s.depth * 7))
+        const alpha = 0.55 + 0.45 * tw * (0.55 + s.depth * 0.45)
+        const size = s.size * (0.92 + tw * 0.12)
 
         // core — crisp fillRect for sub-pixel pinpricks, arc for larger
         if (size < 0.9) {
@@ -285,46 +281,18 @@ export function createCosmos(): BgProgram {
           ctx.fill()
         }
 
-        // diffraction spikes — the brightest 0.5% get a crisp cross
-        // (what makes a star look like a star in hst imagery)
+        // short crisp plot-marker spikes on brightest stars — reads
+        // as catalog / sky-survey crosshairs, not cinematic bloom
         if (s.hasSpikes) {
-          const len = size * 9
-          const spikeA = alpha * 0.55
-          const midR = s.r, midG = s.g, midB = s.b
-          // horizontal
-          const g1 = ctx.createLinearGradient(px - len, py, px + len, py)
-          g1.addColorStop(0,   'rgba(0, 0, 0, 0)')
-          g1.addColorStop(0.5, `rgba(${midR}, ${midG}, ${midB}, ${spikeA.toFixed(3)})`)
-          g1.addColorStop(1,   'rgba(0, 0, 0, 0)')
-          ctx.strokeStyle = g1
-          ctx.lineWidth = 0.7
+          const len = size * 3.2
+          ctx.strokeStyle = `rgba(${s.r}, ${s.g}, ${s.b}, ${(alpha * 0.32).toFixed(3)})`
+          ctx.lineWidth = 0.5
           ctx.beginPath()
           ctx.moveTo(px - len, py)
           ctx.lineTo(px + len, py)
-          ctx.stroke()
-          // vertical
-          const g2 = ctx.createLinearGradient(px, py - len, px, py + len)
-          g2.addColorStop(0,   'rgba(0, 0, 0, 0)')
-          g2.addColorStop(0.5, `rgba(${midR}, ${midG}, ${midB}, ${spikeA.toFixed(3)})`)
-          g2.addColorStop(1,   'rgba(0, 0, 0, 0)')
-          ctx.strokeStyle = g2
-          ctx.lineWidth = 0.7
-          ctx.beginPath()
           ctx.moveTo(px, py - len)
           ctx.lineTo(px, py + len)
           ctx.stroke()
-        }
-
-        // soft halo — only on the very brightest (about 0.4%)
-        if (s.hasHalo) {
-          const hr = size * 4.5
-          const grd = ctx.createRadialGradient(px, py, 0, px, py, hr)
-          grd.addColorStop(0, `rgba(${s.r}, ${s.g}, ${s.b}, ${(alpha * 0.22).toFixed(3)})`)
-          grd.addColorStop(1, 'rgba(0, 0, 0, 0)')
-          ctx.fillStyle = grd
-          ctx.beginPath()
-          ctx.arc(px, py, hr, 0, Math.PI * 2)
-          ctx.fill()
         }
       }
 
@@ -354,7 +322,7 @@ export function createCosmos(): BgProgram {
         st.y += st.vy * dt
         if (st.age > st.life) { streaks.splice(i, 1); continue }
         const speed = Math.hypot(st.vx, st.vy) || 1
-        const tailLen = 200
+        const tailLen = 140
         const tx = st.x - (st.vx / speed) * tailLen
         const ty = st.y - (st.vy / speed) * tailLen
         const fadeIn  = Math.min(1, st.age / 0.3)
@@ -364,18 +332,18 @@ export function createCosmos(): BgProgram {
         const gg = st.warm ? 225 : 235
         const bb = st.warm ? 205 : 255
         const grd = ctx.createLinearGradient(st.x, st.y, tx, ty)
-        grd.addColorStop(0,   `rgba(${rr}, ${gg}, ${bb}, ${(0.85 * fade).toFixed(3)})`)
-        grd.addColorStop(0.4, `rgba(${rr}, ${gg}, ${bb}, ${(0.28 * fade).toFixed(3)})`)
+        grd.addColorStop(0,   `rgba(${rr}, ${gg}, ${bb}, ${(0.55 * fade).toFixed(3)})`)
+        grd.addColorStop(0.4, `rgba(${rr}, ${gg}, ${bb}, ${(0.18 * fade).toFixed(3)})`)
         grd.addColorStop(1,   'rgba(0, 0, 0, 0)')
         ctx.strokeStyle = grd
-        ctx.lineWidth = 1.1
+        ctx.lineWidth = 0.9
         ctx.beginPath()
         ctx.moveTo(st.x, st.y)
         ctx.lineTo(tx, ty)
         ctx.stroke()
-        ctx.fillStyle = `rgba(255, 250, 240, ${(0.95 * fade).toFixed(3)})`
+        ctx.fillStyle = `rgba(255, 250, 240, ${(0.75 * fade).toFixed(3)})`
         ctx.beginPath()
-        ctx.arc(st.x, st.y, 1.3, 0, Math.PI * 2)
+        ctx.arc(st.x, st.y, 1.1, 0, Math.PI * 2)
         ctx.fill()
       }
     },
@@ -391,7 +359,6 @@ function makeStar(x: number, y: number): Star {
     phase: Math.random() * Math.PI * 2,
     twinkleRate: 0.4 + Math.random() * 1.6,
     r: color.r, g: color.g, b: color.b,
-    hasHalo: size > 2.6 && Math.random() < 0.65,
-    hasSpikes: size > 2.3,
+    hasSpikes: size > 1.85,
   }
 }
