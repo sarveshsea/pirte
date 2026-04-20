@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, type RefObject } from 'react'
 import { fitCanvas, prefersReducedMotion } from '../lib/canvas'
 import { createMatrixRain } from '../modules/matrixRain'
 import { stepClifford, DEFAULTS } from '../modules/attractors'
@@ -13,21 +13,48 @@ import { DotsSpinner, ArcSpinner, PulseSpinner, WaveSpinner, BounceSpinner, Eart
 const TARGET_FPS = 24
 const FRAME_MS = 1000 / TARGET_FPS
 
-function useThrottledRaf(draw: (t: number) => void, deps: unknown[] = []) {
+function useThrottledRaf(
+  draw: (t: number) => void,
+  deps: unknown[] = [],
+  target?: RefObject<Element | null>,
+) {
   useEffect(() => {
     const reduce = prefersReducedMotion()
     let raf = 0
     let last = 0
-    const loop = (t: number) => {
-      if (t - last >= FRAME_MS) {
-        draw(t)
-        last = t
-      }
-      if (!reduce) raf = requestAnimationFrame(loop)
+
+    const tick = (t: number) => {
+      if (t - last >= FRAME_MS) { draw(t); last = t }
+      raf = requestAnimationFrame(tick)
     }
+    const start = () => {
+      if (raf || reduce) return
+      raf = requestAnimationFrame(tick)
+    }
+    const stop = () => {
+      if (!raf) return
+      cancelAnimationFrame(raf)
+      raf = 0
+    }
+
+    let io: IntersectionObserver | null = null
+    const el = target?.current
+    if (el && typeof IntersectionObserver !== 'undefined') {
+      io = new IntersectionObserver(
+        ([entry]) => { entry.isIntersecting ? start() : stop() },
+        { rootMargin: '120px' },
+      )
+      io.observe(el)
+    } else {
+      start()
+    }
+
     if (reduce) draw(0)
-    else raf = requestAnimationFrame(loop)
-    return () => { if (raf) cancelAnimationFrame(raf) }
+
+    return () => {
+      stop()
+      io?.disconnect()
+    }
     /* eslint-disable-next-line */
   }, deps)
 }
@@ -38,7 +65,7 @@ export function ThumbMatrix() {
   useEffect(() => { scene.reset(32, 14) }, [scene])
   useThrottledRaf((t) => {
     if (preRef.current) preRef.current.textContent = scene.frame(t)
-  }, [scene])
+  }, [scene], preRef)
   return <pre ref={preRef} className="m-0 whitespace-pre text-[9px] leading-[1.0] text-[var(--color-fg)]" />
 }
 
@@ -67,7 +94,7 @@ export function ThumbClifford() {
       const py = r.height / 2 + stateRef.current.y * (r.height / 5)
       ctx.fillRect(px, py, 1, 1)
     }
-  })
+  }, [], ref)
   return <canvas ref={ref} className="block h-full w-full" />
 }
 
@@ -150,7 +177,7 @@ export function ThumbTime() {
     const mm = String(d.getMinutes()).padStart(2, '0')
     const ss = String(d.getSeconds()).padStart(2, '0')
     preRef.current.textContent = renderSevenSegment(`${hh}:${mm}:${ss}`)
-  })
+  }, [], preRef)
   return (
     <div className="grid h-full place-items-center overflow-hidden">
       <pre ref={preRef} className="m-0 whitespace-pre text-[var(--color-fg)] text-[12px] leading-[1.1]" />
@@ -171,7 +198,7 @@ export function ThumbSprites() {
     s.cursor.active = true
     spritesStep(s, 1 / 24)
     preRef.current.textContent = spritesRender(s)
-  })
+  }, [], preRef)
   return <pre ref={preRef} className="m-0 whitespace-pre text-[9px] leading-[1.0] text-[var(--color-fg)]" />
 }
 
@@ -207,7 +234,7 @@ export function ThumbWaves() {
       const h = Math.abs(Math.sin(i * 0.6 + t * 0.002)) * H * 0.22
       ctx.fillRect(i * (W / 32), H - h - 2, Math.max(1, W / 32 - 2), h)
     }
-  })
+  }, [], ref)
   return <canvas ref={ref} className="block h-full w-full" />
 }
 
@@ -244,7 +271,7 @@ export function ThumbBreathe() {
       lines.push(line)
     }
     preRef.current.textContent = lines.join('\n')
-  })
+  }, [], preRef)
   return <pre ref={preRef} className="m-0 whitespace-pre text-[9px] leading-[1.0] text-[var(--color-fg)]" />
 }
 
@@ -256,7 +283,7 @@ export function ThumbStarfield() {
     if (!preRef.current) return
     stepStars(starsRef.current, 0.5, 1 / 24, 0.5, 100)
     preRef.current.textContent = renderStars(starsRef.current, 38, 14, 0, 0, 1.0, 100)
-  })
+  }, [], preRef)
   return <pre ref={preRef} className="m-0 whitespace-pre text-[9px] leading-[1.0] text-[var(--color-fg)]" />
 }
 
@@ -354,7 +381,7 @@ export function ThumbDoom() {
       else if (s.kind === 'armor') lines[y][x] = '◇'
     }
     preRef.current.textContent = lines.map((r) => r.join('')).join('\n')
-  })
+  }, [], preRef)
   return (
     <div className="grid h-full w-full place-items-center p-1">
       <pre ref={preRef} className="m-0 whitespace-pre text-[7px] leading-[1.0] text-[var(--color-fg)]" />
@@ -429,7 +456,7 @@ export function ThumbKaleidoscope() {
     ctx.imageSmoothingEnabled = true
     ctx.clearRect(0, 0, rect.width, rect.height)
     ctx.drawImage(off, 0, 0, rect.width, rect.height)
-  })
+  }, [], ref)
   return <canvas ref={ref} className="block h-full w-full" />
 }
 
