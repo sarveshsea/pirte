@@ -10,8 +10,8 @@ import { type Kind, toHTML } from './colors'
 import { mulberry32 } from '../../lib/rng'
 
 const FOV = Math.PI / 3
-const MOVE_SPEED = 3.0
-const TURN_SPEED = 2.4
+const MOVE_SPEED = 4.2
+const TURN_SPEED = 3.2
 const ASPECT = 0.5
 
 const WALL_X = ['█', '▓', '▒', '░']
@@ -36,6 +36,8 @@ const rand = mulberry32(0xd00f)
 export type Doom = {
   reset(cols: number, rows: number): void
   frame(t: number): string
+  turnBy(rad: number): void
+  clearInput(): void
   readonly input: DoomInput
   readonly state: GameState
 }
@@ -110,20 +112,24 @@ function damagePlayer(state: GameState, dmg: number) {
   }
 }
 
+function rotatePlayer(state: GameState, rot: number) {
+  if (rot === 0) return
+  const p = state.player
+  const c = Math.cos(rot), s = Math.sin(rot)
+  const dx = p.dir.x, dy = p.dir.y
+  p.dir.x = dx * c - dy * s
+  p.dir.y = dx * s + dy * c
+  const px = p.plane.x, py = p.plane.y
+  p.plane.x = px * c - py * s
+  p.plane.y = px * s + py * c
+}
+
 function updatePlayer(state: GameState, input: DoomInput, dt: number) {
   const p = state.player
   let rot = 0
   if (input.turnL) rot -= TURN_SPEED * dt
   if (input.turnR) rot += TURN_SPEED * dt
-  if (rot !== 0) {
-    const c = Math.cos(rot), s = Math.sin(rot)
-    const dx = p.dir.x, dy = p.dir.y
-    p.dir.x = dx * c - dy * s
-    p.dir.y = dx * s + dy * c
-    const px = p.plane.x, py = p.plane.y
-    p.plane.x = px * c - py * s
-    p.plane.y = px * s + py * c
-  }
+  rotatePlayer(state, rot)
 
   let mx = 0, my = 0
   if (input.forward)  { mx += p.dir.x; my += p.dir.y }
@@ -546,6 +552,11 @@ export function createDoom(): Doom {
     Object.assign(prev, input)
   }
 
+  const clearInput = () => {
+    for (const k of Object.keys(input) as (keyof DoomInput)[]) input[k] = false
+    for (const k of Object.keys(prev) as (keyof DoomInput)[]) prev[k] = false
+  }
+
   return {
     reset(cols, rows) {
       state = makeState(cols, rows)
@@ -558,6 +569,11 @@ export function createDoom(): Doom {
       update(state, input, dt)
       return render(state, t)
     },
+    turnBy(rad) {
+      if (state.phase !== 'play') return
+      rotatePlayer(state, rad)
+    },
+    clearInput,
     get input() { return input },
     get state() { return state },
   }
