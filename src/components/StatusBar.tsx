@@ -4,9 +4,15 @@ import { getSessionStart, formatElapsed } from '../lib/session'
 import { formatUTC } from '../lib/clock'
 import { rafLoop } from '../lib/rafLoop'
 
-type Props = { onPalette: () => void; onShortcuts?: () => void; onWM?: () => void }
+type Props = {
+  onPalette: () => void
+  onShortcuts?: () => void
+  onWM?: () => void
+  bgName?: string
+  onCycleBg?: () => void
+}
 
-export default function StatusBar({ onPalette, onShortcuts, onWM }: Props) {
+export default function StatusBar({ onPalette, onShortcuts, onWM, bgName, onCycleBg }: Props) {
   const loc = useLocation()
   const [now, setNow] = useState(Date.now())
   const [fps, setFps] = useState(60)
@@ -57,6 +63,15 @@ export default function StatusBar({ onPalette, onShortcuts, onWM }: Props) {
         <span>utc {formatUTC(new Date(now))}</span>
         <span>session {formatElapsed(now - start)}</span>
         <span>{fps}fps</span>
+        {onCycleBg && (
+          <button
+            onClick={onCycleBg}
+            className="!border-0 !px-0 !py-0 text-[var(--color-dim)] hover:text-[var(--color-fg)]"
+            title="cycle background program"
+          >
+            ▦ bg: {bgName ?? 'rain'}
+          </button>
+        )}
         {onWM && (
           <button onClick={onWM} className="!border-0 !px-0 !py-0 text-[var(--color-dim)] hover:text-[var(--color-fg)]" title="tiling window manager · shift+space">
             ▦ wm

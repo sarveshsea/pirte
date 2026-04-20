@@ -76,17 +76,6 @@ export const ROUTE_SHORTCUTS: Record<string, Group> = {
       { keys: 'drop .wav',     label: 'load sample into drum track' },
     ],
   },
-  '/doom': {
-    heading: 'doom · e1m1',
-    items: [
-      { keys: 'w a s d', label: 'move / strafe' },
-      { keys: '← / →',    label: 'turn' },
-      { keys: 'space',    label: 'fire' },
-      { keys: 'e',        label: 'open door / interact' },
-      { keys: 'p',        label: 'pause' },
-      { keys: 'r',        label: 'restart level' },
-    ],
-  },
   '/breathe': {
     heading: 'breathe',
     items: [

@@ -44,12 +44,6 @@ const SECTIONS: Section[] = [
     ],
   },
   {
-    title: 'game',
-    items: [
-      { path: '/doom', code: '10', label: 'doom', desc: 'ascii raycast homage to e1m1 with imps, fireballs, a pistol, and a doom-style hud.', keybinds: ['wasd  move', '← →  turn', 'space  fire', 'e  open', 'p  pause', 'r  restart'] },
-    ],
-  },
-  {
     title: 'live',
     note: 'pulls from real external data.',
     items: [

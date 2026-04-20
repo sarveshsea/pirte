@@ -10,7 +10,6 @@ export const ROUTE_ORDER = [
   { path: '/kaleidoscope', label: 'kaleidoscope', code: '07' },
   { path: '/sprites',      label: 'sprites',      code: '08' },
   { path: '/waves',        label: 'waves',        code: '09' },
-  { path: '/doom',         label: 'doom',         code: '10' },
   { path: '/breathe',      label: 'breathe',      code: '11' },
   { path: '/starfield',    label: 'starfield',    code: '12' },
   { path: '/orbit',        label: 'orbit',        code: '17' },

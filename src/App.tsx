@@ -8,9 +8,12 @@ import CommandPalette, { type Command } from './components/CommandPalette'
 import Shortcuts from './components/Shortcuts'
 import PageNav from './components/PageNav'
 import RouteError from './components/RouteError'
+import GridBackground from './components/GridBackground'
 import WM from './wm/WM'
 import { DotsSpinner } from './components/spinners'
 import { prefersReducedMotion } from './lib/canvas'
+import { usePersistedBg } from './bg/usePersistedBg'
+import { nextBg, type BgName } from './bg/registry'
 
 // route chunks — each becomes its own js file via vite code-splitting
 const Index        = lazy(() => import('./routes/Index'))
@@ -22,7 +25,6 @@ const Time         = lazy(() => import('./routes/Time'))
 const Kaleidoscope = lazy(() => import('./routes/Kaleidoscope'))
 const Sprites      = lazy(() => import('./routes/Sprites'))
 const Waves        = lazy(() => import('./routes/Waves'))
-const Doom         = lazy(() => import('./routes/Doom'))
 const Breathe      = lazy(() => import('./routes/Breathe'))
 const Starfield    = lazy(() => import('./routes/Starfield'))
 const Orbit        = lazy(() => import('./routes/Orbit'))
@@ -45,7 +47,6 @@ const commands: Command[] = [
   { id: 'kaleidoscope', label: 'kaleidoscope', to: '/kaleidoscope', hint: 'n-fold mirror' },
   { id: 'sprites',     label: 'sprites',     to: '/sprites',     hint: 'ascii playground' },
   { id: 'waves',       label: 'waves',       to: '/waves',       hint: 'studio · 12 tracks · drum synths · fm/wavetable/pluck/pad · master fx · midi' },
-  { id: 'doom',        label: 'doom',        to: '/doom',        hint: 'e1m1 ascii homage' },
   { id: 'breathe',     label: 'breathe',     to: '/breathe',     hint: 'box-breathing guide' },
   { id: 'starfield',   label: 'starfield',   to: '/starfield',   hint: '3d flythrough' },
   { id: 'orbit',       label: 'orbit',       to: '/orbit',       hint: 'iss live · telemetry' },
@@ -96,7 +97,6 @@ function AnimatedRoutes() {
               <Route path="/kaleidoscope" element={<Kaleidoscope />} />
               <Route path="/sprites" element={<Sprites />} />
               <Route path="/waves" element={<Waves />} />
-              <Route path="/doom" element={<Doom />} />
               <Route path="/breathe" element={<Breathe />} />
               <Route path="/starfield" element={<Starfield />} />
               <Route path="/orbit" element={<Orbit />} />
@@ -118,6 +118,14 @@ export default function App() {
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const [wmOpen, setWmOpen] = useState(false)
+  const [bg, setBg] = usePersistedBg()
+  const cycleBg = () => setBg(nextBg(bg))
+  const bgCommands: Command[] = (['rain', 'flow', 'life', 'off'] as BgName[]).map((n) => ({
+    id: `bg-${n}`,
+    label: `bg: ${n}`,
+    hint: n === 'off' ? 'static gradients only' : 'living wallpaper',
+    run: () => setBg(n),
+  }))
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -144,8 +152,11 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
+  const mergedCommands = [...commands, ...bgCommands]
+
   return (
     <>
+      <GridBackground program={bg} />
       <Spotlight />
       <main className="min-h-[calc(100vh-28px)] px-6 pt-6 pb-10 md:px-8 md:pt-8">
         <PageNav />
@@ -155,8 +166,10 @@ export default function App() {
         onPalette={() => setPaletteOpen(true)}
         onShortcuts={() => setShortcutsOpen(true)}
         onWM={() => setWmOpen(true)}
+        bgName={bg}
+        onCycleBg={cycleBg}
       />
-      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} commands={commands} />
+      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} commands={mergedCommands} />
       <Shortcuts open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
       <WM open={wmOpen} onClose={() => setWmOpen(false)} />
       <Cursor />

@@ -5,7 +5,6 @@ import { renderKaleidoscope } from '../modules/kaleidoscope'
 import { renderSevenSegment } from '../modules/sevenSegment'
 import { initState as spritesInit, step as spritesStep, render as spritesRender, type SpritesState } from '../modules/sprites'
 import { makeStars, stepStars, renderStars, type Star } from '../modules/starfield'
-import { parseMap } from '../modules/doom/map'
 import { DotsSpinner, ArcSpinner, PulseSpinner, WaveSpinner, BounceSpinner, EarthSpinner } from './spinners'
 
 const TARGET_FPS = 24
@@ -433,40 +432,6 @@ export function ThumbOrbit() {
   return <canvas ref={ref} className="block h-full w-full" />
 }
 
-export function ThumbDoom() {
-  // top-down mini-map of the real e1m1 layout parsed from doom/map.
-  // walls (#/D) stay opaque; floor dims; nukage gets a tint; spawns blink.
-  const parsed = useMemo(() => parseMap(), [])
-  const preRef = useRef<HTMLPreElement>(null)
-  useThrottledRaf((t) => {
-    if (!preRef.current) return
-    const blink = Math.floor(t / 400) % 2 === 0
-    const lines: string[][] = parsed.grid.map((row) => row.split('').map((ch): string => {
-      if (ch === '#') return '█'
-      if (ch === 'D') return '╫'
-      if (ch === '~') return '≈'
-      if (ch === 'X') return '◆'
-      return '·'
-    }))
-    // stamp spawns over floor
-    for (const s of parsed.spawns) {
-      const x = Math.floor(s.at.x)
-      const y = Math.floor(s.at.y)
-      if (y < 0 || y >= lines.length || x < 0 || x >= lines[0].length) continue
-      if (s.kind === 'player') lines[y][x] = blink ? '◉' : '○'
-      else if (s.kind === 'imp') lines[y][x] = blink ? '✖' : '×'
-      else if (s.kind === 'health') lines[y][x] = '+'
-      else if (s.kind === 'ammo') lines[y][x] = '¤'
-      else if (s.kind === 'armor') lines[y][x] = '◇'
-    }
-    preRef.current.textContent = lines.map((r) => r.join('')).join('\n')
-  }, [], preRef)
-  return (
-    <div className="grid h-full w-full place-items-center p-1">
-      <pre ref={preRef} className="m-0 whitespace-pre text-[7px] leading-[1.0] text-[var(--color-fg)]" />
-    </div>
-  )
-}
 
 export function ThumbRadio() {
   // ascii mini-globe with a few pins and a "live" dot
