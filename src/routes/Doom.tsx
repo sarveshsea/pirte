@@ -143,11 +143,15 @@ export default function Doom() {
           className="m-0 h-full w-full whitespace-pre text-[12px] leading-[1.1] text-[var(--color-fg)]"
           style={{ tabSize: 1 }}
         />
-        {!locked && (
+        {!locked ? (
           <div className="pointer-events-none absolute inset-0 grid place-items-center">
-            <div className="rounded-[4px] border border-[var(--color-line)] bg-black/70 px-4 py-2 text-[11px] tracking-[0.12em] text-[var(--color-dim)]">
+            <div className="rounded-[4px] border border-[var(--color-line)] bg-black/70 px-5 py-2.5 text-[13px] tracking-[0.1em] text-[var(--color-fg)]">
               click to capture mouse
             </div>
+          </div>
+        ) : (
+          <div className="pointer-events-none absolute right-3 top-3 rounded-[4px] border border-[var(--color-fg)] bg-black/70 px-2.5 py-1 text-[12px] tracking-[0.1em] text-[var(--color-fg)]">
+            mouse captured · esc to release
           </div>
         )}
       </div>
