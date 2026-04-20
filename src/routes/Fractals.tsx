@@ -345,6 +345,13 @@ function Dive({ piece, onClose }: { piece: Piece; onClose: () => void }) {
       wrap.removeEventListener('wheel', onWheel)
       window.removeEventListener('keydown', onKD)
       window.removeEventListener('keyup', onKU)
+      // explicit webgl teardown — browsers cap at ~16 live contexts; without
+      // loseContext() the gpu keeps this one pinned until GC which may never
+      // happen during a long session
+      try {
+        const ext = (gl as WebGLRenderingContext).getExtension('WEBGL_lose_context')
+        ext?.loseContext()
+      } catch { /* ignore */ }
       gl.canvas.remove()
     }
   }, [piece, onClose])
@@ -465,6 +472,7 @@ function FractalTile({ piece, onOpen, onRegenerate }: { piece: Piece; onOpen: ()
 /* ---------------------- route ---------------------- */
 
 const PAGE = 12
+const MAX_LIVE = 96 // cap live gallery tiles to keep dom + canvas memory flat
 
 export default function Fractals() {
   const [params, setParams] = useSearchParams()
@@ -496,7 +504,10 @@ export default function Fractals() {
             const more = Array.from({ length: PAGE }, (_, i) =>
               randomPiece(mulberry32(base + i), `${seedRoot}.${ps.length + i}`),
             )
-            return [...ps, ...more]
+            const combined = [...ps, ...more]
+            // cap live tiles; drop the oldest page when we exceed the window.
+            // keeps backing-store bytes + dom nodes + observers bounded.
+            return combined.length > MAX_LIVE ? combined.slice(combined.length - MAX_LIVE) : combined
           })
           setTimeout(() => { loadingRef.current = false }, 120)
         }
