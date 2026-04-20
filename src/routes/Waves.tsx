@@ -7,6 +7,7 @@ import StepGrid from './waves/StepGrid'
 import Visualizer from './waves/Visualizer'
 import FXRack from './waves/FXRack'
 import KitPicker from './waves/KitPicker'
+import Settings from './waves/Settings'
 
 /** global-keybinds bridge. kept inside the provider so it can call dispatchers. */
 function Shortcuts() {
@@ -79,9 +80,14 @@ function Studio() {
         <Tile label="master fx" footer={<span>bitcrush · compressor (sidechain taps the kick) · delay · reverb · limiter</span>}>
           <FXRack />
         </Tile>
-        <Tile label="kit" footer={<span>drop .wav onto a drum track · converts voice to sampler</span>}>
-          <KitPicker />
-        </Tile>
+        <div className="flex flex-col gap-4">
+          <Tile label="kit" footer={<span>drop .wav onto a drum track · converts voice to sampler</span>}>
+            <KitPicker />
+          </Tile>
+          <Tile label="settings" footer={<span>midi · project</span>}>
+            <Settings />
+          </Tile>
+        </div>
       </div>
     </div>
   )

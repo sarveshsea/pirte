@@ -10,6 +10,7 @@ import { clearPattern, copyPattern, findPattern, makeProject } from '../../modul
 import {
   History, clearAutosave, exportProject, importProject, loadAutosave, saveAutosave,
 } from '../../modules/waves/project'
+import { MidiInput, type MidiDevice } from '../../modules/waves/midi'
 import type {
   BitcrushParams, CompParams, DelayParams, FilterType, LimiterParams,
   PatternId, Project, ReverbParams, Track, VoiceKind,
@@ -39,6 +40,7 @@ type StudioAPI = {
   setTrackDrive: (i: number, v: number) => void
   setTrackSendA: (i: number, v: number) => void
   setTrackSendB: (i: number, v: number) => void
+  setTrackArmed: (i: number, v: boolean) => void
   triggerTrack: (i: number, note?: number) => void
   loadSample: (i: number, buf: ArrayBuffer, name: string) => Promise<void>
   // pattern ops
@@ -53,6 +55,12 @@ type StudioAPI = {
   exportProject: () => void
   importProject: (file: File) => Promise<void>
   resetProject: () => void
+  // midi
+  midiAvailable: boolean
+  midiDevices: MidiDevice[]
+  midiActiveId: string | null
+  initMidi: () => Promise<void>
+  selectMidi: (id: string | null) => void
   // master fx
   setMasterBitcrush: (p: Partial<BitcrushParams>) => void
   setMasterDelay: (p: Partial<DelayParams>) => void
@@ -74,10 +82,13 @@ export function StudioProvider({ children }: { children: ReactNode }) {
   const projectRef = useRef<Project>(loadAutosave() ?? makeProject())
   const engineRef = useRef<WavesEngine | null>(null)
   const historyRef = useRef<History>(new History())
+  const midiRef = useRef<MidiInput>(new MidiInput())
   const [rev, setRev] = useState(0)
   const [ready, setReady] = useState(false)
   const [playing, setPlaying] = useState(false)
   const [step, setStep] = useState(0)
+  const [midiDevices, setMidiDevices] = useState<MidiDevice[]>([])
+  const [midiActiveId, setMidiActiveId] = useState<string | null>(null)
 
   const bump = useCallback(() => setRev((r) => r + 1), [])
 
@@ -105,6 +116,7 @@ export function StudioProvider({ children }: { children: ReactNode }) {
       eng.stop()
       eng.dispose()
       engineRef.current = null
+      midiRef.current.dispose()
     }
   }, [])
 
@@ -185,6 +197,13 @@ export function StudioProvider({ children }: { children: ReactNode }) {
     setTrackDrive: (i, v) => mutTrack(i, (t) => { t.drive = v }),
     setTrackSendA: (i, v) => mutTrack(i, (t) => { t.sendA = v }),
     setTrackSendB: (i, v) => mutTrack(i, (t) => { t.sendB = v }),
+    setTrackArmed: (i, v) => {
+      // mutually exclusive arm: arming a track disarms the others
+      const p = projectRef.current
+      const pattern = findPattern(p, p.activePattern)
+      for (let j = 0; j < pattern.tracks.length; j++) pattern.tracks[j].armed = v && j === i
+      bump()
+    },
     triggerTrack: (i, note = 60) => { engineRef.current?.triggerManual(i, note) },
     loadSample: async (i, buf, name) => {
       const eng = engineRef.current
@@ -260,7 +279,28 @@ export function StudioProvider({ children }: { children: ReactNode }) {
     getTrackLevel: (i) => engineRef.current?.getTrackLevel(i) ?? [0, 0],
     getCompGR: () => engineRef.current?.getCompGR() ?? 0,
     getLimiterGR: () => engineRef.current?.getLimiterGR() ?? 0,
-  }), [rev, ready, playing, step, bump, mutTrack, snapshot, replaceProject])
+    midiAvailable: midiRef.current.available(),
+    midiDevices,
+    midiActiveId,
+    initMidi: async () => {
+      await midiRef.current.init()
+      setMidiDevices(midiRef.current.list())
+      midiRef.current.onNote((e) => {
+        const eng = engineRef.current
+        if (!eng) return
+        const pattern = findPattern(projectRef.current, projectRef.current.activePattern)
+        const armed = pattern.tracks.findIndex((t) => t.armed)
+        if (armed < 0) return
+        if (e.kind === 'on') {
+          eng.triggerManual(armed, e.note, Math.max(0.05, e.velocity / 127), 0.4)
+        }
+      })
+    },
+    selectMidi: (id) => {
+      midiRef.current.select(id)
+      setMidiActiveId(id)
+    },
+  }), [rev, ready, playing, step, bump, mutTrack, snapshot, replaceProject, midiDevices, midiActiveId])
 
   return <Ctx.Provider value={api}>{children}</Ctx.Provider>
 }

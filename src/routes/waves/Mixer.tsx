@@ -73,6 +73,14 @@ export default function Mixer() {
               >
                 s
               </button>
+              <button
+                data-interactive
+                onClick={() => s.setTrackArmed(i, !t.armed)}
+                className={`flex-1 !px-1 !py-0.5 !text-[10px] ${t.armed ? '!border-[#ff5a6a] !bg-[#ff5a6a]/15 !text-[#ff5a6a]' : '!border-[var(--color-line)] !text-[var(--color-dim)]'}`}
+                title="arm for midi / keyboard input"
+              >
+                ●
+              </button>
             </div>
 
             <button
