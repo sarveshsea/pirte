@@ -194,12 +194,23 @@ void main() {
 }
 `
 
-// ambient curl-of-noise forcing — keeps the field drifting when idle
+// ambient forcing — combines three water-feeling effects in one pass:
+//
+//   1. curl-of-noise  — keeps the surface alive when you're not painting
+//   2. bulk flow      — a uniform directional "river current" that pushes
+//                       everything in uFlowDir at uFlowSpeed
+//   3. meandering     — the local curl rotates the bulk flow so the river
+//                       weaves instead of marching in a straight line.
+//                       scaled by uFlowMeander; at 0 the river is a ruler,
+//                       at 1 it braids heavily like a real shallow stream.
 const AMBIENT_FRAG = BASE_FRAG_HEADER + /* glsl */`
 uniform sampler2D uVelocity;
 uniform sampler2D uNoise;
 uniform float uTime;
-uniform float uStrength;
+uniform float uStrength;     // curl-noise strength
+uniform vec2  uFlowDir;      // normalized bulk direction (screen-space)
+uniform float uFlowSpeed;    // bulk magnitude
+uniform float uFlowMeander;  // 0..1 — curl deflects the local flow
 void main() {
   float eps = 1.0 / 512.0;
   vec2 drift = uTime * vec2(0.013, 0.009);
@@ -207,14 +218,32 @@ void main() {
   float nD = texture(uNoise, vUv + vec2(0.0, -eps) + drift).r;
   float nR = texture(uNoise, vUv + vec2( eps, 0.0) + drift).r;
   float nL = texture(uNoise, vUv + vec2(-eps, 0.0) + drift).r;
-  // curl of scalar noise field
+  // curl of scalar noise field — divergence-free, looks like turbulence
   vec2 curl = vec2(nU - nD, -(nR - nL)) / (2.0 * eps);
+
+  // bulk flow with meandering — the perpendicular of curl laterally
+  // deflects the flow vector, producing natural sinuous currents.
+  vec2 flow = uFlowDir * uFlowSpeed;
+  vec2 perp = vec2(-curl.y, curl.x);
+  vec2 flowMeander = perp * (uFlowMeander * uFlowSpeed * 1.6);
+
   vec2 v = texture(uVelocity, vUv).xy;
-  fragColor = vec4(v + curl * uStrength, 0.0, 1.0);
+  fragColor = vec4(v + curl * uStrength + flow + flowMeander, 0.0, 1.0);
 }
 `
 
-// final display pass — beer-lambert subtractive + paper grain + vignette
+// final display pass — hybrid subtractive/emissive + paper grain + ACES tonemap.
+//
+// on light paper we're in classic beer-lambert territory: pigment
+// attenuates reflected light → `paper * exp(-pigment * k)`.
+// on dark paper (black ink on raw black) that formula blanks everything
+// out — there's no reflected light to subtract. we blend between the two
+// based on paper luminance: as the substrate darkens, the pigment itself
+// becomes the emission source, so you get glowing strokes instead of
+// invisible ones. capillary "granulation" is softened (the old 1 + 0.35 ·
+// (1 − grain) bias pushed mid-tones into mud) and a Narkowicz-ACES curve
+// compresses highlights so heavy pigment saturates gracefully rather than
+// clipping to white or punching through the paper tint.
 const DISPLAY_FRAG = BASE_FRAG_HEADER + /* glsl */`
 uniform sampler2D uDensity;
 uniform sampler2D uPaper;
@@ -222,17 +251,49 @@ uniform vec3 uPaperColor;
 uniform float uAbsorption;
 uniform float uGrain;
 uniform float uVignette;
+
+// Narkowicz 2015 ACES fit — cheap, punchy, no clipping at highlights.
+vec3 aces(vec3 x) {
+  const float a = 2.51, b = 0.03, c = 2.43, d = 0.59, e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.0, 1.0);
+}
+
 void main() {
   vec4 d = texture(uDensity, vUv);
   float grain = texture(uPaper, vUv).r;
-  // subtle paper darkening at low-grain (valleys) and slight highlight at ridges
-  float paperMod = 1.0 - (grain - 0.5) * uGrain * 0.6;
+
+  // paper grain now only tilts the substrate; it never multiplies pigment.
+  // that single change kills the muddy-midtone look.
+  float paperMod = 1.0 - (grain - 0.5) * uGrain * 0.45;
   vec3 paper = uPaperColor * paperMod;
-  // beer-lambert: out = paper * exp(-pigment * k). add a granulation bias
-  // so heavy pigment settles more in paper valleys.
-  vec3 pigment = d.gba * (1.0 + (1.0 - grain) * 0.35);
-  vec3 col = paper * exp(-pigment * uAbsorption);
-  // vignette for mood
+
+  // pigment density (stored subtractive: bigger channel = stronger absorption)
+  vec3 pigment = d.gba;
+
+  // subtractive branch — classic watercolor on white
+  vec3 subtractive = paper * exp(-pigment * uAbsorption);
+
+  // emissive branch — pigment glows from within; paper is just backdrop.
+  // the tint inverts pigment (absorbance → reflectance) so a [0.95, 0.75, 0.10]
+  // "ultramarine" still reads as blue when it emits.
+  vec3 pigTint = 1.0 - pigment;
+  float strength = 1.0 - exp(-length(pigment) * uAbsorption * 0.55);
+  vec3 emissive = paper + pigTint * strength;
+
+  // blend by paper luminance — dark paper → emissive, light paper → subtractive
+  float pl = dot(uPaperColor, vec3(0.299, 0.587, 0.114));
+  float mixAmt = smoothstep(0.35, 0.12, pl);
+  vec3 col = mix(subtractive, emissive, mixAmt);
+
+  // granulation — settle a little extra density in paper valleys. much
+  // gentler than the old formulation (and only on the subtractive branch
+  // so dark-paper strokes don't pick up a patchy look).
+  col *= 1.0 - (1.0 - grain) * 0.12 * (1.0 - mixAmt);
+
+  // tonemap — compresses highlights, restores contrast lost to the blend
+  col = aces(col);
+
+  // vignette
   vec2 c = vUv - 0.5;
   float vig = 1.0 - dot(c, c) * uVignette;
   fragColor = vec4(col * vig, 1.0);
@@ -241,21 +302,112 @@ void main() {
 
 // ---------------- public types ----------------
 
+export type PigmentFamily =
+  | 'black' | 'red' | 'orange' | 'yellow' | 'earth' | 'green' | 'blue' | 'violet'
+
 export type Pigment = {
   label: string
+  family: PigmentFamily
   /** subtractive absorbance per rgb channel. 1 fully blocks that channel. */
   absorb: [number, number, number]
 }
 
+/* derive absorb from a target hex color at a "fully loaded" stroke density.
+   the display is `paper · exp(-absorb · density)`, so at density=D the
+   visible color is `hex`. D=2.2 matches the existing calibration. */
+function absorbFromHex(hex: string, D = 2.2): [number, number, number] {
+  const r = parseInt(hex.slice(1, 3), 16) / 255
+  const g = parseInt(hex.slice(3, 5), 16) / 255
+  const b = parseInt(hex.slice(5, 7), 16) / 255
+  const safe = (v: number) => Math.max(0.004, v)
+  return [
+    -Math.log(safe(r)) / D,
+    -Math.log(safe(g)) / D,
+    -Math.log(safe(b)) / D,
+  ]
+}
+
+/* full curated watercolor palette (~33 pigments) organized by hue family.
+   hex values target classic tube watercolor swatches (winsor & newton /
+   daniel smith / holbein). `family` drives the grouping in the ui sheet. */
+const P = (label: string, family: PigmentFamily, hex: string): Pigment =>
+  ({ label, family, absorb: absorbFromHex(hex) })
+
 export const PIGMENTS: Pigment[] = [
-  { label: 'sumi',        absorb: [1.00, 1.00, 1.00] },
-  { label: 'ultramarine', absorb: [0.95, 0.75, 0.10] },
-  { label: 'alizarin',    absorb: [0.20, 0.90, 0.80] },
-  { label: 'sienna',      absorb: [0.30, 0.80, 0.95] },
-  { label: 'sap green',   absorb: [0.85, 0.20, 0.85] },
-  { label: 'cadmium',     absorb: [0.10, 0.20, 0.95] },
-  { label: 'payne',       absorb: [0.70, 0.60, 0.50] },
-  { label: 'indigo',      absorb: [0.88, 0.80, 0.30] },
+  // — blacks / neutrals (quick pick row starts here so muscle memory stays)
+  P('sumi',              'black',  '#111111'),
+  P('ultramarine',       'blue',   '#2A4084'),
+  P('alizarin',          'red',    '#8C2131'),
+  P('burnt sienna',      'earth',  '#8A3A20'),
+  P('sap green',         'green',  '#4A6A23'),
+  P('cadmium yellow',    'yellow', '#EFC430'),
+  P('payne',             'black',  '#2A3137'),
+  P('indigo',            'blue',   '#1F2F5A'),
+  // — additional blacks / neutrals
+  P('lamp black',        'black',  '#1A1817'),
+  P('neutral tint',      'black',  '#2F3336'),
+  P('davys grey',        'black',  '#4D5155'),
+  // — reds
+  P('cadmium red',       'red',    '#B32122'),
+  P('vermilion',         'red',    '#D43A1E'),
+  P('rose madder',       'red',    '#B34057'),
+  P('quinacridone rose', 'red',    '#B5265C'),
+  // — oranges
+  P('cadmium orange',    'orange', '#D96C1F'),
+  P('gamboge',           'orange', '#D99522'),
+  P('venetian red',      'orange', '#923A2A'),
+  // — yellows
+  P('lemon yellow',      'yellow', '#ECDA3F'),
+  P('naples yellow',     'yellow', '#E2C878'),
+  P('yellow ochre',      'yellow', '#C49E4E'),
+  // — earths
+  P('raw sienna',        'earth',  '#A36B2B'),
+  P('burnt umber',       'earth',  '#5A331D'),
+  P('raw umber',         'earth',  '#6B4E2C'),
+  P('van dyke brown',    'earth',  '#4C2F1D'),
+  // — greens
+  P('viridian',          'green',  '#1A6B55'),
+  P('phthalo green',     'green',  '#115F4B'),
+  P('olive green',       'green',  '#5B6227'),
+  // — blues
+  P('cobalt blue',       'blue',   '#235B95'),
+  P('cerulean',          'blue',   '#2383A3'),
+  P('phthalo blue',      'blue',   '#1B4A7F'),
+  P('prussian blue',     'blue',   '#123246'),
+  // — violets
+  P('quin violet',       'violet', '#523566'),
+  P('dioxazine',         'violet', '#3E2760'),
+]
+
+/* ─── brush presets ────────────────────────────────────────────────────
+   our watercolor is a stable-fluids simulation, not a stamp engine, so
+   "brushes" here are starting parameters + per-stamp stroke behaviors.
+   the feel categories (round/flat/bristle/wash/dry/sumi/splatter/detail)
+   mirror classic digital-watercolor brush families (krita watercolor, the
+   leonardo-oss "pigment" set, real-brush-js) — we encode their feel as
+   values in the fluid-sim param space. */
+export type BrushPreset = {
+  id: string
+  label: string
+  radius: number        // starting radius in uv
+  wetness: number
+  density: number
+  push: number          // scales velocity impulse
+  spacing: number       // 0 → use radius·0.55 default; else relative to radius
+  jitterPos: number     // per-stamp lateral shake in uv
+  jitterRadius: number  // per-stamp radius variance (0..1)
+  pressureGamma: number // pressure → scale exponent. 1 = linear; >1 hard; <1 soft
+}
+
+export const BRUSH_PRESETS: BrushPreset[] = [
+  { id: 'round',    label: 'round',    radius: 0.016, wetness: 0.50, density: 1.10, push: 1.0, spacing: 0.55, jitterPos: 0.000, jitterRadius: 0.00, pressureGamma: 1.0 },
+  { id: 'wash',     label: 'wash',     radius: 0.060, wetness: 1.20, density: 0.55, push: 0.6, spacing: 0.80, jitterPos: 0.003, jitterRadius: 0.08, pressureGamma: 0.7 },
+  { id: 'dry',      label: 'dry',      radius: 0.022, wetness: 0.12, density: 2.00, push: 0.5, spacing: 1.10, jitterPos: 0.004, jitterRadius: 0.35, pressureGamma: 1.3 },
+  { id: 'bristle',  label: 'bristle',  radius: 0.020, wetness: 0.35, density: 1.60, push: 0.9, spacing: 0.45, jitterPos: 0.006, jitterRadius: 0.55, pressureGamma: 1.1 },
+  { id: 'sumi',     label: 'sumi',     radius: 0.028, wetness: 0.25, density: 2.40, push: 1.4, spacing: 0.40, jitterPos: 0.000, jitterRadius: 0.00, pressureGamma: 2.0 },
+  { id: 'splatter', label: 'splatter', radius: 0.009, wetness: 0.60, density: 1.80, push: 1.6, spacing: 1.80, jitterPos: 0.022, jitterRadius: 0.80, pressureGamma: 0.8 },
+  { id: 'detail',   label: 'detail',   radius: 0.006, wetness: 0.35, density: 1.30, push: 0.8, spacing: 0.40, jitterPos: 0.000, jitterRadius: 0.00, pressureGamma: 1.8 },
+  { id: 'flat',     label: 'flat',     radius: 0.034, wetness: 0.55, density: 1.00, push: 0.8, spacing: 0.30, jitterPos: 0.000, jitterRadius: 0.05, pressureGamma: 0.9 },
 ]
 
 export type PaperTint = {
@@ -282,23 +434,39 @@ export type BloomParams = {
   grain: number              // 0..1 — paper grain visibility
   vignette: number           // 0..1 — vignette strength
   ambient: number            // 0..1 — ambient curl-noise drift
+  // river — a bulk current applied to the entire field each step.
+  // paint dropped on the surface rides downstream; the meander term
+  // makes that journey curve naturally instead of marching straight.
+  flowAngle: number          // radians, screen-space (0 = right, π/2 = up)
+  flowSpeed: number          // 0..0.6 — bulk current magnitude
+  flowMeander: number        // 0..1 — curl deflects the flow (1 = braided)
   pressureIter: number       // Jacobi iterations per step (20 default)
   timeScale: number          // dt multiplier — "flow speed"
 }
 
 export const DEFAULT_PARAMS: BloomParams = {
-  viscosity: 0.08,
-  velocityDissipation: 0.985,
-  waterDissipation: 0.9985,
-  dyeDissipation: 0.9995,
-  evaporation: 0.14,
-  pigmentDiffusion: 0.06,
-  edgeDarken: 0.85,
-  absorption: 2.4,
-  grain: 0.55,
-  vignette: 0.20,
-  ambient: 0.035,
-  pressureIter: 20,
+  // defaults tuned for "looks like a gentle river" out of the box:
+  //  - lower edge-darken     → no muddy outlines on every stroke
+  //  - lower pigment diffuse → crisp cauliflower edges survive longer
+  //  - higher absorption     → richer pigments, better contrast
+  //  - nonzero flowSpeed     → paint visibly drifts downstream with an
+  //                            eastward default; arbitrary, change via UI
+  //  - nonzero flowMeander   → the current braids instead of running straight
+  viscosity: 0.055,
+  velocityDissipation: 0.990,
+  waterDissipation: 0.9987,
+  dyeDissipation: 0.9996,
+  evaporation: 0.10,
+  pigmentDiffusion: 0.030,
+  edgeDarken: 0.40,
+  absorption: 3.1,
+  grain: 0.42,
+  vignette: 0.10,
+  ambient: 0.04,
+  flowAngle: 0,
+  flowSpeed: 0.03,
+  flowMeander: 0.45,
+  pressureIter: 22,
   timeScale: 1.0,
 }
 
@@ -462,6 +630,9 @@ export function createBloomGpu(mount: HTMLElement): BloomGpu {
     uNoise: { value: null },
     uTime: { value: 0 },
     uStrength: { value: 0.03 },
+    uFlowDir: { value: new Vec2(1, 0) },
+    uFlowSpeed: { value: 0 },
+    uFlowMeander: { value: 0 },
   })
   const P_display = mkProgram(DISPLAY_FRAG, {
     uDensity: { value: null },
@@ -629,12 +800,15 @@ export function createBloomGpu(mount: HTMLElement): BloomGpu {
     const sdt = Math.min(0.033, dt) * p.timeScale
     t += sdt
 
-    // ambient curl forcing
-    if (p.ambient > 0) {
+    // ambient forcing — curl-noise + directional river flow + meander
+    if (p.ambient > 0 || p.flowSpeed > 0) {
       P_ambient.uniforms.uVelocity.value = velocity.read.texture
       P_ambient.uniforms.uNoise.value = noiseTex
       P_ambient.uniforms.uTime.value = t
       P_ambient.uniforms.uStrength.value = p.ambient
+      ;(P_ambient.uniforms.uFlowDir.value as Vec2).set(Math.cos(p.flowAngle), Math.sin(p.flowAngle))
+      P_ambient.uniforms.uFlowSpeed.value = p.flowSpeed
+      P_ambient.uniforms.uFlowMeander.value = p.flowMeander
       blit(M_ambient, velocity.write); velocity.swap()
     }
 

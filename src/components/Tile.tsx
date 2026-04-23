@@ -1,105 +1,85 @@
-import { useRef, type ReactNode, type CSSProperties, type MouseEvent } from 'react'
+import { type ReactNode, type CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
+import { prefetchRoute } from '../lib/routes'
 
 type TileProps = {
   label: string
-  code?: string
   to?: string
   children?: ReactNode
   className?: string
   style?: CSSProperties
   footer?: ReactNode
-  starred?: boolean
-  onToggleStar?: () => void
+  /** optional hex/css color — renders as a small dot next to the label */
   accent?: string
+  /** optional short tag (e.g. "live", "audio") — renders as a monospace chip */
+  tag?: string
+  /** optional short route or telemetry code shown in the header */
+  code?: string
 }
 
-export default function Tile({ label, code, to, children, className = '', style, footer, starred, onToggleStar, accent }: TileProps) {
-  const ref = useRef<HTMLDivElement>(null)
+export default function Tile({
+  label,
+  to,
+  children,
+  className = '',
+  style,
+  footer,
+  accent,
+  tag,
+  code,
+}: TileProps) {
   const interactive = !!to
-
-  const onMove = (e: MouseEvent<HTMLDivElement>) => {
-    const el = ref.current
-    if (!el) return
-    const rect = el.getBoundingClientRect()
-    const nx = ((e.clientX - rect.left) / rect.width) - 0.5
-    const ny = ((e.clientY - rect.top) / rect.height) - 0.5
-    // cap tilt to 1.6° to stay subtle
-    el.style.setProperty('--tilt-x', `${(-ny * 1.6).toFixed(2)}deg`)
-    el.style.setProperty('--tilt-y', `${(nx * 1.6).toFixed(2)}deg`)
-    // thumb parallax — inner translates counter to tilt direction
-    el.style.setProperty('--thumb-dx', `${(-nx * 8).toFixed(2)}px`)
-    el.style.setProperty('--thumb-dy', `${(-ny * 8).toFixed(2)}px`)
-    // cursor-local glow coords (percent)
-    el.style.setProperty('--mx-local', `${(((e.clientX - rect.left) / rect.width) * 100).toFixed(1)}%`)
-    el.style.setProperty('--my-local', `${(((e.clientY - rect.top) / rect.height) * 100).toFixed(1)}%`)
+  const prefetch = () => {
+    if (!to) return
+    prefetchRoute(to)
   }
-  const onLeave = () => {
-    const el = ref.current
-    if (!el) return
-    el.style.setProperty('--tilt-x', '0deg')
-    el.style.setProperty('--tilt-y', '0deg')
-    el.style.setProperty('--thumb-dx', '0px')
-    el.style.setProperty('--thumb-dy', '0px')
-  }
-  const onEnter = () => {
-    const el = ref.current
-    if (!el) return
-    // quick nudge that relaxes back via css transition on --label-dx
-    el.style.setProperty('--label-dx', '3px')
-    requestAnimationFrame(() => { el.style.setProperty('--label-dx', '0px') })
-  }
-
-  const starBtn = onToggleStar ? (
-    <button
-      type="button"
-      data-interactive
-      onClick={(e) => { e.preventDefault(); e.stopPropagation(); onToggleStar() }}
-      aria-label={starred ? 'unpin module' : 'pin module'}
-      title={starred ? 'unpin · remove from favorites' : 'pin · sort first on index'}
-      className={`absolute right-2 top-2 z-10 !border-0 !px-0 !py-0 text-[14px] transition-opacity ${
-        starred ? 'opacity-90 text-[var(--color-fg)]' : 'opacity-0 group-hover:opacity-60 text-[var(--color-dim)] hover:!text-[var(--color-fg)]'
-      }`}
-    >
-      {starred ? '★' : '☆'}
-    </button>
-  ) : null
-
-  const mergedStyle = accent
-    ? { ...style, ['--tile-accent' as string]: accent } as CSSProperties
-    : style
 
   const body = (
     <div
-      ref={ref}
-      onMouseMove={interactive ? onMove : undefined}
-      onMouseLeave={interactive ? onLeave : undefined}
-      onMouseEnter={interactive ? onEnter : undefined}
-      className={`tile group ${interactive ? 'tile-interactive' : ''} ${accent ? 'tile-accented' : ''} relative flex h-full flex-col ${className}`}
-      style={mergedStyle}
+      className={`tile ${interactive ? 'tile-interactive' : ''} relative flex h-full min-h-0 min-w-0 flex-col ${className}`}
+      style={style}
     >
-      {interactive && (
-        <>
-          <span className="tile-bracket tl" aria-hidden />
-          <span className="tile-bracket tr" aria-hidden />
-          <span className="tile-bracket bl" aria-hidden />
-          <span className="tile-bracket br" aria-hidden />
-        </>
-      )}
-      {accent && interactive && <span className="tile-sheen" aria-hidden />}
-      {starBtn}
-      <header className="flex items-center justify-between border-b border-[var(--color-line)] px-4 py-2.5 text-[13px] tracking-[0.06em] text-[var(--color-dim)]">
-        <span className="tile-label flex items-center gap-2">
-          {accent && <span className="tile-dot" aria-hidden />}
-          {label}
+      <header className="flex min-w-0 items-center justify-between gap-2 border-b border-[var(--color-line)] px-4 py-2.5 text-[13px]">
+        <span className="flex min-w-0 items-center gap-2">
+          {accent && (
+            <span
+              className="h-[7px] w-[7px] shrink-0 rounded-full"
+              style={{
+                backgroundColor: accent,
+                boxShadow: `0 0 0 2px color-mix(in srgb, ${accent} 18%, transparent)`,
+              }}
+              aria-hidden
+            />
+          )}
+          <span className="truncate whitespace-nowrap text-[var(--color-fg)]">{label}</span>
         </span>
-        {code && <span className={`tile-code ${onToggleStar ? 'mr-5' : ''} text-[var(--color-dim)]`}>{code}</span>}
+        {(code || tag) && (
+          <span className="flex shrink-0 items-center gap-1.5">
+            {code && (
+              <span
+                data-mono
+                className="tile-code rounded-[999px] px-2 py-[2px] text-[10px] uppercase tracking-[0.18em]"
+              >
+                {code}
+              </span>
+            )}
+            {tag && (
+              <span
+                data-mono
+                className="shrink-0 rounded-[999px] border border-[var(--color-line)] bg-[var(--color-surface-strong)] px-2 py-[2px] text-[10px] uppercase tracking-[0.14em] text-[var(--color-dim)]"
+              >
+                {tag}
+              </span>
+            )}
+          </span>
+        )}
       </header>
-      <div className="tile-thumb relative flex-1 overflow-hidden">{children}</div>
+      <div className="relative flex-1 min-h-0 min-w-0 overflow-hidden">
+        {children}
+      </div>
       {footer && (
-        <footer className="relative border-t border-[var(--color-line)] px-4 py-2.5 text-[13px] text-[var(--color-dim)]">
+        <footer className="relative min-w-0 border-t border-[var(--color-line)] px-4 py-2.5 text-[13px] text-[var(--color-dim)]">
           {footer}
-          {interactive && <span className="tile-chevron" aria-hidden>→</span>}
         </footer>
       )}
     </div>
@@ -107,7 +87,14 @@ export default function Tile({ label, code, to, children, className = '', style,
 
   if (to) {
     return (
-      <Link to={to} data-interactive className="block h-full">
+      <Link
+        to={to}
+        data-interactive
+        className="block h-full min-w-0"
+        onMouseEnter={prefetch}
+        onFocus={prefetch}
+        onTouchStart={prefetch}
+      >
         {body}
       </Link>
     )

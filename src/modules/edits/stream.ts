@@ -15,14 +15,20 @@ type Callbacks = {
 
 // exponential backoff with a ceiling — wikimedia's stream is reliable but
 // consumer network blips (sleeping laptop, vpn switch) happen.
+//
+// visibility: the stream closes when the tab is hidden and reconnects on
+// show. at ~60 edits/sec this is meaningful data + cpu savings for a user
+// who's switched tabs. (the onRow listener never fires while closed — we
+// don't backlog hidden events.)
 export function subscribeWikiStream({ onRow, onStatus }: Callbacks): StreamHandle {
   let es: EventSource | null = null
   let retry = 0
   let retryTimer: number | null = null
   let closed = false
+  let paused = false
 
   const connect = () => {
-    if (closed) return
+    if (closed || paused) return
     onStatus('connecting')
     try {
       es = new EventSource(STREAM_URL)
@@ -42,7 +48,7 @@ export function subscribeWikiStream({ onRow, onStatus }: Callbacks): StreamHandl
       }
     }
     es.onerror = () => {
-      if (closed) return
+      if (closed || paused) return
       onStatus('error')
       try { es?.close() } catch { /* ignore */ }
       es = null
@@ -50,20 +56,39 @@ export function subscribeWikiStream({ onRow, onStatus }: Callbacks): StreamHandl
     }
   }
 
+  const disconnect = () => {
+    if (retryTimer !== null) { clearTimeout(retryTimer); retryTimer = null }
+    try { es?.close() } catch { /* ignore */ }
+    es = null
+  }
+
   const scheduleRetry = () => {
+    if (paused || closed) return
     retry = Math.min(retry + 1, 6)
     const delay = 500 * Math.pow(2, retry)   // 1s → 2s → 4s → … → 32s
     retryTimer = window.setTimeout(connect, delay)
   }
 
+  const onVis = () => {
+    if (closed) return
+    if (document.hidden) {
+      paused = true
+      disconnect()
+    } else if (paused) {
+      paused = false
+      retry = 0
+      connect()
+    }
+  }
+
+  document.addEventListener('visibilitychange', onVis)
   connect()
 
   return {
     close: () => {
       closed = true
-      if (retryTimer !== null) { clearTimeout(retryTimer); retryTimer = null }
-      try { es?.close() } catch { /* ignore */ }
-      es = null
+      document.removeEventListener('visibilitychange', onVis)
+      disconnect()
     },
   }
 }

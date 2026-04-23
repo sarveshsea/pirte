@@ -107,9 +107,11 @@ function toStation(r: RawStation): Station | null {
 
 export type FetchOpts = {
   limit?: number
+  offset?: number
   country?: string        // country name ('germany')
   countrycode?: string    // iso 2-letter ('de')
   tag?: string            // genre ('jazz')
+  name?: string           // free-text name search
   order?: 'clickcount' | 'votes' | 'name' | 'random'
 }
 
@@ -117,6 +119,7 @@ export async function fetchStations(opts: FetchOpts = {}): Promise<Station[]> {
   const base = await pickMirror()
   const params = new URLSearchParams()
   params.set('limit', String(opts.limit ?? 500))
+  if (opts.offset) params.set('offset', String(opts.offset))
   params.set('hidebroken', 'true')
   params.set('has_geo_info', 'true')
   params.set('is_https', 'true')
@@ -125,6 +128,7 @@ export async function fetchStations(opts: FetchOpts = {}): Promise<Station[]> {
   if (opts.country) params.set('country', opts.country)
   if (opts.countrycode) params.set('countrycode', opts.countrycode)
   if (opts.tag) params.set('tag', opts.tag)
+  if (opts.name) params.set('name', opts.name)
   const r = await fetch(`${base}/json/stations/search?${params}`)
   if (!r.ok) throw new Error(`stations: http ${r.status}`)
   const raw: RawStation[] = await r.json()
@@ -138,6 +142,36 @@ export async function fetchStations(opts: FetchOpts = {}): Promise<Station[]> {
     if (s.hls) continue
     seen.add(s.id)
     out.push(s)
+  }
+  return out
+}
+
+/*
+ * fetch multiple pages concurrently and merge. dedupes by station id across
+ * pages (the api paginates on the raw result set, so an entry that fails
+ * toStation() on one page won't shift offsets — but we dedupe defensively).
+ * keeps relative ordering: earlier pages come first.
+ */
+export async function fetchStationsPaged(
+  opts: FetchOpts = {},
+  pages = 6,
+  pageSize = 500,
+  signal?: AbortSignal,
+): Promise<Station[]> {
+  const reqs: Promise<Station[]>[] = []
+  for (let p = 0; p < pages; p++) {
+    reqs.push(fetchStations({ ...opts, limit: pageSize, offset: p * pageSize }))
+  }
+  const results = await Promise.all(reqs)
+  if (signal?.aborted) throw new DOMException('aborted', 'AbortError')
+  const seen = new Set<string>()
+  const out: Station[] = []
+  for (const page of results) {
+    for (const s of page) {
+      if (seen.has(s.id)) continue
+      seen.add(s.id)
+      out.push(s)
+    }
   }
   return out
 }

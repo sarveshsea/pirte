@@ -117,7 +117,7 @@ export default function Sprites() {
         </div>
       }
     >
-      <div ref={wrapRef} className="h-[76vh] w-full cursor-none">
+      <div ref={wrapRef} className="h-[min(76vh,calc(100dvh-14rem))] w-full cursor-none">
         <pre
           ref={preRef}
           className="m-0 h-full w-full whitespace-pre text-[12px] leading-[1.1] text-[var(--color-fg)]"

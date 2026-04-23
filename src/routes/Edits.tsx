@@ -60,7 +60,7 @@ export default function Edits() {
   const now = Date.now()
 
   return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[2fr_1fr]">
+    <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
       {/* live ticker */}
       <Tile
         label={`edits · live · wikipedia`}
@@ -86,7 +86,7 @@ export default function Edits() {
           </div>
         }
       >
-        <div className="h-[68vh] overflow-hidden px-4 py-3">
+        <div className="h-[min(68vh,calc(100dvh-14rem))] overflow-hidden px-4 py-3">
           <pre className="m-0 flex h-full flex-col gap-[1px] whitespace-pre font-mono text-[12px] leading-[1.35]">
             {rows.length === 0 ? (
               <span className="text-[var(--color-dim)]">
@@ -105,7 +105,7 @@ export default function Edits() {
       </Tile>
 
       {/* stats column */}
-      <div className="flex flex-col gap-6">
+      <div className="flex min-w-0 flex-col gap-6">
         <Tile label="rate" code="e/s" footer={<span>10s rolling window</span>}>
           <div className="flex flex-col gap-3 p-4">
             <div className="flex items-baseline gap-3">

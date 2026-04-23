@@ -5,7 +5,7 @@
 // the (F, k) plane partitions into regions, each producing a distinct
 // stable pattern class — switching sub-presets moves across that plane.
 
-import { rampChar, type SimInstance } from './index'
+import { rampChar, type SimInstance, type PhaseSample, type PhaseSpec } from './index'
 
 const Du = 1.0
 const Dv = 0.5
@@ -142,6 +142,20 @@ export function createGrayScott(): SimInstance {
     seed()
   }
 
+  const phase = (): PhaseSample => {
+    const N = v.length
+    let su = 0, sv = 0
+    for (let i = 0; i < N; i++) { su += u[i]; sv += v[i] }
+    return { x: N === 0 ? 0 : su / N, y: N === 0 ? 0 : sv / N }
+  }
+
+  const phaseSpec = (): PhaseSpec => ({
+    xLabel: 'u',
+    yLabel: 'v',
+    xMin: 0, xMax: 1,
+    yMin: 0, yMax: 0.6,
+  })
+
   return {
     reset,
     reseed: seed,
@@ -149,6 +163,8 @@ export function createGrayScott(): SimInstance {
     render,
     metrics,
     params,
+    phase,
+    phaseSpec,
     setSubPreset,
     subPresetIdx: () => subIdx,
   }

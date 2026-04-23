@@ -76,7 +76,7 @@ export default function Faces() {
   }, [filtered, handleCopy])
 
   return (
-    <div className="relative flex h-[calc(100vh-9rem)] w-full flex-col overflow-hidden rounded-xl border border-[var(--color-line)] bg-[var(--color-surface)]">
+    <div className="relative flex h-[min(calc(100vh-9rem),calc(100dvh-14rem))] w-full flex-col overflow-hidden rounded-xl border border-[var(--color-line)] bg-[var(--color-surface)]">
       <SearchBar
         ref={searchRef}
         value={query}

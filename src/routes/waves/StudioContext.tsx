@@ -120,7 +120,30 @@ export function StudioProvider({ children }: { children: ReactNode }) {
     engineRef.current = eng
     historyRef.current.push(projectRef.current)
     setReady(true)
+
+    // stop the scheduler when the tab is hidden — browsers throttle setTimeout
+    // on hidden tabs, which would cause the lookahead scheduler to glitch. we
+    // remember the intent-to-play and restart on show so the user doesn't
+    // lose their transport state.
+    let wasPlaying = false
+    const onVis = () => {
+      const e = engineRef.current
+      if (!e) return
+      if (document.hidden) {
+        if (e.isPlaying) {
+          wasPlaying = true
+          e.stop()
+          // don't setPlaying(false) — the UI still reflects user intent
+        }
+      } else if (wasPlaying) {
+        wasPlaying = false
+        e.start()
+      }
+    }
+    document.addEventListener('visibilitychange', onVis)
+
     return () => {
+      document.removeEventListener('visibilitychange', onVis)
       try { eng.stop() } catch { /* ignore */ }
       try { eng.dispose() } catch { /* ignore */ }
       engineRef.current = null

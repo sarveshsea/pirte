@@ -4,7 +4,7 @@
 // rotating spiral — the same topology seen in cardiac fibrillation, neural
 // spreading depression, and the belousov-zhabotinsky reaction dish.
 
-import { rampChar, type SimInstance } from './index'
+import { rampChar, type SimInstance, type PhaseSample, type PhaseSpec } from './index'
 
 const Du = 1.0
 const EPS = 0.015
@@ -139,5 +139,21 @@ export function createExcitable(): SimInstance {
     'dt': DT.toFixed(2),
   })
 
-  return { reset, reseed: seed, step, render, metrics, params }
+  const phase = (): PhaseSample => {
+    // phase portrait of (mean u, mean v) traces the limit cycle per rotation
+    // of the spiral — a squashed closed loop in (u, v) space.
+    let sumU = 0, sumV = 0
+    const N = u.length
+    for (let i = 0; i < N; i++) { sumU += u[i]; sumV += v[i] }
+    return { x: N === 0 ? 0 : sumU / N, y: N === 0 ? 0 : sumV / N }
+  }
+
+  const phaseSpec = (): PhaseSpec => ({
+    xLabel: 'u',
+    yLabel: 'v',
+    xMin: -0.5, xMax: 1.2,
+    yMin: -0.1, yMax: 0.8,
+  })
+
+  return { reset, reseed: seed, step, render, metrics, params, phase, phaseSpec }
 }

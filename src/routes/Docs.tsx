@@ -18,15 +18,12 @@ const SECTIONS: Section[] = [
     items: [
       { path: '/fractals',     code: '01', label: 'fractals',     desc: 'mandelbrot + julia via webgl. pan/zoom with mouse.' },
       { path: '/attractors',   code: '02', label: 'attractors',   desc: 'lorenz · clifford · dejong strange attractors in canvas2d.' },
-      { path: '/kaleidoscope', code: '07', label: 'kaleidoscope', desc: 'n-fold mirror over a perlin field.' },
     ],
   },
   {
     title: 'interactive',
     note: 'playgrounds — your input drives the system.',
     items: [
-      { path: '/ascii',      code: '03', label: 'ascii',     desc: 'image → text converter with ramp, bias, pixelate, mix controls.' },
-      { path: '/pixels',     code: '05', label: 'pixels',    desc: 'upload an image, get a paint-by-number puzzle.', keybinds: ['click  fill a cell'] },
       { path: '/sprites',    code: '08', label: 'sprites',   desc: 'particle sandbox with attract/repel/vortex forces.', keybinds: ['a f v i  modes', 'click  pulse'] },
       { path: '/bloom',      code: '22', label: 'bloom',     desc: 'wet-on-wet watercolor sim — advection + capillary flow + edge darkening. 8 pigments, 4 papers, full parameter panel.', keybinds: ['drag  paint', 'space  freeze', 'c  clear', 'r  reseed paper', 's  save png', 'm  mono', '[ ]  brush size', '1–8  pigment'] },
       { path: '/faces',      code: '10', label: 'faces',     desc: 'kaomoji gallery — ~150 curated unicode emoticons. search matches face + mood/subject tags. click to copy.', keybinds: ['click  copy', '/  focus search', 'enter  copy first', 'r  random', 'esc  clear'] },
@@ -39,24 +36,11 @@ const SECTIONS: Section[] = [
     ],
   },
   {
-    title: 'meditative',
-    items: [
-      { path: '/breathe', code: '11', label: 'breathe', desc: 'box-breathing guide with phase colors, sine-tick audio, and a waveform mode.', keybinds: ['space  pause', 'v  mode (circle / waveform)', 'm  sound on/off', 'r  reset cycle'] },
-    ],
-  },
-  {
     title: 'live',
     note: 'pulls from real external data.',
     items: [
-      { path: '/time',  code: '06', label: 'time',  desc: 'global clocks across six cities + session timer.' },
-      { path: '/orbit', code: '17', label: 'orbit', desc: 'iss telemetry, live altitude/velocity, ground-track overlay.' },
       { path: '/radio', code: '18', label: 'radio', desc: 'curated global stations streamed directly · clickable pins on an ascii world map.' },
-    ],
-  },
-  {
-    title: 'future ascii',
-    items: [
-      { path: '/starfield', code: '12', label: 'starfield', desc: '3d ascii flythrough. mouse steers.', keybinds: ['mouse  steer', '↑ ↓  speed', 'space  warp', 'r  reset'] },
+      { path: '/edits', code: '23', label: 'edits', desc: 'live wikipedia firehose · ~60 edits/sec · sse stream.' },
     ],
   },
   {
@@ -71,7 +55,6 @@ const SECTIONS: Section[] = [
 const GLOBAL_KEYS: [string, string][] = [
   ['⌘k / ctrl+k', 'command palette — jump to any module'],
   ['?',           'toggle shortcuts overlay'],
-  ['shift+space', 'tiling window manager overlay'],
   ['[ / ]',       'previous / next module'],
   ['h',           'home'],
 ]
@@ -90,8 +73,8 @@ export default function Docs() {
         </Link>
       </header>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_260px]">
-        <div className="flex flex-col gap-6">
+      <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,260px)]">
+        <div className="flex min-w-0 flex-col gap-6">
           {SECTIONS.map((sec) => (
             <Tile key={sec.title} label={sec.title} footer={sec.note ? <span>{sec.note}</span> : undefined}>
               <ul className="flex flex-col divide-y divide-[var(--color-line)]">
@@ -124,7 +107,7 @@ export default function Docs() {
           ))}
         </div>
 
-        <div className="flex flex-col gap-6">
+        <div className="flex min-w-0 flex-col gap-6">
           <Tile label="global keys">
             <ul className="flex flex-col divide-y divide-[var(--color-line)]">
               {GLOBAL_KEYS.map(([k, v]) => (

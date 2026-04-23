@@ -1,4 +1,5 @@
 import { useEffect, useState, type CSSProperties } from 'react'
+import { intervalLoop } from '../../lib/rafLoop'
 
 export interface SpinnerProps {
   size?: number
@@ -24,8 +25,10 @@ export function Spinner({
   const [frame, setFrame] = useState(0)
 
   useEffect(() => {
-    const id = setInterval(() => setFrame((i) => (i + 1) % frames.length), interval)
-    return () => clearInterval(id)
+    // visibility-aware: spinners don't tick while the tab is hidden. matters
+    // most for the RouteLoader fallback, which mounts briefly on every lazy
+    // route switch — previously those intervals stayed live on background tabs.
+    return intervalLoop(() => setFrame((i) => (i + 1) % frames.length), interval)
   }, [frames, interval])
 
   return (

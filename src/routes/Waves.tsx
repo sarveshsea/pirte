@@ -57,16 +57,16 @@ function Shortcuts() {
 
 function Studio() {
   return (
-    <div className="flex w-full flex-col gap-4">
+    <div className="flex min-w-0 w-full flex-col gap-4">
       <Tile label="waves · studio" code="09">
         <Transport />
       </Tile>
 
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_600px]">
+      <div className="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,600px)]">
         <Tile label="sequencer" footer={<span>click steps to toggle · pattern {} · space play</span>}>
           <StepGrid />
         </Tile>
-        <div className="flex flex-col gap-4">
+        <div className="flex min-w-0 flex-col gap-4">
           <Tile label="visualizer">
             <Visualizer />
           </Tile>
@@ -76,11 +76,11 @@ function Studio() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_420px]">
+      <div className="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,420px)]">
         <Tile label="master fx" footer={<span>bitcrush · compressor (sidechain taps the kick) · delay · reverb · limiter</span>}>
           <FXRack />
         </Tile>
-        <div className="flex flex-col gap-4">
+        <div className="flex min-w-0 flex-col gap-4">
           <Tile label="kit" footer={<span>drop .wav onto a drum track · converts voice to sampler</span>}>
             <KitPicker />
           </Tile>

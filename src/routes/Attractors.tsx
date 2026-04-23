@@ -127,13 +127,13 @@ export default function Attractors() {
   const fmt = (n: number) => n.toFixed(3)
 
   return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_280px]">
+    <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,280px)]">
       <Tile
         label={`attractors · ${kind}`}
         code="02"
         footer={<span>space · randomize (clifford/dejong) · trail {(trail * 100).toFixed(0)}%</span>}
       >
-        <canvas ref={canvasRef} className="block h-[72vh] w-full" />
+        <canvas ref={canvasRef} className="block h-[min(72vh,calc(100dvh-14rem))] w-full" />
       </Tile>
 
       <Tile label="params">

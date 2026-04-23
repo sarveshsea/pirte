@@ -1,81 +1,59 @@
-import { useEffect, useState, type CSSProperties } from 'react'
-import Hourglass from './Hourglass'
+import { useEffect, useState } from 'react'
+import { prefersReducedMotion } from '../lib/canvas'
 
-// fills → twists → flies to the resting logo position and fades away.
-// shown once per session; subsequent navigations skip.
-// css-driven (was framer-motion) — stage changes swap classes; the
-// settle stage reads the target transform from css vars so we can
-// compute it from the measured logo position.
-const KEY = 'pirte.splash.shown.v1'
+const KEY = 'pirte.splash.wordmark.v2'
 
-type Rect = { left: number; top: number; width: number; height: number }
-
-type Stage = 'fill' | 'twist' | 'settle' | 'fading' | 'gone'
+type Stage = 'enter' | 'settle' | 'fade' | 'gone'
 
 export default function Splash() {
-  const [stage, setStage] = useState<Stage>(() => {
-    try { return sessionStorage.getItem(KEY) ? 'gone' : 'fill' } catch { return 'fill' }
+  const [enabled] = useState(() => {
+    try {
+      return !sessionStorage.getItem(KEY)
+    } catch {
+      return true
+    }
   })
-  const [target, setTarget] = useState<Rect | null>(null)
+  const [stage, setStage] = useState<Stage>(enabled ? 'enter' : 'gone')
 
   useEffect(() => {
-    if (stage === 'gone') return
-    try { sessionStorage.setItem(KEY, '1') } catch { /* ignore */ }
+    if (!enabled) return
 
-    const findTarget = () => {
-      const el = document.querySelector('[data-logo-target]') as HTMLElement | null
-      if (el) {
-        const r = el.getBoundingClientRect()
-        setTarget({ left: r.left, top: r.top, width: r.width, height: r.height })
-        return true
-      }
-      return false
+    const reduce = prefersReducedMotion()
+
+    try {
+      sessionStorage.setItem(KEY, '1')
+    } catch {
+      // ignore
     }
 
-    // bounded polling — give up after ~1s; skip animation gracefully if
-    // the target never mounts (layout blocked, font load stalled, etc.)
-    let tries = 0
-    let measureId: number | null = null
-    const tryMeasure = () => {
-      if (findTarget() || tries++ > 16) { measureId = null; return }
-      measureId = window.setTimeout(tryMeasure, 60)
-    }
-    tryMeasure()
+    const settleAt = reduce ? 0 : 720
+    const fadeAt = reduce ? 680 : 1960
+    const doneAt = reduce ? 1120 : 2580
 
-    const t1 = setTimeout(() => setStage('twist'),   900)
-    const t2 = setTimeout(() => setStage('settle'),  1500)
-    const t3 = setTimeout(() => setStage('fading'),  2400)
-    const t4 = setTimeout(() => setStage('gone'),    2900)
+    const timers = [
+      settleAt > 0 ? window.setTimeout(() => setStage('settle'), settleAt) : 0,
+      window.setTimeout(() => setStage('fade'), fadeAt),
+      window.setTimeout(() => setStage('gone'), doneAt),
+    ]
+
     return () => {
-      if (measureId !== null) clearTimeout(measureId)
-      clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4)
+      for (const timer of timers) {
+        if (timer) window.clearTimeout(timer)
+      }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [enabled])
 
   if (stage === 'gone') return null
 
-  const big = 140
-  // target scale: match the resting logo height (26px) to the splash viewBox (60 units)
-  const finalScale = target ? (target.height / big) : (26 / big)
-  const targetLeft = target ? target.left + target.width / 2 : 44
-  const targetTop  = target ? target.top  + target.height / 2 : 44
-
-  const style: CSSProperties & Record<string, string | number> = {
-    background: 'var(--color-bg)',
-    ['--splash-scale']: finalScale,
-    ['--splash-tx']: `${targetLeft - window.innerWidth / 2}px`,
-    ['--splash-ty']: `${targetTop - window.innerHeight / 2}px`,
-  }
-
   return (
-    <div
-      className={`splash-backdrop splash-${stage}`}
-      style={style}
-      aria-hidden
-    >
-      <div className="splash-shape" style={{ color: 'var(--color-fg)' }}>
-        <Hourglass size={big} introFillSec={0.9} />
+    <div className={`splash-backdrop splash-${stage}`} aria-hidden>
+      <div className="splash-aura splash-aura--left" />
+      <div className="splash-aura splash-aura--right" />
+
+      <div className="splash-wordmark-shell">
+        <div className="splash-wordmark-sheen" />
+        <div className="splash-wordmark-glow" />
+        <div className="splash-wordmark-text">pirt,e</div>
       </div>
     </div>
   )

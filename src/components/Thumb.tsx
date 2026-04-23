@@ -1,10 +1,7 @@
 import { useEffect, useMemo, useRef, type RefObject } from 'react'
 import { fitCanvas, prefersReducedMotion } from '../lib/canvas'
 import { stepClifford, DEFAULTS } from '../modules/attractors'
-import { renderKaleidoscope } from '../modules/kaleidoscope'
-import { renderSevenSegment } from '../modules/sevenSegment'
 import { initState as spritesInit, step as spritesStep, render as spritesRender, type SpritesState } from '../modules/sprites'
-import { makeStars, stepStars, renderStars, type Star } from '../modules/starfield'
 import { DotsSpinner, ArcSpinner, PulseSpinner, WaveSpinner, BounceSpinner, EarthSpinner } from './spinners'
 
 const TARGET_FPS = 24
@@ -36,13 +33,15 @@ function useThrottledRaf(
     const reduce = prefersReducedMotion()
     let raf = 0
     let last = 0
+    let visible = !document.hidden
 
     const tick = (t: number) => {
+      if (!visible) return
       if (t - last >= FRAME_MS) { draw(t); last = t }
       raf = requestAnimationFrame(tick)
     }
     const start = () => {
-      if (raf || reduce) return
+      if (raf || reduce || !visible) return
       raf = requestAnimationFrame(tick)
     }
     const stop = () => {
@@ -51,11 +50,25 @@ function useThrottledRaf(
       raf = 0
     }
 
+    const onVisibility = () => {
+      visible = !document.hidden
+      if (visible) {
+        last = 0
+        start()
+      } else {
+        stop()
+      }
+    }
+
     let io: IntersectionObserver | null = null
     const el = target?.current
     if (el && typeof IntersectionObserver !== 'undefined') {
       io = new IntersectionObserver(
-        ([entry]) => { entry.isIntersecting ? start() : stop() },
+        ([entry]) => {
+          visible = !document.hidden && !!entry?.isIntersecting
+          if (visible) start()
+          else stop()
+        },
         { rootMargin: '120px' },
       )
       io.observe(el)
@@ -63,105 +76,116 @@ function useThrottledRaf(
       start()
     }
 
+    document.addEventListener('visibilitychange', onVisibility)
+
     if (reduce) draw(0)
 
     return () => {
       stop()
       io?.disconnect()
+      document.removeEventListener('visibilitychange', onVisibility)
     }
     /* eslint-disable-next-line */
   }, deps)
+}
+
+type CanvasSurface = {
+  ctx: CanvasRenderingContext2D | null
+  width: number
+  height: number
+  dpr: number
+}
+
+function useCanvasSurface(ref: RefObject<HTMLCanvasElement | null>) {
+  const surfaceRef = useRef<CanvasSurface>({
+    ctx: null,
+    width: 0,
+    height: 0,
+    dpr: 1,
+  })
+
+  useEffect(() => {
+    const canvas = ref.current
+    const ctx = canvas?.getContext('2d') ?? null
+    if (!canvas || !ctx) return
+
+    const resize = () => {
+      surfaceRef.current = {
+        ctx,
+        ...fitCanvas(canvas, ctx),
+      }
+    }
+
+    resize()
+    const observer = new ResizeObserver(resize)
+    observer.observe(canvas)
+
+    return () => observer.disconnect()
+  }, [ref])
+
+  return surfaceRef
 }
 
 
 export function ThumbClifford() {
   const ref = useRef<HTMLCanvasElement>(null)
   const stateRef = useRef({ x: 0.1, y: 0.1 })
+  const surfaceRef = useCanvasSurface(ref)
+
   useEffect(() => {
-    const c = ref.current
-    if (!c) return
-    const ctx = c.getContext('2d')!
-    fitCanvas(c, ctx)
+    const { ctx, width, height } = surfaceRef.current
+    if (!ctx || width === 0 || height === 0) return
     ctx.fillStyle = '#000'
-    const r = c.getBoundingClientRect()
-    ctx.fillRect(0, 0, r.width, r.height)
-  }, [])
+    ctx.fillRect(0, 0, width, height)
+  }, [surfaceRef])
+
   useThrottledRaf(() => {
-    const c = ref.current; if (!c) return
-    const ctx = c.getContext('2d')!
-    const r = c.getBoundingClientRect()
+    const { ctx, width, height } = surfaceRef.current
+    if (!ctx || width === 0 || height === 0) return
     ctx.fillStyle = 'rgba(0,0,0,0.06)'
-    ctx.fillRect(0, 0, r.width, r.height)
+    ctx.fillRect(0, 0, width, height)
     ctx.fillStyle = '#e8e8e8'
     for (let i = 0; i < 2500; i++) {
       stepClifford(stateRef.current, DEFAULTS.clifford)
-      const px = r.width / 2 + stateRef.current.x * (r.width / 5)
-      const py = r.height / 2 + stateRef.current.y * (r.height / 5)
+      const px = width / 2 + stateRef.current.x * (width / 5)
+      const py = height / 2 + stateRef.current.y * (height / 5)
       ctx.fillRect(px, py, 1, 1)
     }
   }, [], ref)
   return <canvas ref={ref} className="block h-full w-full" />
 }
 
-// live rotating ascii donut — dynamic + recognizable + fits the aesthetic
-export function ThumbAscii() {
-  const preRef = useRef<HTMLPreElement>(null)
-  useThrottledRaf((t) => {
-    if (!preRef.current) return
-    const A = t * 0.0009, B = t * 0.0005
-    const cA = Math.cos(A), sA = Math.sin(A)
-    const cB = Math.cos(B), sB = Math.sin(B)
-    const cols = 40, rows = 16
-    const K1 = cols * 0.42, K2 = 5
-    const out = new Array<string>(rows * cols).fill(' ')
-    const zbuf = new Float32Array(rows * cols)
-    const LUM = '.,-~:;=!*#$@'
-    for (let theta = 0; theta < 6.283; theta += 0.14) {
-      const cT = Math.cos(theta), sT = Math.sin(theta)
-      for (let phi = 0; phi < 6.283; phi += 0.05) {
-        const cP = Math.cos(phi), sP = Math.sin(phi)
-        const circleX = 2 + cT, circleY = sT
-        const x = circleX * (cB * cP + sA * sB * sP) - circleY * cA * sB
-        const y = circleX * (sB * cP - sA * cB * sP) + circleY * cA * cB
-        const z = K2 + cA * circleX * sP + circleY * sA
-        const ooz = 1 / z
-        const xp = Math.floor(cols / 2 + K1 * ooz * x)
-        const yp = Math.floor(rows / 2 - K1 * 0.5 * ooz * y)
-        const L = cP * cT * sB - cA * cT * sP - sA * sT + cB * (cA * sT - cT * sA * sP)
-        if (L > 0 && xp >= 0 && xp < cols && yp >= 0 && yp < rows) {
-          const idx = xp + cols * yp
-          if (ooz > zbuf[idx]) {
-            zbuf[idx] = ooz
-            out[idx] = LUM[Math.floor(L * 8)] ?? '@'
-          }
-        }
-      }
-    }
-    const lines: string[] = []
-    for (let y = 0; y < rows; y++) lines.push(out.slice(y * cols, (y + 1) * cols).join(''))
-    preRef.current.textContent = lines.join('\n')
-  }, [], preRef)
-  return (
-    <div className="grid h-full w-full place-items-center" style={{ background: '#060408' }}>
-      <pre ref={preRef} className="m-0 whitespace-pre text-[10px] leading-[1.0] text-[#e8e0ff]" />
-    </div>
-  )
-}
-
 // live colorful julia morph — c traces a slow lissajous curve, hue drifts
 export function ThumbMandelbrot() {
   const ref = useRef<HTMLCanvasElement>(null)
+  const surfaceRef = useCanvasSurface(ref)
+  const bufferRef = useRef<{
+    canvas: HTMLCanvasElement
+    ctx: CanvasRenderingContext2D
+    image: ImageData
+  } | null>(null)
+
+  useEffect(() => {
+    const canvas = document.createElement('canvas')
+    canvas.width = 140
+    canvas.height = 88
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+    bufferRef.current = {
+      canvas,
+      ctx,
+      image: ctx.createImageData(canvas.width, canvas.height),
+    }
+  }, [])
+
   useThrottledRaf((t) => {
-    const c = ref.current; if (!c) return
-    const ctx = c.getContext('2d')!
-    fitCanvas(c, ctx)
-    const rect = c.getBoundingClientRect()
-    // small backing-store — blitted up by css. cheap + soft.
-    const W = 140, H = 88
-    c.width = W * Math.min(2, window.devicePixelRatio || 1)
-    c.height = H * Math.min(2, window.devicePixelRatio || 1)
-    const img = ctx.createImageData(W, H)
-    const data = img.data
+    const { ctx, width, height } = surfaceRef.current
+    const buffer = bufferRef.current
+    if (!ctx || !buffer || width === 0 || height === 0) return
+
+    const W = buffer.canvas.width
+    const H = buffer.canvas.height
+    const data = buffer.image.data
     const phase = t * 0.00018
     const cxj = Math.cos(phase) * 0.38 - 0.42
     const cyj = Math.sin(phase * 1.3) * 0.38 + 0.12
@@ -193,82 +217,12 @@ export function ThumbMandelbrot() {
         }
       }
     }
-    // draw to offscreen at native, then scale up onto the real canvas
-    const off = document.createElement('canvas')
-    off.width = W; off.height = H
-    off.getContext('2d')!.putImageData(img, 0, 0)
+    buffer.ctx.putImageData(buffer.image, 0, 0)
     ctx.imageSmoothingEnabled = true
-    ctx.clearRect(0, 0, c.width, c.height)
-    ctx.drawImage(off, 0, 0, c.width, c.height)
-    // keep css size accurate
-    c.style.width = `${rect.width}px`
-    c.style.height = `${rect.height}px`
+    ctx.clearRect(0, 0, width, height)
+    ctx.drawImage(buffer.canvas, 0, 0, width, height)
   }, [], ref)
   return <canvas ref={ref} className="block h-full w-full" />
-}
-
-// colorful voronoi blobs from seeded palette — reads as 'quantized image', not a gray checker
-export function ThumbPixels() {
-  const n = 16
-  const cells = useMemo(() => {
-    const palette: [number, number, number][] = [
-      [255, 106, 136], [255, 160, 96],  [235, 205, 110],
-      [160, 212, 130], [100, 212, 198], [108, 150, 255],
-      [180, 138, 255], [235, 130, 200], [120, 120, 150],
-    ]
-    const nSeeds = 5 + Math.floor(Math.random() * 3)
-    const seeds = Array.from({ length: nSeeds }, () => ({
-      x: Math.random() * n,
-      y: Math.random() * n,
-      color: palette[Math.floor(Math.random() * palette.length)],
-    }))
-    const out: string[] = []
-    for (let y = 0; y < n; y++) {
-      for (let x = 0; x < n; x++) {
-        let best = 0, bestD = Infinity
-        for (let i = 0; i < seeds.length; i++) {
-          const d = (x - seeds[i].x) ** 2 + (y - seeds[i].y) ** 2
-          if (d < bestD) { bestD = d; best = i }
-        }
-        const [r, g, b] = seeds[best].color
-        // subtle edge darkening toward the border
-        const edge = 1 - 0.35 * Math.max(0, (bestD / (n * n)))
-        out.push(`rgb(${Math.floor(r * edge)},${Math.floor(g * edge)},${Math.floor(b * edge)})`)
-      }
-    }
-    return out
-  }, [])
-  return (
-    <div
-      className="grid h-full w-full"
-      style={{
-        gridTemplateColumns: `repeat(${n}, 1fr)`,
-        gridTemplateRows: `repeat(${n}, 1fr)`,
-        gap: '1px',
-        background: '#0a0a0a',
-        padding: '1px',
-      }}
-    >
-      {cells.map((bg, i) => <div key={i} style={{ background: bg }} />)}
-    </div>
-  )
-}
-
-export function ThumbTime() {
-  const preRef = useRef<HTMLPreElement>(null)
-  useThrottledRaf(() => {
-    if (!preRef.current) return
-    const d = new Date()
-    const hh = String(d.getHours()).padStart(2, '0')
-    const mm = String(d.getMinutes()).padStart(2, '0')
-    const ss = String(d.getSeconds()).padStart(2, '0')
-    preRef.current.textContent = renderSevenSegment(`${hh}:${mm}:${ss}`)
-  }, [], preRef)
-  return (
-    <div className="grid h-full place-items-center overflow-hidden">
-      <pre ref={preRef} className="m-0 whitespace-pre text-[var(--color-fg)] text-[12px] leading-[1.1]" />
-    </div>
-  )
 }
 
 export function ThumbSprites() {
@@ -290,12 +244,10 @@ export function ThumbSprites() {
 
 export function ThumbWaves() {
   const ref = useRef<HTMLCanvasElement>(null)
+  const surfaceRef = useCanvasSurface(ref)
   useThrottledRaf((t) => {
-    const c = ref.current; if (!c) return
-    const ctx = c.getContext('2d')!
-    fitCanvas(c, ctx)
-    const rect = c.getBoundingClientRect()
-    const W = rect.width, H = rect.height
+    const { ctx, width: W, height: H } = surfaceRef.current
+    if (!ctx || W === 0 || H === 0) return
     ctx.fillStyle = '#0a0a0a'
     ctx.fillRect(0, 0, W, H)
 
@@ -341,97 +293,6 @@ export function ThumbWaves() {
   }, [], ref)
   return <canvas ref={ref} className="block h-full w-full" />
 }
-
-export function ThumbBreathe() {
-  const preRef = useRef<HTMLPreElement>(null)
-  useThrottledRaf((t) => {
-    if (!preRef.current) return
-    const cycle = 16
-    const p = ((t / 1000) % cycle) / cycle
-    let scale
-    if (p < 0.25) scale = 0.3 + 0.7 * (p / 0.25)
-    else if (p < 0.5) scale = 1
-    else if (p < 0.75) scale = 1 - 0.7 * ((p - 0.5) / 0.25)
-    else scale = 0.3
-    const cols = 32, rows = 12
-    const cx = cols / 2, cy = rows / 2
-    const maxR = Math.min(cols, rows * 2) * 0.45
-    const r = maxR * scale
-    const lines: string[] = []
-    for (let y = 0; y < rows; y++) {
-      let line = ''
-      for (let x = 0; x < cols; x++) {
-        const dx = x - cx
-        const dy = (y - cy) * 2
-        const d = Math.sqrt(dx * dx + dy * dy)
-        const edge = Math.abs(d - r)
-        if (d < r - 0.6) {
-          const k = 1 - d / Math.max(0.001, r)
-          const ramp = ' ░▒▓█'
-          line += ramp[Math.min(ramp.length - 1, Math.floor(k * ramp.length))]
-        } else if (edge < 0.6) line += '●'
-        else line += ' '
-      }
-      lines.push(line)
-    }
-    preRef.current.textContent = lines.join('\n')
-  }, [], preRef)
-  return <pre ref={preRef} className="m-0 whitespace-pre text-[9px] leading-[1.0] text-[var(--color-fg)]" />
-}
-
-export function ThumbStarfield() {
-  const preRef = useRef<HTMLPreElement>(null)
-  const starsRef = useRef<Star[]>([])
-  useEffect(() => { starsRef.current = makeStars(180, 100) }, [])
-  useThrottledRaf(() => {
-    if (!preRef.current) return
-    stepStars(starsRef.current, 0.5, 1 / 24, 0.5, 100)
-    preRef.current.textContent = renderStars(starsRef.current, 38, 14, 0, 0, 1.0, 100)
-  }, [], preRef)
-  return <pre ref={preRef} className="m-0 whitespace-pre text-[9px] leading-[1.0] text-[var(--color-fg)]" />
-}
-
-export function ThumbOrbit() {
-  const ref = useRef<HTMLCanvasElement>(null)
-  useEffect(() => {
-    const c = ref.current; if (!c) return
-    const ctx = c.getContext('2d')!
-    fitCanvas(c, ctx)
-    const rect = c.getBoundingClientRect()
-    // dark space bg with stars
-    ctx.fillStyle = '#020014'
-    ctx.fillRect(0, 0, rect.width, rect.height)
-    for (let i = 0; i < 60; i++) {
-      ctx.fillStyle = `rgba(255,255,255,${0.2 + Math.random() * 0.7})`
-      ctx.fillRect(Math.random() * rect.width, Math.random() * rect.height, 1, 1)
-    }
-    // earth limb arc
-    const cx = rect.width / 2, cy = rect.height * 1.6
-    const r = rect.height * 1.2
-    ctx.beginPath()
-    ctx.arc(cx, cy, r, 0, Math.PI * 2)
-    const grad = ctx.createRadialGradient(cx, cy - r * 0.3, 0, cx, cy, r)
-    grad.addColorStop(0, '#2a5eff')
-    grad.addColorStop(0.6, '#0a2254')
-    grad.addColorStop(1, '#04102a')
-    ctx.fillStyle = grad
-    ctx.fill()
-    // atmosphere glow
-    ctx.beginPath()
-    ctx.arc(cx, cy, r + 3, 0, Math.PI * 2)
-    ctx.strokeStyle = 'rgba(110, 180, 255, 0.6)'
-    ctx.lineWidth = 1
-    ctx.stroke()
-    // iss marker
-    ctx.fillStyle = '#ffffff'
-    ctx.fillRect(rect.width * 0.65 - 1, rect.height * 0.35 - 1, 3, 3)
-    ctx.strokeStyle = '#ff4b5e'
-    ctx.lineWidth = 0.5
-    ctx.strokeRect(rect.width * 0.65 - 5, rect.height * 0.35 - 5, 10, 10)
-  }, [])
-  return <canvas ref={ref} className="block h-full w-full" />
-}
-
 
 export function ThumbRadio() {
   // ascii mini-globe with a few pins and a "live" dot
@@ -484,25 +345,6 @@ export function ThumbSpinners() {
   )
 }
 
-export function ThumbKaleidoscope() {
-  const ref = useRef<HTMLCanvasElement>(null)
-  useThrottledRaf((t) => {
-    const c = ref.current; if (!c) return
-    const ctx = c.getContext('2d')!
-    fitCanvas(c, ctx)
-    const rect = c.getBoundingClientRect()
-    const rw = 80, rh = 80
-    const buf = ctx.createImageData(rw, rh)
-    renderKaleidoscope(buf, t * 0.001, 6, 14)
-    const off = document.createElement('canvas')
-    off.width = rw; off.height = rh
-    off.getContext('2d')!.putImageData(buf, 0, 0)
-    ctx.imageSmoothingEnabled = true
-    ctx.clearRect(0, 0, rect.width, rect.height)
-    ctx.drawImage(off, 0, 0, rect.width, rect.height)
-  }, [], ref)
-  return <canvas ref={ref} className="block h-full w-full" />
-}
 
 /* microbes thumb — static physarum-style pseudo-trail pattern. no sim runs;
    this is a layout of coherent branching paths sampled from a few seeds that
@@ -562,44 +404,34 @@ export function ThumbMicrobes() {
   return <pre className="m-0 whitespace-pre text-[9px] leading-[1.0] text-[var(--color-fg)]">{lines}</pre>
 }
 
-export function ThumbChroma() {
-  const ref = useRef<HTMLCanvasElement>(null)
-  useThrottledRaf((t) => {
-    const c = ref.current; if (!c) return
-    const ctx = c.getContext('2d')!
-    fitCanvas(c, ctx)
-    const rect = c.getBoundingClientRect()
-    const W = rect.width, H = rect.height
-    ctx.fillStyle = '#08080b'
-    ctx.fillRect(0, 0, W, H)
-    const colors = ['#6a8cff', '#ff6a88', '#50ffd8', '#ffb86a']
-    ctx.globalCompositeOperation = 'lighter'
-    for (let i = 0; i < colors.length; i++) {
-      const a = t * 0.0005 + (i * Math.PI * 2) / colors.length
-      const rad = Math.min(W, H) * 0.3
-      const cx = W / 2 + Math.cos(a) * rad * 0.6
-      const cy = H / 2 + Math.sin(a * 0.7) * rad * 0.6
-      const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.min(W, H) * 0.55)
-      g.addColorStop(0,   colors[i] + 'aa')
-      g.addColorStop(0.5, colors[i] + '22')
-      g.addColorStop(1,   '#00000000')
-      ctx.fillStyle = g
-      ctx.fillRect(0, 0, W, H)
-    }
-    ctx.globalCompositeOperation = 'source-over'
-    // faint glass pane in the middle
-    const pw = W * 0.55, ph = H * 0.42
-    const px = (W - pw) / 2, py = (H - ph) / 2
-    ctx.fillStyle = 'rgba(255,255,255,0.07)'
-    ctx.fillRect(px, py, pw, ph)
-    ctx.strokeStyle = 'rgba(255,255,255,0.14)'
-    ctx.strokeRect(px + 0.5, py + 0.5, pw - 1, ph - 1)
-    ctx.fillStyle = '#e8e8e8'
-    ctx.font = '10px ui-monospace, monospace'
-    ctx.textBaseline = 'middle'
-    ctx.fillText('Aa  #6a8cff', px + 10, py + ph / 2)
-  })
-  return <canvas ref={ref} className="block h-full w-full" />
+export function ThumbVoxels() {
+  const blocks = [
+    { x: 48, y: 74, fill: '#ff648b' },
+    { x: 88, y: 50, fill: '#ff9a47' },
+    { x: 128, y: 74, fill: '#63b7ff' },
+    { x: 88, y: 98, fill: '#8d7bff' },
+  ]
+
+  return (
+    <div className="grid h-full w-full place-items-center bg-[#05060a]">
+      <svg width="220" height="160" viewBox="0 0 220 160" aria-hidden>
+        {blocks.map((block, index) => (
+          <g key={index} transform={`translate(${block.x} ${block.y})`}>
+            <path d="M0 -24 L22 -12 L0 0 L-22 -12 Z" fill={block.fill} fillOpacity="0.92" />
+            <path d="M-22 -12 L0 0 L0 24 L-22 12 Z" fill={block.fill} fillOpacity="0.52" />
+            <path d="M22 -12 L0 0 L0 24 L22 12 Z" fill={block.fill} fillOpacity="0.28" />
+          </g>
+        ))}
+        <path
+          d="M34 120 L110 82 L186 120"
+          fill="none"
+          stroke="rgba(255,255,255,0.18)"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        />
+      </svg>
+    </div>
+  )
 }
 
 /* bloom thumb — static watercolor "blossom" rendered once via multiple
@@ -707,5 +539,47 @@ export function ThumbEdits() {
         )
       })}
     </div>
+  )
+}
+
+// pigment drift — a tiny static render using the real RYB generator.
+// we render once on mount with low particle count so the thumb reflects
+// actual pipeline output rather than a faked painting.
+export function ThumbPigment() {
+  const ref = useRef<HTMLCanvasElement>(null)
+  useEffect(() => {
+    const c = ref.current; if (!c) return
+    const ctx = c.getContext('2d')!
+    fitCanvas(c, ctx)
+    const rect = c.getBoundingClientRect()
+    const W = Math.max(1, Math.floor(rect.width))
+    const H = Math.max(1, Math.floor(rect.height))
+    // defer the heavy generate() call off the mount tick
+    const id = setTimeout(() => {
+      // dynamic import to keep the thumb chunk out of the critical Thumb bundle
+      Promise.all([
+        import('../modules/pigment/generate'),
+      ]).then(([mod]) => {
+        const img = ctx.createImageData(W, H)
+        mod.generate(img, {
+          ...mod.DEFAULTS,
+          density: 22000,
+          ribbons: 4,
+          harmonics: 4,
+          warp: 90,
+          grain: 2.0,
+          seed: 0x51a7,
+        })
+        ctx.putImageData(img, 0, 0)
+      }).catch(() => { /* ignore */ })
+    }, 40)
+    return () => clearTimeout(id)
+  }, [])
+  return (
+    <canvas
+      ref={ref}
+      className="block h-full w-full"
+      style={{ background: 'rgb(7,8,13)' }}
+    />
   )
 }

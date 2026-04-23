@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import Slider from '../components/Slider'
 import { rafLoop } from '../lib/rafLoop'
 import {
-  createBloomGpu, PIGMENTS, PAPERS, DEFAULT_PARAMS,
-  type BloomGpu, type BloomParams,
+  createBloomGpu, PIGMENTS, PAPERS, DEFAULT_PARAMS, BRUSH_PRESETS,
+  type BloomGpu, type BloomParams, type PigmentFamily, type BrushPreset,
 } from '../modules/bloom/gpu'
 
 /* bloom — watercolor painting surface.
@@ -11,24 +11,66 @@ import {
    never in the way. mobile-app ergonomics on desktop. */
 
 type Brush = {
-  radius: number      // uv units
+  radius: number          // uv units
   wetness: number
   density: number
-  push: number        // scales mouse velocity → fluid impulse
+  push: number            // scales mouse velocity → fluid impulse
   pigmentIdx: number
-  monochrome: boolean // sumi-override
+  monochrome: boolean     // sumi-override
+  // per-stamp behaviors — sourced from the active brush preset. defaults
+  // reproduce the old fixed-round-brush behavior when untouched.
+  spacing: number         // relative to radius (0.55 = half-radius apart)
+  jitterPos: number       // uv lateral shake per stamp
+  jitterRadius: number    // fraction of radius varied per stamp (0..1)
+  pressureGamma: number   // pressure → scale curve; >1 hard, <1 soft
+  presetId: string
 }
 
-const DEFAULT_BRUSH: Brush = {
-  radius: 0.016,
-  wetness: 0.50,
-  density: 1.1,
-  push: 1.0,
-  pigmentIdx: 1,      // ultramarine default
-  monochrome: false,
-}
+const DEFAULT_BRUSH: Brush = (() => {
+  const p = BRUSH_PRESETS[0]
+  return {
+    radius: p.radius,
+    wetness: p.wetness,
+    density: p.density,
+    push: p.push,
+    pigmentIdx: 1,
+    monochrome: false,
+    spacing: p.spacing,
+    jitterPos: p.jitterPos,
+    jitterRadius: p.jitterRadius,
+    pressureGamma: p.pressureGamma,
+    presetId: p.id,
+  }
+})()
 
-type Sheet = null | 'brush' | 'advanced'
+type Sheet = null | 'brush' | 'advanced' | 'palette'
+
+// hue-family ordering for the palette sheet
+const FAMILIES: { id: PigmentFamily; label: string }[] = [
+  { id: 'black',  label: 'black · grey' },
+  { id: 'red',    label: 'red' },
+  { id: 'orange', label: 'orange' },
+  { id: 'yellow', label: 'yellow' },
+  { id: 'earth',  label: 'earth' },
+  { id: 'green',  label: 'green' },
+  { id: 'blue',   label: 'blue' },
+  { id: 'violet', label: 'violet' },
+]
+
+function applyPreset(b: Brush, p: BrushPreset): Brush {
+  return {
+    ...b,
+    radius:        p.radius,
+    wetness:       p.wetness,
+    density:       p.density,
+    push:          p.push,
+    spacing:       p.spacing,
+    jitterPos:     p.jitterPos,
+    jitterRadius:  p.jitterRadius,
+    pressureGamma: p.pressureGamma,
+    presetId:      p.id,
+  }
+}
 
 // preview color for a pigment at a given subtractive density (for swatches).
 const pigmentCss = (absorb: readonly [number, number, number], d = 2.2) =>
@@ -113,10 +155,30 @@ export default function Bloom() {
       const b = brushRef.current
       const pig = PIGMENTS[b.pigmentIdx]
       const absorb: [number, number, number] = b.monochrome ? [1, 1, 1] : pig.absorb
-      const k = 0.5 + pressure * 0.8
+
+      // pressure curve — per-brush gamma. dry / detail / sumi respond hard,
+      // wash responds soft so a light tap already lays water down.
+      const gamma = b.pressureGamma || 1
+      const pShaped = Math.pow(Math.max(0, Math.min(1, pressure)), gamma)
+      const k = 0.5 + pShaped * 0.9
+
+      // per-stamp lateral jitter (bristle, splatter) + radius variance (dry)
+      let jx = 0, jy = 0
+      if (b.jitterPos > 0) {
+        const ang = Math.random() * Math.PI * 2
+        const mag = Math.random() * b.jitterPos
+        jx = Math.cos(ang) * mag
+        jy = Math.sin(ang) * mag
+      }
+      const rJitter = b.jitterRadius > 0
+        ? 1 - b.jitterRadius * Math.random()
+        : 1
+
       gpu.splat({
-        x, y, dx, dy,
-        radius: b.radius * k,
+        x: x + jx,
+        y: y + jy,
+        dx, dy,
+        radius:  b.radius  * k * rJitter,
         wetness: b.wetness * k,
         density: b.density * k,
         absorb,
@@ -138,8 +200,9 @@ export default function Bloom() {
       const vy = (y - drag.lastY) / dtMs * 1000
       const dist = Math.hypot(x - drag.lastX, y - drag.lastY)
       const b = brushRef.current
-      const spacing = Math.max(0.003, b.radius * 0.55)
-      const n = Math.max(1, Math.ceil(dist / spacing))
+      // per-brush spacing — flat is dense (0.30), splatter is sparse (1.8)
+      const spacingUv = Math.max(0.0015, b.radius * (b.spacing || 0.55))
+      const n = Math.max(1, Math.ceil(dist / spacingUv))
       const pressure = e.pressure || 0.5
       for (let k = 1; k <= n; k++) {
         const t = k / n
@@ -211,11 +274,24 @@ export default function Bloom() {
 
   return (
     <div
-      className="relative h-[calc(100vh-9rem)] w-full overflow-hidden rounded-xl"
+      className="relative h-[min(calc(100vh-9rem),calc(100dvh-14rem))] w-full overflow-hidden rounded-xl"
       style={{ background: `rgb(${currentPaper.rgb.join(',')})` }}
     >
       {/* canvas mount — absolute so it fills the tile */}
       <div ref={wrapRef} className="absolute inset-0" style={{ cursor: 'crosshair', touchAction: 'none' }} />
+
+      {/* flow compass — top-left. shows the current river direction + speed
+          and lets you drag to rotate. double-click sets speed to 0 (still water). */}
+      <div className="absolute left-3 top-3 z-10">
+        <FlowCompass
+          angle={params.flowAngle}
+          speed={params.flowSpeed}
+          meander={params.flowMeander}
+          dark={!lightChrome}
+          onAngle={(a) => setP({ flowAngle: a })}
+          onSpeed={(s) => setP({ flowSpeed: s })}
+        />
+      </div>
 
       {/* corner chips — top-right */}
       <div className="absolute right-3 top-3 z-10 flex gap-1.5">
@@ -244,15 +320,85 @@ export default function Bloom() {
         </Chip>
       </div>
 
-      {/* sheet — brush */}
+      {/* sheet — brush (presets + fine-tune) */}
       {sheet === 'brush' && (
-        <Sheet onClose={() => setSheet(null)}>
+        <Sheet onClose={() => setSheet(null)} tall>
           <div className="text-[10px] tracking-[0.2em] text-white/60 mb-2">brush</div>
-          <div className="flex flex-col gap-2.5">
-            <WhiteSlider label="radius"  value={brush.radius}  min={0.004} max={0.10} step={0.001} onChange={(v) => setBrush((b) => ({ ...b, radius: v }))}  fmt={(v) => v.toFixed(3)} />
-            <WhiteSlider label="wetness" value={brush.wetness} min={0}     max={1.5}  step={0.01}  onChange={(v) => setBrush((b) => ({ ...b, wetness: v }))} fmt={(v) => v.toFixed(2)} />
-            <WhiteSlider label="density" value={brush.density} min={0}     max={3.0}  step={0.01}  onChange={(v) => setBrush((b) => ({ ...b, density: v }))} fmt={(v) => v.toFixed(2)} />
-            <WhiteSlider label="push"    value={brush.push}    min={0}     max={3.0}  step={0.01}  onChange={(v) => setBrush((b) => ({ ...b, push: v }))}    fmt={(v) => v.toFixed(2)} />
+          {/* preset row — click to load, then tune below */}
+          <div className="mb-3 grid grid-cols-4 gap-1.5">
+            {BRUSH_PRESETS.map((p) => {
+              const active = brush.presetId === p.id
+              return (
+                <button
+                  key={p.id}
+                  onClick={() => setBrush((b) => applyPreset(b, p))}
+                  title={p.label}
+                  className={`flex flex-col items-center gap-1 rounded-xl py-2 text-[11px] transition-colors ${
+                    active ? 'bg-white/15 text-white ring-1 ring-white/50' : 'bg-white/5 text-white/70 hover:bg-white/10'
+                  }`}
+                >
+                  <BrushPreview preset={p} active={active} />
+                  <span className="tracking-[0.05em]">{p.label}</span>
+                </button>
+              )
+            })}
+          </div>
+          <div className="mb-1.5 text-[10px] tracking-[0.2em] text-white/50">fine-tune</div>
+          <div className="flex flex-col gap-2">
+            <WhiteSlider label="radius"   value={brush.radius}   min={0.004} max={0.10} step={0.001} onChange={(v) => setBrush((b) => ({ ...b, radius: v }))}   fmt={(v) => v.toFixed(3)} />
+            <WhiteSlider label="wetness"  value={brush.wetness}  min={0}     max={1.5}  step={0.01}  onChange={(v) => setBrush((b) => ({ ...b, wetness: v }))}  fmt={(v) => v.toFixed(2)} />
+            <WhiteSlider label="density"  value={brush.density}  min={0}     max={3.0}  step={0.01}  onChange={(v) => setBrush((b) => ({ ...b, density: v }))}  fmt={(v) => v.toFixed(2)} />
+            <WhiteSlider label="push"     value={brush.push}     min={0}     max={3.0}  step={0.01}  onChange={(v) => setBrush((b) => ({ ...b, push: v }))}     fmt={(v) => v.toFixed(2)} />
+            <WhiteSlider label="spacing"  value={brush.spacing}  min={0.2}   max={2.0}  step={0.05}  onChange={(v) => setBrush((b) => ({ ...b, spacing: v }))}  fmt={(v) => v.toFixed(2)} />
+            <WhiteSlider label="jitter·pos"    value={brush.jitterPos}     min={0}   max={0.03} step={0.001} onChange={(v) => setBrush((b) => ({ ...b, jitterPos: v }))}     fmt={(v) => v.toFixed(3)} />
+            <WhiteSlider label="jitter·size"   value={brush.jitterRadius}  min={0}   max={1}    step={0.02}  onChange={(v) => setBrush((b) => ({ ...b, jitterRadius: v }))}  fmt={(v) => v.toFixed(2)} />
+            <WhiteSlider label="pressure γ"    value={brush.pressureGamma} min={0.4} max={2.5}  step={0.05}  onChange={(v) => setBrush((b) => ({ ...b, pressureGamma: v }))} fmt={(v) => v.toFixed(2)} />
+          </div>
+        </Sheet>
+      )}
+
+      {/* sheet — palette (all ~33 watercolors by hue family) */}
+      {sheet === 'palette' && (
+        <Sheet onClose={() => setSheet(null)} tall>
+          <div className="text-[10px] tracking-[0.2em] text-white/60 mb-2">palette</div>
+          <div className="flex flex-col gap-3">
+            {FAMILIES.map((fam) => {
+              const group = PIGMENTS
+                .map((p, i) => ({ p, i }))
+                .filter(({ p }) => p.family === fam.id)
+              if (group.length === 0) return null
+              return (
+                <div key={fam.id}>
+                  <div className="mb-1 text-[10px] tracking-[0.2em] text-white/40">{fam.label}</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {group.map(({ p, i }) => {
+                      const active = brush.pigmentIdx === i && !brush.monochrome
+                      return (
+                        <button
+                          key={p.label}
+                          onClick={() => {
+                            setBrush((b) => ({ ...b, pigmentIdx: i, monochrome: false }))
+                            setSheet(null)
+                          }}
+                          title={p.label}
+                          className={`flex items-center gap-2 rounded-full py-1 pl-1 pr-2.5 text-[11px] transition-colors ${
+                            active
+                              ? 'bg-white/15 text-white ring-1 ring-white/60'
+                              : 'bg-white/5 text-white/80 hover:bg-white/10'
+                          }`}
+                        >
+                          <span
+                            className="h-5 w-5 rounded-full ring-1 ring-white/25"
+                            style={{ background: pigmentCss(p.absorb) }}
+                          />
+                          <span className="whitespace-nowrap">{p.label}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </Sheet>
       )}
@@ -261,12 +407,33 @@ export default function Bloom() {
       {sheet === 'advanced' && (
         <Sheet onClose={() => setSheet(null)} tall>
           <div className="flex flex-col gap-4">
+            <SheetGroup label="river">
+              <WhiteSlider label="current speed" value={params.flowSpeed}   min={0}      max={0.6} step={0.005} onChange={(v) => setP({ flowSpeed: v })}   fmt={(v) => v.toFixed(3)} />
+              <WhiteSlider label="direction °"   value={radToDeg(params.flowAngle)} min={-180} max={180} step={1}     onChange={(v) => setP({ flowAngle: degToRad(v) })} fmt={(v) => v.toFixed(0)} />
+              <WhiteSlider label="meander"       value={params.flowMeander} min={0}      max={1}   step={0.01}  onChange={(v) => setP({ flowMeander: v })} fmt={(v) => v.toFixed(2)} />
+              <div className="mt-1 flex items-center gap-2">
+                {(['slow', 'stream', 'fast'] as const).map((k) => {
+                  const val = k === 'slow' ? 0.012 : k === 'stream' ? 0.03 : 0.08
+                  return (
+                    <button
+                      key={k}
+                      onClick={() => setP({ flowSpeed: val })}
+                      className="rounded-full bg-white/5 px-2.5 py-0.5 text-[11px] text-white/70 hover:bg-white/10"
+                    >{k}</button>
+                  )
+                })}
+                <button
+                  onClick={() => setP({ flowSpeed: 0 })}
+                  className="rounded-full bg-white/5 px-2.5 py-0.5 text-[11px] text-white/70 hover:bg-white/10"
+                >still</button>
+              </div>
+            </SheetGroup>
             <SheetGroup label="fluid">
               <WhiteSlider label="viscosity"    value={params.viscosity}           min={0}    max={0.3} step={0.005} onChange={(v) => setP({ viscosity: v })}           fmt={(v) => v.toFixed(3)} />
               <WhiteSlider label="vel decay"    value={params.velocityDissipation} min={0.90} max={1.0} step={0.001} onChange={(v) => setP({ velocityDissipation: v })} fmt={(v) => v.toFixed(3)} />
               <WhiteSlider label="ambient curl" value={params.ambient}             min={0}    max={0.2} step={0.005} onChange={(v) => setP({ ambient: v })}             fmt={(v) => v.toFixed(3)} />
               <WhiteSlider label="pressure it"  value={params.pressureIter}        min={5}    max={40}  step={1}     onChange={(v) => setP({ pressureIter: v })}        fmt={(v) => v.toFixed(0)} />
-              <WhiteSlider label="flow speed"   value={params.timeScale}           min={0}    max={3}   step={0.05}  onChange={(v) => setP({ timeScale: v })}           fmt={(v) => v.toFixed(2)} />
+              <WhiteSlider label="time scale"   value={params.timeScale}           min={0}    max={3}   step={0.05}  onChange={(v) => setP({ timeScale: v })}           fmt={(v) => v.toFixed(2)} />
             </SheetGroup>
             <SheetGroup label="paint">
               <WhiteSlider label="water decay"  value={params.waterDissipation}   min={0.98} max={1.0} step={0.0005} onChange={(v) => setP({ waterDissipation: v })}  fmt={(v) => v.toFixed(4)} />
@@ -291,9 +458,9 @@ export default function Bloom() {
       {/* bottom-center toolbar — single pill */}
       <div className="absolute bottom-3 left-1/2 z-10 -translate-x-1/2">
         <div className="flex items-center gap-1 rounded-full bg-black/70 px-2.5 py-1.5 shadow-2xl backdrop-blur-md ring-1 ring-white/10">
-          {/* pigments */}
+          {/* pigments — first 8 for quick access; palette button opens the full set */}
           <div className="flex gap-1">
-            {PIGMENTS.map((p, i) => {
+            {PIGMENTS.slice(0, 8).map((p, i) => {
               const active = brush.pigmentIdx === i && !brush.monochrome
               return (
                 <button
@@ -310,11 +477,30 @@ export default function Bloom() {
               )
             })}
           </div>
+          {/* show current pigment swatch if it's *not* in the first-8 quick row */}
+          {brush.pigmentIdx >= 8 && !brush.monochrome && (
+            <span
+              aria-hidden
+              title={PIGMENTS[brush.pigmentIdx].label}
+              className="h-7 w-7 rounded-full ring-2 ring-white scale-110"
+              style={{ background: pigmentCss(PIGMENTS[brush.pigmentIdx].absorb) }}
+            />
+          )}
+          <button
+            onClick={() => setSheet((s) => (s === 'palette' ? null : 'palette'))}
+            title={`palette · ${PIGMENTS.length} colors`}
+            className={`flex h-7 items-center gap-1 rounded-full px-2 text-[11px] tracking-[0.05em] transition-colors ${
+              sheet === 'palette' ? 'bg-white/20 text-white' : 'bg-white/5 text-white/70 hover:bg-white/10'
+            }`}
+          >
+            <span className="font-mono">◉</span>
+            <span className="tabular-nums">{PIGMENTS.length}</span>
+          </button>
           <Sep />
-          {/* brush size button — shows a dot sized to current radius, opens sheet */}
+          {/* brush button — preset name + radius dot; opens brush sheet */}
           <button
             onClick={() => setSheet((s) => (s === 'brush' ? null : 'brush'))}
-            title="brush · tap to adjust"
+            title={`brush · ${brush.presetId}`}
             className={`flex h-8 items-center gap-1.5 rounded-full px-2 transition-colors ${
               sheet === 'brush' ? 'bg-white/15' : 'hover:bg-white/10'
             }`}
@@ -328,7 +514,8 @@ export default function Bloom() {
                 }}
               />
             </span>
-            <span className="hidden text-[11px] tabular-nums text-white/70 sm:inline">
+            <span className="hidden text-[11px] tracking-[0.05em] text-white/80 sm:inline">{brush.presetId}</span>
+            <span className="hidden text-[11px] tabular-nums text-white/50 md:inline">
               {(brush.radius * 1000).toFixed(0)}
             </span>
           </button>
@@ -359,7 +546,7 @@ export default function Bloom() {
         </div>
         {/* single-line hint. fades with the toolbar when user is painting — we just keep it static, readable. */}
         <div className={`mt-2 text-center text-[10px] tracking-[0.15em] ${lightChrome ? 'text-black/40' : 'text-white/40'}`}>
-          drag to paint · 1–8 pigment · [ ] brush · m mono · space freeze · c clear · s save
+          drag to paint · 1–8 pigment · ◉ palette · brush presets · [ ] size · m mono · space freeze · c clear · s save
         </div>
       </div>
     </div>
@@ -390,6 +577,57 @@ function Sep() {
   return <span aria-hidden className="mx-0.5 h-6 w-px bg-white/15" />
 }
 
+/* a tiny stroke-preview that illustrates each brush preset's feel —
+   radius drives height, jitterPos drives wobble, jitterRadius drives
+   stamp variance, spacing drives stamp count, pressureGamma drives
+   head/tail taper. pure svg, 96×22 px, one <circle> per stamp. */
+function BrushPreview({ preset, active }: { preset: BrushPreset; active: boolean }) {
+  const dots = useMemo(() => {
+    const W = 96, H = 22
+    const cy = H / 2
+    const rBase = Math.min(8, Math.max(2, preset.radius * 120))
+    const stepPx = Math.max(3, rBase * 1.3 * (preset.spacing || 0.55))
+    const count = Math.max(4, Math.floor((W - 10) / stepPx))
+    // deterministic pseudo-random so preview is stable per preset
+    let seed = (preset.id.charCodeAt(0) * 131) | 0
+    const rnd = () => {
+      seed = (Math.imul(seed ^ (seed >>> 13), 1274126177) ^ 0x9e3779b9) | 0
+      return ((seed >>> 0) % 10000) / 10000
+    }
+    const jitterPx = preset.jitterPos * 400          // uv → preview px
+    const rJit = preset.jitterRadius
+    const gamma = preset.pressureGamma
+    const out: Array<{ cx: number; cy: number; r: number; op: number }> = []
+    for (let i = 0; i < count; i++) {
+      const t = (i + 0.5) / count
+      // taper via pressure gamma — tails dim when gamma > 1
+      const pressure = Math.pow(0.4 + 0.6 * Math.sin(t * Math.PI), gamma)
+      const dy = (rnd() - 0.5) * 2 * jitterPx
+      const rV = rBase * (1 - (rJit * rnd())) * (0.5 + 0.7 * pressure)
+      out.push({
+        cx: 5 + t * (W - 10),
+        cy: cy + dy,
+        r: Math.max(0.7, rV),
+        op: 0.55 + 0.35 * pressure,
+      })
+    }
+    return { W, H, out }
+  }, [preset])
+  return (
+    <svg
+      width={dots.W}
+      height={dots.H}
+      viewBox={`0 0 ${dots.W} ${dots.H}`}
+      aria-hidden
+      style={{ opacity: active ? 1 : 0.85 }}
+    >
+      {dots.out.map((d, i) => (
+        <circle key={i} cx={d.cx} cy={d.cy} r={d.r} fill="white" fillOpacity={d.op} />
+      ))}
+    </svg>
+  )
+}
+
 function Sheet({ children, onClose, tall }: { children: ReactNode; onClose: () => void; tall?: boolean }) {
   return (
     <div
@@ -413,6 +651,179 @@ function SheetGroup({ label, children }: { label: string; children: ReactNode })
       <div className="text-[10px] tracking-[0.2em] text-white/50">{label}</div>
       {children}
     </section>
+  )
+}
+
+// ── river flow ────────────────────────────────────────────────────────
+const radToDeg = (r: number) => (r * 180) / Math.PI
+const degToRad = (d: number) => (d * Math.PI) / 180
+
+/* the flow compass — a 56×56 glass disk in the corner that visualizes the
+   current river direction + speed. drag anywhere on it to rotate. click
+   the center to toggle still/flowing. shift-drag from the edge sets speed
+   by how far you drag from center. designed to be the primary handle for
+   "which way is the water going" without opening the advanced sheet. */
+function FlowCompass({
+  angle, speed, meander, dark, onAngle, onSpeed,
+}: {
+  angle: number
+  speed: number
+  meander: number
+  dark: boolean
+  onAngle: (a: number) => void
+  onSpeed: (s: number) => void
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+  const SPEED_MAX = 0.3  // compass can dial up to here; sheet goes higher
+  const size = 58
+  const cx = size / 2
+  const cy = size / 2
+
+  const arrowLen = 12 + Math.min(16, (speed / SPEED_MAX) * 16)
+  // screen angle — positive y is *up* in our convention; SVG y grows down,
+  // so flip sin for the screen vector used to draw the arrow.
+  const ax = Math.cos(angle) * arrowLen
+  const ay = -Math.sin(angle) * arrowLen
+
+  const pointToAngle = (clientX: number, clientY: number) => {
+    const el = ref.current
+    if (!el) return { ang: angle, mag: 0 }
+    const r = el.getBoundingClientRect()
+    const px = clientX - (r.left + r.width / 2)
+    const py = clientY - (r.top + r.height / 2)
+    // svg y grows down; flip so up is +
+    const ang = Math.atan2(-py, px)
+    const mag = Math.hypot(px, py) / (r.width / 2)
+    return { ang, mag }
+  }
+
+  // drag handler — updates angle continuously; speed auto-adjusts when
+  // user drags from the rim (mag > 0.7).
+  const onPointerDown = (e: React.PointerEvent) => {
+    e.preventDefault()
+    const el = ref.current; if (!el) return
+    el.setPointerCapture(e.pointerId)
+    const first = pointToAngle(e.clientX, e.clientY)
+    // clicking the center → toggle between still and the last nonzero speed
+    if (first.mag < 0.25) {
+      onSpeed(speed > 0 ? 0 : 0.04)
+      return
+    }
+    onAngle(first.ang)
+    if (first.mag > 0.6 || speed === 0) {
+      onSpeed(Math.min(SPEED_MAX, first.mag * 0.12))
+    }
+    const onMove = (ev: PointerEvent) => {
+      const { ang, mag } = pointToAngle(ev.clientX, ev.clientY)
+      onAngle(ang)
+      if (ev.shiftKey || mag > 0.85) {
+        onSpeed(Math.min(SPEED_MAX, mag * 0.18))
+      }
+    }
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+      try { el.releasePointerCapture(e.pointerId) } catch { /* ignore */ }
+    }
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+  }
+
+  const ringColor = dark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.18)'
+  const fgColor   = dark ? 'rgba(255,255,255,0.90)' : 'rgba(0,0,0,0.80)'
+  const muted     = dark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.45)'
+
+  // meander preview — a short curving tail behind the arrow whose wiggle
+  // amplitude tracks uFlowMeander (0 = straight line, 1 = obvious s-curve).
+  // drawn in screen-y-down SVG space; we negate y when computing.
+  const tail = (() => {
+    const pts: string[] = []
+    const N = 10
+    const dirX = Math.cos(angle), dirY = -Math.sin(angle)
+    const perpX = -dirY, perpY = dirX
+    for (let i = 0; i <= N; i++) {
+      const t = i / N
+      const bx = cx - dirX * 18 * t
+      const by = cy - dirY * 18 * t
+      const wobble = Math.sin(t * Math.PI * 1.8) * meander * 4 * t
+      pts.push(`${(bx + perpX * wobble).toFixed(1)},${(by + perpY * wobble).toFixed(1)}`)
+    }
+    return pts.join(' ')
+  })()
+
+  return (
+    <div
+      ref={ref}
+      onPointerDown={onPointerDown}
+      role="slider"
+      aria-label="river flow direction"
+      aria-valuenow={Math.round(radToDeg(angle))}
+      title={`flow · ${Math.round(radToDeg(angle))}° · ${speed.toFixed(3)} — drag to rotate, center to toggle, shift-drag to set speed`}
+      className="grid cursor-grab place-items-center rounded-full ring-1 backdrop-blur-md active:cursor-grabbing"
+      style={{
+        width: size, height: size,
+        background: dark ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.70)',
+        borderColor: ringColor, touchAction: 'none',
+        boxShadow: dark ? '0 6px 18px rgba(0,0,0,0.35)' : '0 4px 10px rgba(0,0,0,0.15)',
+      }}
+    >
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden>
+        {/* compass rose ticks */}
+        {[0, 90, 180, 270].map((deg) => {
+          const r1 = size / 2 - 5
+          const r2 = size / 2 - 2
+          const a = degToRad(deg)
+          return (
+            <line
+              key={deg}
+              x1={cx + Math.cos(a) * r1}
+              y1={cy + Math.sin(a) * r1}
+              x2={cx + Math.cos(a) * r2}
+              y2={cy + Math.sin(a) * r2}
+              stroke={muted}
+              strokeWidth={1}
+            />
+          )
+        })}
+        {/* meander tail */}
+        {speed > 0 && (
+          <polyline
+            points={tail}
+            fill="none"
+            stroke={muted}
+            strokeWidth={1.2}
+            strokeLinecap="round"
+          />
+        )}
+        {/* arrow — pointing in flow direction */}
+        {speed > 0 ? (
+          <>
+            <line
+              x1={cx} y1={cy}
+              x2={cx + ax} y2={cy + ay}
+              stroke={fgColor}
+              strokeWidth={2}
+              strokeLinecap="round"
+            />
+            {/* arrow head */}
+            <polygon
+              points={(() => {
+                const hx = cx + ax, hy = cy + ay
+                const bx = cx + Math.cos(angle + Math.PI - 0.4) * 5
+                const by = cy - Math.sin(angle + Math.PI - 0.4) * 5
+                const cxa = cx + Math.cos(angle + Math.PI + 0.4) * 5
+                const cya = cy - Math.sin(angle + Math.PI + 0.4) * 5
+                return `${hx},${hy} ${hx + bx - cx},${hy + by - cy} ${hx + cxa - cx},${hy + cya - cy}`
+              })()}
+              fill={fgColor}
+            />
+          </>
+        ) : (
+          // still water — show a tiny ring instead of an arrow
+          <circle cx={cx} cy={cy} r={3} fill="none" stroke={muted} strokeWidth={1.5} />
+        )}
+      </svg>
+    </div>
   )
 }
 

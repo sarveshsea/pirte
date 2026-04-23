@@ -5,7 +5,7 @@
 // produces the branching/network topology real physarum polycephalum uses
 // to find optimal transport paths between nutrient sources.
 
-import { rampChar, type SimInstance } from './index'
+import { rampChar, type SimInstance, type PhaseSample, type PhaseSpec } from './index'
 
 // parameters (jones 2010, tuned for visual clarity at low grid res)
 const SA = Math.PI / 4   // sensor angle (±45°)
@@ -155,5 +155,24 @@ export function createPhysarum(): SimInstance {
     'density': `${(AGENT_DENSITY * 100).toFixed(0)}%`,
   })
 
-  return { reset, reseed: seed, step, render, metrics, params }
+  const phase = (): PhaseSample => {
+    // phase: (mean trail density, fraction of lit cells). as the network
+    // grows, both rise; at equilibrium they sit in a compact cloud.
+    let sum = 0, lit = 0
+    const N = trail.length
+    for (let i = 0; i < N; i++) {
+      sum += trail[i]
+      if (trail[i] > 0.25) lit++
+    }
+    return { x: N === 0 ? 0 : sum / N, y: N === 0 ? 0 : lit / N }
+  }
+
+  const phaseSpec = (): PhaseSpec => ({
+    xLabel: 'mean',
+    yLabel: 'cover',
+    xMin: 0, xMax: 2,
+    yMin: 0, yMax: 1,
+  })
+
+  return { reset, reseed: seed, step, render, metrics, params, phase, phaseSpec }
 }

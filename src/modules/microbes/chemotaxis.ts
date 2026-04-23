@@ -6,7 +6,7 @@
 // any actual steering — the organism literally cannot measure a gradient
 // instantaneously (it's too small), only a change over time.
 
-import { RAMP, type SimInstance } from './index'
+import { RAMP, type SimInstance, type PhaseSample, type PhaseSpec } from './index'
 
 const N_AGENTS = 600
 const STEP = 0.6           // swim distance per tick
@@ -158,5 +158,24 @@ export function createChemotaxis(): SimInstance {
     'σ field': GRADIENT_SIGMA.toFixed(2),
   })
 
-  return { reset, reseed: () => { rebuildField(); seed() }, step, render, metrics, params }
+  const phase = (): PhaseSample => {
+    // phase: (mean c sampled by population, bias ≥0.75 fraction).
+    // population climbing the gradient → both numbers rise together.
+    let sumC = 0, bias = 0
+    for (let i = 0; i < N_AGENTS; i++) {
+      const c = sampleField(ax[i], ay[i])
+      sumC += c
+      if (c > 0.75) bias++
+    }
+    return { x: sumC / N_AGENTS, y: bias / N_AGENTS }
+  }
+
+  const phaseSpec = (): PhaseSpec => ({
+    xLabel: 'mean c',
+    yLabel: 'bias',
+    xMin: 0, xMax: 1,
+    yMin: 0, yMax: 1,
+  })
+
+  return { reset, reseed: () => { rebuildField(); seed() }, step, render, metrics, params, phase, phaseSpec }
 }
